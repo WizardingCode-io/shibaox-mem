@@ -118,7 +118,10 @@ describe("core/git", () => {
     ["https://github.com/org/repo/", "github.com/org/repo"],
     ["git@github.com:Org/Repo.git", "github.com/org/repo"],
     ["ssh://git@github.com:22/org/repo.git", "github.com/org/repo"],
-    ["https://user:s3cretpass@gitlab.example.com/group/sub/repo.git", "gitlab.example.com/group/sub/repo"],
+    [
+      "https://user:s3cretpass@gitlab.example.com/group/sub/repo.git",
+      "gitlab.example.com/group/sub/repo",
+    ],
     ["https://x-access-token:abc123@github.com/org/repo", "github.com/org/repo"],
     ["git://Example.COM/org/repo.git", "example.com/org/repo"],
     ["/srv/git/repo.git", "/srv/git/repo"],
