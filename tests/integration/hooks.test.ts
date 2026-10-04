@@ -3,10 +3,13 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { claudeCode } from "../../src/adapters/claude-code/adapter.ts";
-import type { HookInput } from "../../src/adapters/types.ts";
+import type { AgentAdapter, HookInput } from "../../src/adapters/types.ts";
+import { resolveProject } from "../../src/core/project.ts";
+import type { Redacted } from "../../src/core/redact.ts";
 import type { HookEvent } from "../../src/core/types.ts";
 import { handleHook } from "../../src/hooks/handle.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
+import { insertMemory } from "../../src/store/memories.ts";
 
 let base: string;
 let project: string;
@@ -21,15 +24,28 @@ beforeEach(() => {
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
   clock = 1_000_000;
   spawned = 0;
+  errors = [];
 });
 afterEach(() => {
   db.close();
   rmSync(base, { recursive: true, force: true });
 });
 
-function hook(event: HookEvent, extra: Partial<HookInput> = {}): string {
+let errors: unknown[] = [];
+
+function hook(
+  event: HookEvent,
+  extra: Partial<HookInput> = {},
+  adapter: AgentAdapter = claudeCode,
+): string {
   clock += 1000;
-  return handleHook({ db, now: () => clock, spawnDistill: () => void spawned++ }, claudeCode, {
+  const deps = {
+    db,
+    now: () => clock,
+    spawnDistill: () => void spawned++,
+    onError: (error: unknown) => void errors.push(error),
+  };
+  return handleHook(deps, adapter, {
     agent: "claude-code",
     event,
     sessionId: "s1",
@@ -218,5 +234,121 @@ describe("hook: what is stored", () => {
     expect(
       db.query<{ transcript_path: string }, []>("SELECT transcript_path FROM turns").get(),
     ).toEqual({ transcript_path: "/tmp/t.jsonl" });
+  });
+});
+
+describe("hook: what the agent is told", () => {
+  const RULE = "The pragma busy_timeout must be the first statement on a connection.";
+
+  function remember(title: string, body = ""): number {
+    return insertMemory(db, {
+      projectId: resolveProject(db, project, clock).id,
+      kind: "gotcha",
+      title,
+      body: body as Redacted,
+      terms: "",
+      importance: 3,
+      branch: null,
+      commit: null,
+      origin: "manual",
+      judge: "heuristic",
+      judgeVersion: "1",
+      sourceTurnId: null,
+      files: [],
+      now: clock,
+    });
+  }
+  const told = (out: string) =>
+    out === ""
+      ? null
+      : (JSON.parse(out).hookSpecificOutput as {
+          hookEventName: string;
+          additionalContext: string;
+        });
+  const injections = () =>
+    db
+      .query<{ event: string; context_epoch: number }, []>(
+        "SELECT event, context_epoch FROM injections ORDER BY id",
+      )
+      .all();
+
+  test("a new session is told what is known, and that is recorded", () => {
+    remember(RULE);
+    const out = told(hook("session-start", { source: "startup" }));
+    expect(out?.hookEventName).toBe("SessionStart");
+    expect(out?.additionalContext).toStartWith("<ai-mem-notes>");
+    expect(out?.additionalContext).toContain(RULE);
+    expect(injections()).toEqual([{ event: "session-start", context_epoch: 0 }]);
+  });
+
+  test("a project with nothing to say prints nothing", () => {
+    expect(hook("session-start", { source: "startup" })).toBe("");
+  });
+
+  test("a resumed session is told nothing: its context is still there", () => {
+    remember(RULE);
+    expect(hook("session-start", { source: "resume" })).toBe("");
+    expect(injections()).toEqual([]);
+  });
+
+  test.each(["compact", "clear"] as const)("after a %s the brief is given again", (source) => {
+    remember(RULE);
+    hook("session-start", { source: "startup" });
+    expect(told(hook("session-start", { source }))?.additionalContext).toContain(RULE);
+    expect(injections().map((row) => row.context_epoch)).toEqual([0, 1]);
+  });
+
+  test("a prompt is given the memories that bear on it", () => {
+    remember(RULE, "Otherwise the first query fails at once.");
+    const out = told(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" }));
+    expect(out?.hookEventName).toBe("UserPromptSubmit");
+    expect(out?.additionalContext).toContain(RULE);
+    expect(out?.additionalContext).toContain("Otherwise the first query fails at once.");
+    expect(injections()).toEqual([{ event: "prompt", context_epoch: 0 }]);
+  });
+
+  test("a memory is not shown again later in the same session", () => {
+    remember(RULE);
+    hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" });
+    expect(hook("prompt", { turnId: "p2", prompt: "so busy_timeout again?" })).toBe("");
+  });
+
+  test("what the brief already said is not repeated on a prompt", () => {
+    remember(RULE);
+    hook("session-start", { source: "startup" });
+    expect(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" })).toBe("");
+  });
+
+  test("an unrelated prompt is given nothing", () => {
+    remember(RULE);
+    expect(hook("prompt", { turnId: "p1", prompt: "write a haiku about autumn leaves" })).toBe("");
+    expect(injections()).toEqual([]);
+  });
+
+  test("a failure while looking things up neither loses the turn nor reaches the host", () => {
+    remember(RULE);
+    db.run("DROP TABLE injections");
+    expect(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" })).toBe("");
+    expect(turns().map((turn) => turn.state)).toEqual(["open"]);
+    expect(errors).toHaveLength(1);
+  });
+
+  test("a host that cannot take context on a prompt gets none, and the turn is still captured", () => {
+    remember(RULE);
+    const mute: AgentAdapter = {
+      ...claudeCode,
+      capabilities: { ...claudeCode.capabilities, promptInjection: false },
+    };
+    expect(
+      hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" }, mute),
+    ).toBe("");
+    expect(turns()).toHaveLength(1);
+    expect(injections()).toEqual([]);
+  });
+
+  test("a disabled project is told nothing", () => {
+    remember(RULE);
+    db.run("UPDATE projects SET disabled = 1");
+    expect(hook("session-start", { source: "startup" })).toBe("");
   });
 });

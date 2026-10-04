@@ -1,9 +1,13 @@
 import type { AgentAdapter, HookInput } from "../adapters/types.ts";
 import { resolveProject } from "../core/project.ts";
 import { type Redacted, redact } from "../core/redact.ts";
+import { sessionBrief } from "../retrieve/brief.ts";
+import { recordInjections } from "../retrieve/notes.ts";
+import { retrieveForPrompt } from "../retrieve/prompt.ts";
+import { renderNotes } from "../retrieve/render.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { drainActive } from "../store/meta.ts";
-import { endSession, touchSession } from "../store/sessions.ts";
+import { advanceEpoch, endSession, touchSession } from "../store/sessions.ts";
 import {
   completeTurn,
   hasQueuedTurns,
@@ -18,6 +22,8 @@ export interface HookDeps {
   now: () => number;
   /** Starts background distillation and returns at once. */
   spawnDistill: () => void;
+  /** Told about failures that were contained here rather than thrown. */
+  onError?: (error: unknown) => void;
 }
 
 const PROMPT_MAX_CHARS = 8 * 1024;
@@ -56,17 +62,63 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
     commit: project.commit,
     now,
   };
-  const context: string | null = null;
+
+  // Looking things up comes after capturing, and its failure is contained: a turn
+  // must not be lost because retrieval broke.
+  const lookUp = (find: () => string | null): string | null => {
+    try {
+      return find();
+    } catch (error) {
+      deps.onError?.(error);
+      return null;
+    }
+  };
+  let context: string | null = null;
 
   switch (input.event) {
-    case "session-start":
+    case "session-start": {
+      // A resumed session still has its context; a cleared or compacted one has lost it.
+      if (input.source === "resume" || !adapter.capabilities.sessionInjection) break;
+      context = lookUp(() => {
+        const wiped = input.source === "clear" || input.source === "compact";
+        const epoch = wiped ? advanceEpoch(db, session.id) : session.contextEpoch;
+        const brief = sessionBrief(db, { projectId: project.id, branch: project.branch, now });
+        recordInjections(db, {
+          sessionId: session.id,
+          epoch,
+          event: "session-start",
+          notes: brief.notes,
+          now,
+        });
+        return brief.text;
+      });
       break;
+    }
     case "prompt": {
       const prompt = input.prompt;
       if (prompt === null) break;
       withWrite(db, () => {
         interruptOpenTurns(db, session.id, now, input.turnId);
         openTurn(db, turn, stored(prompt, PROMPT_MAX_CHARS));
+      });
+      if (!adapter.capabilities.promptInjection) break;
+      context = lookUp(() => {
+        const notes = retrieveForPrompt(db, {
+          projectId: project.id,
+          sessionId: session.id,
+          epoch: session.contextEpoch,
+          prompt,
+          branch: project.branch,
+          now,
+        });
+        recordInjections(db, {
+          sessionId: session.id,
+          epoch: session.contextEpoch,
+          event: "prompt",
+          notes,
+          now,
+        });
+        return renderNotes(notes);
       });
       break;
     }

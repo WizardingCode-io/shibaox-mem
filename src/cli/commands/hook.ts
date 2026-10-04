@@ -41,7 +41,16 @@ export async function run(argv: string[]): Promise<number> {
     if (input === null || input.subagent) return 0;
 
     db = openDb({ busyTimeoutMs: BUSY_TIMEOUT_MS[event] });
-    const out = handleHook({ db, now: Date.now, spawnDistill }, adapter, input);
+    const out = handleHook(
+      {
+        db,
+        now: Date.now,
+        spawnDistill,
+        onError: (error) => logError(`hook ${agent} ${event} (lookup)`, error),
+      },
+      adapter,
+      input,
+    );
     if (out !== "") process.stdout.write(out);
   } catch (error) {
     outcome = error instanceof Error ? error.name : "Error";
