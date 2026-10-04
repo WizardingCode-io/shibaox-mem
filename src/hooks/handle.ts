@@ -2,6 +2,7 @@ import type { AgentAdapter, HookInput } from "../adapters/types.ts";
 import { resolveProject } from "../core/project.ts";
 import { type Redacted, redact } from "../core/redact.ts";
 import { type Db, withWrite } from "../store/db.ts";
+import { drainActive } from "../store/meta.ts";
 import { endSession, touchSession } from "../store/sessions.ts";
 import {
   completeTurn,
@@ -87,6 +88,6 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
       break;
   }
 
-  if (hasQueuedTurns(db)) deps.spawnDistill();
+  if (hasQueuedTurns(db) && !drainActive(db, now)) deps.spawnDistill();
   return adapter.render(input.event, context);
 }

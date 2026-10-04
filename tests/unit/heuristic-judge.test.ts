@@ -275,6 +275,16 @@ describe("heuristic judge: how a new memory relates to existing ones", () => {
     expect(verdict?.contradicts).toBeGreaterThanOrEqual(0.7);
   });
 
+  test("repeating a statement that already says what it replaced does not contradict it", async () => {
+    const statement = {
+      title: "The retry limit is now five",
+      body: "The retry limit is five; it is no longer three attempts.",
+    };
+    const verdict = await relate(statement, statement);
+    expect(verdict?.relation).toBe("same");
+    expect(verdict?.contradicts).toBeLessThan(0.5);
+  });
+
   test("unrelated statements are different", async () => {
     const verdict = await relate(
       { title: "FTS5 folds diacritics", body: "The tokenizer removes diacritics before matching." },

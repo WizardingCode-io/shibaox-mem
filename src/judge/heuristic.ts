@@ -1,4 +1,5 @@
 import type { MemoryKind } from "../core/types.ts";
+import { tokens } from "../util/words.ts";
 import type {
   ConsolidateInput,
   ConsolidateVerdict,
@@ -149,17 +150,6 @@ function distill(input: DistillInput): DistillVerdict {
 
 // --- Consolidation ----------------------------------------------------------------
 
-const STOPWORDS = new Set(
-  "the and for are was were not but with that this from have has had its their there which when then than into about over also been being will would should could can may our your you they them these those does did doing done just only very more most some such each any all one two out off too now new use used using get got yet still onto upon within without between while where what who whom whose why how nor both few own same other another again once here uma uns umas dos das nos nas por para com sem sob sobre entre até que não sim mas como mais menos muito pouco também já ainda são ser está estão foi era eram tem têm ter isto isso esse essa este esta aquele aquela ele ela eles elas seu sua seus suas num numa pelo pela pelos pelas aos quando onde porque pois cada todo toda todos todas outro outra outros outras".split(
-    " ",
-  ),
-);
-
-function tokens(text: string): Set<string> {
-  const found = text.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? [];
-  return new Set(found.filter((token) => token.length >= 3 && !STOPWORDS.has(token)));
-}
-
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let shared = 0;
@@ -186,7 +176,8 @@ function consolidate(input: ConsolidateInput): ConsolidateVerdict {
         id: neighbour.id,
         relation,
         relationScore: relation === "same" ? 2 : relation === "related" ? 1 : 0,
-        contradicts: replaces && overlap >= 0.5 ? 0.8 : 0.1,
+        // A near-identical neighbour already says what it replaced: nothing is contradicted.
+        contradicts: replaces && overlap >= 0.5 && overlap < 0.9 ? 0.8 : 0.1,
       };
     }),
   };

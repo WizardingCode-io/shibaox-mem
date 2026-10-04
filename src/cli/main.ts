@@ -9,6 +9,7 @@ export interface CommandModule {
 // Each command is loaded on demand so that hooks never pay for code they do not run.
 const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   hook: () => import("./commands/hook.ts"),
+  distill: () => import("./commands/distill.ts"),
   __spike: () => import("./commands/spike.ts"),
 };
 
