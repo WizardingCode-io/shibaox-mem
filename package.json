@@ -1,0 +1,26 @@
+{
+  "name": "ai-mem",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Persistent cross-session memory for coding agents. No daemon, no generative LLM, local by default.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "bun test",
+    "build": "bun scripts/build.ts",
+    "check": "bun run typecheck && bun run lint && bun run test"
+  },
+  "trustedDependencies": [
+    "bun",
+    "@biomejs/biome"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/bun": "1.4.2",
+    "bun": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}
