@@ -1,0 +1,290 @@
+[
+  {
+    "id": "en-fix-stdin-tty",
+    "prompt": "The hook hangs on Windows when stdin is empty.",
+    "final": "Found it. The hook was waiting on stdin even when the host attached a terminal, so it blocked forever. I now check `process.stdin.isTTY` and return immediately in that case. The fix is in src/cli/commands/hook.ts and there is a regression test.",
+    "filesChanged": ["src/cli/commands/hook.ts", "tests/integration/hook-cli.test.ts"],
+    "hadErrors": true,
+    "worth": true,
+    "kind": "fix"
+  },
+  {
+    "id": "pt-fix-wal-busy",
+    "prompt": "os testes da base de dados falham de vez em quando",
+    "final": "Encontrei a causa: o `PRAGMA journal_mode = WAL` não respeita o busy_timeout, por isso dois processos a criar a base de dados ao mesmo tempo recebiam SQLITE_BUSY. Acrescentei uma repetição manual com espera curta em src/store/db.ts. Corri o teste oito vezes seguidas sem falhas.",
+    "filesChanged": ["src/store/db.ts"],
+    "hadErrors": true,
+    "worth": true,
+    "kind": "fix"
+  },
+  {
+    "id": "en-convention-no-mocks",
+    "prompt": "No, don't use mocks for the database here. We always test against a real SQLite file.",
+    "final": "Understood, I've switched the tests to open a real database in a temporary directory.",
+    "filesChanged": ["tests/integration/db.test.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "convention"
+  },
+  {
+    "id": "pt-convention-clean-room",
+    "prompt": "Não quero um fork, quero fazer de raiz baseado no claude-mem. Isto tem que estar bem explícito.",
+    "final": "Registado: a implementação é de raiz e a regra fica escrita no CLEAN-ROOM.md.",
+    "filesChanged": ["CLEAN-ROOM.md"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "convention"
+  },
+  {
+    "id": "en-decision-no-embeddings",
+    "prompt": "Should retrieval use embeddings?",
+    "final": "I recommend against embeddings for the first version. We decided to use FTS5 with BM25 because it needs no extra process and no model download, and identifiers in code match lexically most of the time. We can add vectors later if recall measurements justify it.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "decision"
+  },
+  {
+    "id": "pt-decision-typescript",
+    "prompt": "usamos Go ou TypeScript?",
+    "final": "Ficou decidido usar TypeScript compilado com Bun em vez de Go, porque a equipa já domina a linguagem e os SDKs oficiais de MCP e TypeSafe existem em TypeScript. O custo é um binário maior, cerca de 60 MB por plataforma.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "decision"
+  },
+  {
+    "id": "en-gotcha-dotenv",
+    "prompt": "why did the compiled binary pick up my API key?",
+    "final": "Note that a binary built with `bun build --compile` loads `.env` from the working directory by default. A hook runs inside the user's project, so it would silently read that project's secrets. The build now passes `--no-compile-autoload-dotenv`.",
+    "filesChanged": ["scripts/build.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "gotcha"
+  },
+  {
+    "id": "pt-gotcha-stop-hook",
+    "prompt": "o Stop hook não dispara?",
+    "final": "Atenção: quando o utilizador interrompe um turno com Ctrl+C, o Claude Code não dispara o evento Stop, só o SessionEnd. Por isso o turno tem de ser aberto no evento de prompt e fechado pelo SessionEnd quando o Stop não chega.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "gotcha"
+  },
+  {
+    "id": "en-change-json-flag",
+    "prompt": "Add a --json option to status.",
+    "final": "Added a `--json` flag to the `status` command in src/cli/commands/status.ts. It prints the same fields as the table view as a single JSON object, and exits non-zero when a check fails. Both output formats are covered by snapshot tests.",
+    "filesChanged": ["src/cli/commands/status.ts", "tests/integration/status.test.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "change"
+  },
+  {
+    "id": "pt-change-migration",
+    "prompt": "cria a migração para a tabela de sessões",
+    "final": "Criei a migração 0002 com a tabela `sessions` e um índice único em (agent, agent_session_id). A migração corre dentro de uma transação imediata e é aplicada automaticamente na abertura da base de dados.",
+    "filesChanged": ["src/store/migrations/0002_sessions.sql", "src/store/db.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "change"
+  },
+  {
+    "id": "en-discovery-prompt-id",
+    "prompt": "how does the host decide the turn id?",
+    "final": "It turns out the turn is identified by `prompt_id`, which Claude Code sends in the UserPromptSubmit and Stop payloads and also writes on the user lines of the transcript. There is no `tool_use_count` field in the Stop payload, despite what the documentation summary said.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "discovery"
+  },
+  {
+    "id": "en-fix-diacritics",
+    "prompt": "search returns nothing for 'migracao'",
+    "final": "The FTS table was created with the default tokenizer, which does not fold diacritics. I recreated it with `unicode61 remove_diacritics 2`, so a query without accents now finds accented text.",
+    "filesChanged": ["src/store/migrations/0001_init.sql"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "fix"
+  },
+  {
+    "id": "en-convention-commit-style",
+    "prompt": "From now on, commit messages must be in English and follow conventional commits.",
+    "final": "Got it. I will write commit messages in English using the conventional commits format.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "convention"
+  },
+  {
+    "id": "pt-decision-gemini",
+    "prompt": "analisa como tratar o Gemini CLI",
+    "final": "O Gemini CLI foi substituído pelo Antigravity CLI para contas gratuitas. Decidimos dar suporte completo ao Gemini CLI e deixar o Antigravity só com MCP, porque o contrato de hooks do Antigravity não tem eventos de sessão nem o prompt no payload.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "decision"
+  },
+  {
+    "id": "en-fix-pending-timer",
+    "prompt": "the test passes locally but the process hangs for ten seconds",
+    "final": "The cause was a pending timer: `Promise.race` with `Bun.sleep` leaves the sleep running after the race settles, which keeps the process alive. Be careful to clear timeouts explicitly. I replaced it with a helper that clears the timer in a finally block.",
+    "filesChanged": ["src/spike/support.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "fix"
+  },
+  {
+    "id": "pt-decision-baseline",
+    "prompt": "muda os alvos x64 para baseline",
+    "final": "Alterei os alvos x64 de Linux e Windows para o runtime baseline em scripts/build.ts, porque o runtime por omissão exige AVX2 e termina com Illegal instruction em processadores antigos.",
+    "filesChanged": ["scripts/build.ts"],
+    "hadErrors": false,
+    "worth": true,
+    "kind": "decision"
+  },
+  {
+    "id": "en-none-thanks",
+    "prompt": "thanks, that works",
+    "final": "Glad it works! Let me know if you need anything else.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-status",
+    "prompt": "como está a correr?",
+    "final": "Os testes estão a correr, já passaram 120 de 286. Aviso quando terminarem.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-obvious-from-code",
+    "prompt": "what does resolveProject return?",
+    "final": "It returns the project id, key, name, root, branch, commit and whether the project is disabled.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-plan-not-done",
+    "prompt": "how would you approach adding sync?",
+    "final": "I would start by defining the sync protocol, then add an outbox table, and finally build the server. Would you like me to write a detailed plan first?",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-question-back",
+    "prompt": "implementa o viewer",
+    "final": "Antes de avançar preciso de saber duas coisas: queres o viewer em React ou em HTML simples? E deve arrancar numa porta fixa?",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-typo",
+    "prompt": "fix the typo in the README",
+    "final": "Fixed the typo.",
+    "filesChanged": ["README.md"],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-formatter",
+    "prompt": "run the formatter",
+    "final": "Ran the formatter. Three files were reformatted.",
+    "filesChanged": ["src/a.ts", "src/b.ts", "src/c.ts"],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-listing",
+    "prompt": "lista os ficheiros da pasta src",
+    "final": "A pasta src tem as subpastas adapters, cli, core, distill, hooks, store e util.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-unresolved",
+    "prompt": "why is the build failing?",
+    "final": "I looked at the build output but could not find the cause yet. I will keep investigating the linker flags next.",
+    "filesChanged": [],
+    "hadErrors": true,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-greeting",
+    "prompt": "hi",
+    "final": "Hello! How can I help you today?",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-restatement",
+    "prompt": "consegues ver o repositório?",
+    "final": "Sim, consigo ver o repositório e os ficheiros que mencionaste.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-tests-pass",
+    "prompt": "run the tests",
+    "final": "All 286 tests pass.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-general-knowledge",
+    "prompt": "what is WAL mode?",
+    "final": "WAL stands for write-ahead logging. In this mode SQLite appends changes to a separate log file, which lets readers continue while a writer is active.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-progress",
+    "prompt": "continua",
+    "final": "Vou agora implementar o passo seguinte e depois corro a suite completa.",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "en-none-version-bump",
+    "prompt": "bump typescript",
+    "final": "Updated typescript to 7.0.2 in package.json.",
+    "filesChanged": ["package.json", "bun.lock"],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  },
+  {
+    "id": "pt-none-interrupted",
+    "prompt": "faz o deploy",
+    "final": "",
+    "filesChanged": [],
+    "hadErrors": false,
+    "worth": false,
+    "kind": "none"
+  }
+]
