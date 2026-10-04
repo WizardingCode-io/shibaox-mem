@@ -82,6 +82,26 @@ export async function run(argv: string[]): Promise<number> {
       process.stdout.write(`${envProbe(required(rest, 0, "name"))}\n`);
       return 0;
     }
+    case "mcp": {
+      const result = await (await import("../../spike/mcp.ts")).mcpSpike();
+      return report(result, result.ok);
+    }
+    case "mcp-server":
+      await (await import("../../spike/mcp.ts")).mcpServer();
+      return 0;
+    case "log-payload": {
+      // Captures what a host really sends to a hook. Silent: hosts read hook output.
+      const { mkdirSync, writeFileSync } = await import("node:fs");
+      const { join } = await import("node:path");
+      const dir = required(rest, 0, "dir");
+      const label = required(rest, 1, "label");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, `${Date.now()}-${process.pid}-${label}.json`),
+        await Bun.stdin.text(),
+      );
+      return 0;
+    }
     case "all": {
       const { isCompiled } = await import("../../spike/support.ts");
       const results: SpikeResult[] = [
@@ -90,6 +110,7 @@ export async function run(argv: string[]): Promise<number> {
         await (await import("../../spike/wal.ts")).walSpike(),
         await (await import("../../spike/detach.ts")).detachSpike(),
         await (await import("../../spike/dotenv.ts")).dotenvSpike(),
+        await (await import("../../spike/mcp.ts")).mcpSpike(),
       ];
       return report(
         {

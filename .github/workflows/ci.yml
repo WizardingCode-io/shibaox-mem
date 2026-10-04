@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binaries
+          path: dist/
+          if-no-files-found: error
+
+  # Every binary is executed on the platform it targets: it must start, and the
+  # platform probes (FTS5, startup latency, WAL, detached child, .env isolation, MCP) must pass.
+  verify:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, file: ai-mem-darwin-arm64 }
+          - { os: macos-15-intel, file: ai-mem-darwin-x64 }
+          - { os: ubuntu-latest, file: ai-mem-linux-x64 }
+          - { os: ubuntu-24.04-arm, file: ai-mem-linux-arm64 }
+          - { os: windows-latest, file: ai-mem-windows-x64.exe }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: binaries
+          path: dist
+      - if: runner.os != 'Windows'
+        run: chmod +x "dist/${{ matrix.file }}"
+      # Cross-compiled macOS binaries are unsigned; Apple Silicon refuses to run those.
+      - if: runner.os == 'macOS'
+        run: |
+          codesign --force --sign - "dist/${{ matrix.file }}"
+          codesign --verify --verbose "dist/${{ matrix.file }}"
+      - run: '"dist/${{ matrix.file }}" --version'
+      - name: Platform probes
+        run: '"dist/${{ matrix.file }}" __spike all | tee "spikes-${{ matrix.file }}.json"'
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spikes-${{ matrix.file }}
+          path: spikes-${{ matrix.file }}.json

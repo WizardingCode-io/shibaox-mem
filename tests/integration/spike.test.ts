@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { runCli } from "../helpers/cli.ts";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { runCli, runCliWithInput } from "../helpers/cli.ts";
 
 async function spike(...args: string[]) {
   const r = await runCli("__spike", ...args);
@@ -64,6 +67,41 @@ describe("__spike", () => {
     // Source runs autoload .env by design; only a compiled binary can pass or fail this probe.
     expect(r.json.compiled).toBe(false);
     expect(r.json.ok).toBe(true);
+  });
+
+  test("mcp: a stdio server inside this program answers the protocol and exits when stdin closes", async () => {
+    const started = performance.now();
+    const r = await spike("mcp");
+    // A pending timeout must not keep the process alive after the work is done.
+    expect(performance.now() - started).toBeLessThan(5000);
+    expect(r.stderr).toBe("");
+    expect(r.exitCode).toBe(0);
+    expect(r.json).toMatchObject({
+      spike: "mcp",
+      ok: true,
+      initialize: true,
+      toolsList: true,
+      toolsCall: true,
+      exitsOnStdinClose: true,
+    });
+  }, 30_000);
+
+  test("log-payload: stores a hook payload verbatim and stays silent", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "ai-mem-test-"));
+    try {
+      const payload = '{"hook_event_name":"Stop","last_assistant_message":"feito — olá"}';
+      const r = await runCliWithInput(payload, "__spike", "log-payload", dir, "Stop");
+      expect(r.exitCode).toBe(0);
+      // Anything a hook prints may be read by the host as context or as JSON.
+      expect(r.stdout).toBe("");
+      expect(r.stderr).toBe("");
+      const files = readdirSync(dir);
+      expect(files).toHaveLength(1);
+      expect(files[0]).toEndWith("-Stop.json");
+      expect(readFileSync(join(dir, files[0] as string), "utf8")).toBe(payload);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test("an unknown spike is a usage error, never exit code 2", async () => {

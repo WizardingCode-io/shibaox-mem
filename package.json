@@ -22,5 +22,9 @@
     "@types/bun": "1.4.2",
     "bun": "1.4.2",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.0",
+    "zod": "4.6.5"
   }
 }

@@ -6,9 +6,16 @@ export interface CliResult {
   exitCode: number;
 }
 
-export async function runCli(...args: string[]): Promise<CliResult> {
+export function runCli(...args: string[]): Promise<CliResult> {
+  return runCliWithInput(undefined, ...args);
+}
+
+export async function runCliWithInput(
+  input: string | undefined,
+  ...args: string[]
+): Promise<CliResult> {
   const proc = Bun.spawn([process.execPath, MAIN, ...args], {
-    stdin: "ignore",
+    stdin: input === undefined ? "ignore" : new TextEncoder().encode(input),
     stdout: "pipe",
     stderr: "pipe",
   });

@@ -35,3 +35,16 @@ export function percentile(samples: readonly number[], p: number): number {
   const index = Math.max(0, Math.ceil((p / 100) * sorted.length) - 1);
   return round(sorted[Math.min(index, sorted.length - 1)] ?? 0);
 }
+
+/** Rejects after `ms` unless `work` settles first. The timer never outlives the race. */
+export async function within<T>(ms: number, work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms`)), ms);
+  });
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}

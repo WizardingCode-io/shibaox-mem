@@ -1,9 +1,16 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import pkg from "../../package.json" with { type: "json" };
 import { buildArgs, TARGETS, type Target } from "../../scripts/build.ts";
 
 const targets: Target[] = [...TARGETS];
 
 describe("build", () => {
+  test("CI installs the same Bun the project pins", () => {
+    const ciVersion = readFileSync(new URL("../../.bun-version", import.meta.url), "utf8").trim();
+    expect(ciVersion).toBe(pkg.devDependencies.bun);
+  });
+
   test("covers the five release platforms", () => {
     expect(TARGETS.map((target) => target.file).sort()).toEqual([
       "ai-mem-darwin-arm64",
