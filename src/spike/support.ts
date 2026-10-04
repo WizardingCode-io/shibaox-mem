@@ -2,19 +2,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+export { isCompiled, selfCommand } from "../util/self.ts";
+
 export interface SpikeResult {
   spike: string;
   ok: boolean;
   [detail: string]: unknown;
-}
-
-export function isCompiled(): boolean {
-  return Bun.main.includes("$bunfs") || Bun.main.includes("~BUN");
-}
-
-/** Command line that re-invokes this program, whether compiled or run from source. */
-export function selfCommand(...args: string[]): string[] {
-  return isCompiled() ? [process.execPath, ...args] : [process.execPath, Bun.main, ...args];
 }
 
 export async function withTempDir<T>(fn: (dir: string) => T | Promise<T>): Promise<T> {

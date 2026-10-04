@@ -10,12 +10,17 @@ export function runCli(...args: string[]): Promise<CliResult> {
   return runCliWithInput(undefined, ...args);
 }
 
-export async function runCliWithInput(
-  input: string | undefined,
+export function runCliWithInput(input: string | undefined, ...args: string[]): Promise<CliResult> {
+  return runCliWith({ ...(input === undefined ? {} : { input }) }, ...args);
+}
+
+export async function runCliWith(
+  options: { input?: string; env?: Record<string, string> },
   ...args: string[]
 ): Promise<CliResult> {
   const proc = Bun.spawn([process.execPath, MAIN, ...args], {
-    stdin: input === undefined ? "ignore" : new TextEncoder().encode(input),
+    env: { ...process.env, ...options.env },
+    stdin: options.input === undefined ? "ignore" : new TextEncoder().encode(options.input),
     stdout: "pipe",
     stderr: "pipe",
   });
