@@ -1,0 +1,86 @@
+import type { MemoryKind } from "../core/types.ts";
+import type { Db } from "../store/db.ts";
+import type { Note } from "./render.ts";
+
+export interface MemoryRow {
+  id: number;
+  kind: MemoryKind;
+  title: string;
+  body: string;
+  terms: string;
+  importance: number;
+  createdAt: number;
+  updatedAt: number;
+  useCount: number;
+  branch: string | null;
+  stale: number;
+}
+
+export const MEMORY_COLUMNS = `m.id, m.kind, m.title, m.body, m.terms, m.importance, m.created_at AS createdAt,
+  m.updated_at AS updatedAt, m.use_count AS useCount, m.branch, m.stale`;
+
+const DAY_MS = 86_400_000;
+const HALF_LIFE_DAYS = 60;
+/** Age lowers a memory's rank but never removes it. */
+const DECAY_FLOOR = 0.25;
+
+/**
+ * How much a memory deserves attention before any query is considered: importance,
+ * faded by age, raised by having been looked up and by belonging to the current branch,
+ * halved when its files are gone.
+ */
+export function prior(row: MemoryRow, context: { branch: string | null; now: number }): number {
+  const ageDays = Math.max(0, context.now - row.updatedAt) / DAY_MS;
+  const decay = Math.max(DECAY_FLOOR, 0.5 ** (ageDays / HALF_LIFE_DAYS));
+  const used = 1 + Math.log1p(row.useCount);
+  const sameBranch = row.branch !== null && row.branch === context.branch ? 1.2 : 1;
+  return row.importance * decay * used * sameBranch * (row.stale === 1 ? 0.5 : 1);
+}
+
+export function filesOf(db: Db, memoryId: number): string[] {
+  return db
+    .query<{ path: string }, [number]>(
+      "SELECT path FROM memory_files WHERE memory_id = ? ORDER BY role, path",
+    )
+    .all(memoryId)
+    .map((row) => row.path);
+}
+
+export function toNote(db: Db, row: MemoryRow): Note {
+  return {
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    body: row.body,
+    createdAt: row.createdAt,
+    files: filesOf(db, row.id),
+    stale: row.stale === 1,
+  };
+}
+
+/** Records what was shown, which is also what stops it being shown again in this context. */
+export function recordInjections(
+  db: Db,
+  input: {
+    sessionId: number;
+    epoch: number;
+    event: "session-start" | "prompt";
+    notes: Note[];
+    now: number;
+  },
+): void {
+  for (const note of input.notes) {
+    db.run(
+      `INSERT OR IGNORE INTO injections (session_id, context_epoch, memory_id, event, tokens, at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        input.sessionId,
+        input.epoch,
+        note.id,
+        input.event,
+        Math.ceil((note.title.length + note.body.length) / 3.5),
+        input.now,
+      ],
+    );
+  }
+}
