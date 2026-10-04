@@ -1,0 +1,264 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { claudeCode } from "../../src/adapters/claude-code/adapter.ts";
+import type { HookEvent } from "../../src/core/types.ts";
+
+const FIXTURES = new URL("../fixtures/claude-code/", import.meta.url).pathname;
+const payload = (name: string) => readFileSync(join(FIXTURES, "payloads", `${name}.json`), "utf8");
+const TRANSCRIPT = join(FIXTURES, "transcripts", "write-tool.jsonl");
+const WRITE_TURN = "39fa363e-4bbd-4d72-b47f-3c439e8e291f";
+const PLAIN_TURN = "035dc7e4-3ed5-48a9-b032-ca24825a8af6";
+
+describe("claude-code payloads", () => {
+  test("session start", () => {
+    expect(claudeCode.parse("session-start", payload("session-start.startup"))).toEqual({
+      agent: "claude-code",
+      event: "session-start",
+      sessionId: "205fc789-847d-4d65-a969-6aa483d2fb82",
+      cwd: "/Users/dev/project",
+      turnId: null,
+      transcriptPath:
+        "/Users/dev/.claude/projects/-Users-dev-project/205fc789-847d-4d65-a969-6aa483d2fb82.jsonl",
+      prompt: null,
+      finalText: null,
+      source: "startup",
+      subagent: false,
+    });
+  });
+
+  test("a resumed session says so", () => {
+    expect(claudeCode.parse("session-start", payload("session-start.resume"))?.source).toBe(
+      "resume",
+    );
+  });
+
+  test("prompt submission carries the prompt and the id that names the turn", () => {
+    expect(claudeCode.parse("prompt", payload("user-prompt-submit"))).toMatchObject({
+      event: "prompt",
+      turnId: WRITE_TURN,
+      prompt:
+        "Create a file named hello.txt containing the single word hi. Then reply with exactly: done",
+      finalText: null,
+    });
+  });
+
+  test("turn end carries the assistant's final message under the same turn id", () => {
+    expect(claudeCode.parse("turn-end", payload("stop"))).toMatchObject({
+      event: "turn-end",
+      turnId: WRITE_TURN,
+      finalText: "done",
+      prompt: null,
+    });
+  });
+
+  test("session end", () => {
+    expect(claudeCode.parse("session-end", payload("session-end"))).toMatchObject({
+      event: "session-end",
+      sessionId: "205fc789-847d-4d65-a969-6aa483d2fb82",
+    });
+  });
+
+  test("an event from inside a subagent is flagged", () => {
+    const inSubagent = JSON.stringify({ ...JSON.parse(payload("stop")), agent_id: "a1" });
+    expect(claudeCode.parse("turn-end", inSubagent)?.subagent).toBe(true);
+  });
+
+  test("an unknown session source is passed through as 'other'", () => {
+    const forked = JSON.stringify({
+      ...JSON.parse(payload("session-start.startup")),
+      source: "fork",
+    });
+    expect(claudeCode.parse("session-start", forked)?.source).toBe("other");
+  });
+
+  test.each(["", "not json", "[]", "null", "42", '{"cwd":"/p"}', '{"session_id":"s"}'])(
+    "unusable input %p yields nothing instead of throwing",
+    (stdin) => {
+      expect(claudeCode.parse("prompt", stdin)).toBeNull();
+    },
+  );
+
+  // The payload is another program's output: any field may vanish or change type.
+  test("never throws, whichever fields are missing or mistyped", () => {
+    const events: [HookEvent, string][] = [
+      ["session-start", "session-start.startup"],
+      ["prompt", "user-prompt-submit"],
+      ["turn-end", "stop"],
+      ["session-end", "session-end"],
+    ];
+    const junk = [null, 7, true, [], {}, ""];
+    for (const [event, name] of events) {
+      const full = JSON.parse(payload(name)) as Record<string, unknown>;
+      for (const key of Object.keys(full)) {
+        const without = { ...full };
+        delete without[key];
+        expect(() => claudeCode.parse(event, JSON.stringify(without))).not.toThrow();
+        for (const value of junk) {
+          expect(() =>
+            claudeCode.parse(event, JSON.stringify({ ...full, [key]: value })),
+          ).not.toThrow();
+        }
+      }
+    }
+  });
+});
+
+describe("claude-code render", () => {
+  test("context for a prompt is wrapped the way the host expects", () => {
+    expect(JSON.parse(claudeCode.render("prompt", "remember this"))).toEqual({
+      hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: "remember this" },
+    });
+  });
+
+  test("context at session start names that event", () => {
+    expect(JSON.parse(claudeCode.render("session-start", "brief")).hookSpecificOutput).toEqual({
+      hookEventName: "SessionStart",
+      additionalContext: "brief",
+    });
+  });
+
+  test.each([null, ""])("no context (%p) prints nothing at all", (context) => {
+    expect(claudeCode.render("prompt", context)).toBe("");
+  });
+
+  test.each(["turn-end", "session-end"] as const)("%s never prints", (event) => {
+    expect(claudeCode.render(event, "anything")).toBe("");
+  });
+
+  test("context is cut to the host's limit", () => {
+    const out = JSON.parse(claudeCode.render("prompt", "x".repeat(50_000)));
+    expect(out.hookSpecificOutput.additionalContext.length).toBeLessThanOrEqual(
+      claudeCode.capabilities.maxInjectionChars,
+    );
+    expect(claudeCode.capabilities.maxInjectionChars).toBe(10_000);
+  });
+});
+
+describe("claude-code transcript", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "ai-mem-transcript-"));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const user = (promptId: string, text: string) =>
+    JSON.stringify({ type: "user", promptId, message: { role: "user", content: text } });
+  const toolUse = (id: string, name: string, input: Record<string, unknown>) =>
+    JSON.stringify({
+      type: "assistant",
+      message: { role: "assistant", content: [{ type: "tool_use", id, name, input }] },
+    });
+  const toolResult = (promptId: string, id: string, content: string, isError = false) =>
+    JSON.stringify({
+      type: "user",
+      promptId,
+      message: {
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: id, content, is_error: isError }],
+      },
+    });
+  const write = (...lines: string[]) => {
+    const path = join(dir, "t.jsonl");
+    writeFileSync(path, `${lines.join("\n")}\n`);
+    return path;
+  };
+
+  test("a real transcript: the turn that wrote a file reports that file", () => {
+    expect(claudeCode.readTurnDetail(TRANSCRIPT, WRITE_TURN)).toEqual({
+      filesRead: [],
+      filesChanged: ["/Users/dev/project/hello.txt"],
+      commands: [],
+      errors: [],
+    });
+  });
+
+  test("a real transcript: a later turn does not inherit an earlier turn's files", () => {
+    expect(claudeCode.readTurnDetail(TRANSCRIPT, PLAIN_TURN)).toEqual({
+      filesRead: [],
+      filesChanged: [],
+      commands: [],
+      errors: [],
+    });
+  });
+
+  test("collects reads, edits, commands and failed tool calls, each once", () => {
+    const path = write(
+      user("p0", "earlier"),
+      toolUse("t0", "Read", { file_path: "/p/old.ts" }),
+      user("p1", "do the thing"),
+      toolUse("t1", "Read", { file_path: "/p/a.ts" }),
+      toolResult("p1", "t1", "contents"),
+      toolUse("t2", "Edit", { file_path: "/p/a.ts", old_string: "x", new_string: "y" }),
+      toolUse("t3", "Read", { file_path: "/p/a.ts" }),
+      toolUse("t4", "Bash", { command: "bun test" }),
+      toolResult("p1", "t4", "1 fail\nexpected 2, received 3", true),
+      toolUse("t5", "NotebookEdit", { notebook_path: "/p/n.ipynb" }),
+      toolUse("t6", "Bash", { command: "bun test" }),
+      user("p2", "next"),
+      toolUse("t7", "Write", { file_path: "/p/later.ts" }),
+    );
+    expect(claudeCode.readTurnDetail(path, "p1")).toEqual({
+      filesRead: ["/p/a.ts"],
+      filesChanged: ["/p/a.ts", "/p/n.ipynb"],
+      commands: ["bun test"],
+      errors: ["1 fail\nexpected 2, received 3"],
+    });
+  });
+
+  test("without a turn id, reads the last turn", () => {
+    const path = write(
+      user("p1", "first"),
+      toolUse("t1", "Write", { file_path: "/p/one.ts" }),
+      user("p2", "second"),
+      toolUse("t2", "Write", { file_path: "/p/two.ts" }),
+    );
+    expect(claudeCode.readTurnDetail(path, null).filesChanged).toEqual(["/p/two.ts"]);
+  });
+
+  test("tolerates unknown line types, garbage and a truncated last line", () => {
+    const path = write(
+      '{"type":"some-future-type","x":1}',
+      "not json at all",
+      user("p1", "go"),
+      '{"type":"assistant","message":"unexpected shape"}',
+      '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Write"}]}}',
+      toolUse("t1", "Write", { file_path: "/p/ok.ts" }),
+      '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"t2","name":"Wri',
+    );
+    expect(claudeCode.readTurnDetail(path, "p1").filesChanged).toEqual(["/p/ok.ts"]);
+  });
+
+  test("a missing or unreadable transcript yields an empty detail", () => {
+    const empty = { filesRead: [], filesChanged: [], commands: [], errors: [] };
+    expect(claudeCode.readTurnDetail(join(dir, "nope.jsonl"), "p1")).toEqual(empty);
+    expect(claudeCode.readTurnDetail(dir, "p1")).toEqual(empty);
+  });
+
+  test("reads only the tail of a very large transcript", () => {
+    const filler = toolUse("f", "Read", { file_path: `/p/${"x".repeat(900)}.ts` });
+    const path = write(
+      user("p0", "long ago"),
+      ...Array.from({ length: 4000 }, () => filler),
+      user("p1", "now"),
+      toolUse("t1", "Write", { file_path: "/p/recent.ts" }),
+    );
+    const detail = claudeCode.readTurnDetail(path, "p1", { maxBytes: 64 * 1024 });
+    expect(detail.filesChanged).toEqual(["/p/recent.ts"]);
+    expect(detail.filesRead).toEqual([]);
+  });
+
+  test("keeps long commands and errors within bounds", () => {
+    const path = write(
+      user("p1", "go"),
+      toolUse("t1", "Bash", { command: `echo ${"a".repeat(5000)}` }),
+      toolResult("p1", "t1", "e".repeat(5000), true),
+    );
+    const detail = claudeCode.readTurnDetail(path, "p1");
+    expect(detail.commands[0]?.length).toBeLessThanOrEqual(500);
+    expect(detail.errors[0]?.length).toBeLessThanOrEqual(500);
+  });
+});
