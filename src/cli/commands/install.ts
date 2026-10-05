@@ -5,6 +5,7 @@ import { stageBinary } from "../../install/binary.ts";
 import { installClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
+import { geminiContext, installGemini } from "../../install/gemini.ts";
 import type { InstallResult } from "../../install/hooks-file.ts";
 import {
   describeImport,
@@ -18,12 +19,16 @@ import { defaultDataDir } from "../../util/paths.ts";
 import { isCompiled } from "../../util/self.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-export const SUPPORTED_AGENTS = ["claude-code", "codex"];
-export const AGENT_NAMES: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex" };
+export const SUPPORTED_AGENTS = ["claude-code", "codex", "gemini"];
+export const AGENT_NAMES: Record<string, string> = {
+  "claude-code": "Claude Code",
+  codex: "Codex",
+  gemini: "Gemini CLI",
+};
 
 const USAGE = `Usage: shibaox-mem install <agent> [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  <agent>             claude-code | codex
+  <agent>             claude-code | codex | gemini
   --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
@@ -103,6 +108,12 @@ export function run(argv: string[]): number {
     if (agent === "codex") {
       process.stdout.write(
         describeInstall(agent, installCodex(codexContext(binaryPath)), binaryPath, lines),
+      );
+      return 0;
+    }
+    if (agent === "gemini") {
+      process.stdout.write(
+        describeInstall(agent, installGemini(geminiContext(binaryPath)), binaryPath, lines),
       );
       return 0;
     }

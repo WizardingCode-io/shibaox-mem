@@ -1,5 +1,5 @@
 import { clip } from "../../util/text.ts";
-import { renderHookJson } from "../common/hook-json.ts";
+import { CLAUDE_STYLE_EVENTS, renderHookJson } from "../common/hook-json.ts";
 import type { AgentAdapter } from "../types.ts";
 import { parsePayload } from "./payloads.ts";
 import { readTurnDetail } from "./transcript.ts";
@@ -18,5 +18,6 @@ export const claudeCode: AgentAdapter = {
   },
   parse: parsePayload,
   readTurnDetail,
-  render: (event, context) => renderHookJson(event, context, (s) => clip(s, MAX_INJECTION_CHARS)),
+  render: (event, context) =>
+    renderHookJson(CLAUDE_STYLE_EVENTS, event, context, (s) => clip(s, MAX_INJECTION_CHARS)),
 };

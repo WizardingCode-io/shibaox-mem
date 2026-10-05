@@ -1,5 +1,5 @@
 import { clip } from "../../util/text.ts";
-import { parseHookJson, renderHookJson } from "../common/hook-json.ts";
+import { CLAUDE_STYLE_EVENTS, parseHookJson, renderHookJson } from "../common/hook-json.ts";
 import type { AgentAdapter } from "../types.ts";
 import { readTurnDetail } from "./transcript.ts";
 
@@ -17,5 +17,6 @@ export const codex: AgentAdapter = {
   },
   parse: (event, stdin) => parseHookJson("codex", { turnIdField: "turn_id" }, event, stdin),
   readTurnDetail,
-  render: (event, context) => renderHookJson(event, context, (s) => clip(s, MAX_INJECTION_CHARS)),
+  render: (event, context) =>
+    renderHookJson(CLAUDE_STYLE_EVENTS, event, context, (s) => clip(s, MAX_INJECTION_CHARS)),
 };

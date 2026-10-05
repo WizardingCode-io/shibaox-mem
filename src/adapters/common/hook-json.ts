@@ -51,19 +51,20 @@ export function parseHookJson(
   };
 }
 
-/** Events that may add context, and the name these hosts expect back for each. */
-const INJECTING: Partial<Record<HookEvent, string>> = {
+/** Events that may add context, and the name Claude Code and Codex expect back for each. */
+export const CLAUDE_STYLE_EVENTS: Partial<Record<HookEvent, string>> = {
   "session-start": "SessionStart",
   prompt: "UserPromptSubmit",
 };
 
 /** The JSON these hosts read from a hook's stdout to add context for the model. */
 export function renderHookJson(
+  names: Partial<Record<HookEvent, string>>,
   event: HookEvent,
   context: string | null,
   clipTo: (s: string) => string,
 ): string {
-  const hookEventName = INJECTING[event];
+  const hookEventName = names[event];
   if (hookEventName === undefined || context === null || context === "") return "";
   // Always the JSON form: plain text that happens to start with "{" would be read as JSON.
   return JSON.stringify({

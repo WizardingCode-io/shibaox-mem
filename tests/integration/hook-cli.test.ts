@@ -71,6 +71,16 @@ describe("shibaox-mem hook", () => {
     ]);
   });
 
+  test("a whole turn from Gemini CLI, which names no turn, closes the session's open one", async () => {
+    await hook(payload("before-agent", "gemini"), "gemini", "prompt");
+    expect(await hook(payload("after-agent", "gemini"), "gemini", "turn-end")).toEqual(
+      SILENT_SUCCESS,
+    );
+    expect(rows("SELECT agent_turn_id, state, completeness, final_text FROM turns")).toEqual([
+      { agent_turn_id: null, state: "pending", completeness: "full", final_text: "done" },
+    ]);
+  });
+
   test("an interrupted turn is queued by the session end that follows it", async () => {
     await hook(payload("interrupted.user-prompt-submit"), "claude-code", "prompt");
     await hook(payload("interrupted.session-end"), "claude-code", "session-end");

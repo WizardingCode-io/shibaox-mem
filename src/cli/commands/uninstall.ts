@@ -1,6 +1,7 @@
 import { uninstallClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, uninstallCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
+import { geminiContext, uninstallGemini } from "../../install/gemini.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
 import { AGENT_NAMES, SUPPORTED_AGENTS } from "./install.ts";
@@ -25,7 +26,9 @@ export function run(argv: string[]): number {
     const result =
       agent === "codex"
         ? uninstallCodex(codexContext(""))
-        : uninstallClaudeCode(claudeCodeContext(""));
+        : agent === "gemini"
+          ? uninstallGemini(geminiContext(""))
+          : uninstallClaudeCode(claudeCodeContext(""));
     process.stdout.write(
       [
         `Removed shibaox-mem from ${AGENT_NAMES[agent]}.`,
