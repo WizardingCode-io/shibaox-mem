@@ -84,11 +84,13 @@ export function readTurnDetail(
   const filesChanged = new Set<string>();
   const commands = new Set<string>();
   const errors = new Set<string>();
+  let savedMemory = false;
   const detail = (): TurnDetail => ({
     filesRead: [...filesRead],
     filesChanged: [...filesChanged],
     commands: [...commands],
     errors: [...errors],
+    savedMemory,
   });
 
   let lines: Json[];
@@ -121,6 +123,8 @@ export function readTurnDetail(
         if (READ_TOOLS.has(name)) add(filesRead, path);
         else if (WRITE_TOOLS.has(name)) add(filesChanged, path);
         else if (name === "Bash") add(commands, text(block.input.command));
+        // MCP tools are named mcp__<server>__<tool>; ours is registered as "ai-mem".
+        else if (name.includes("ai-mem") && name.endsWith("__memory_save")) savedMemory = true;
       } else if (block.type === "tool_result" && block.is_error === true) {
         add(errors, text(resultText(block.content)));
       }

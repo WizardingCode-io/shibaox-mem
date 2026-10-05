@@ -173,6 +173,7 @@ describe("claude-code transcript", () => {
       filesChanged: ["/Users/dev/project/hello.txt"],
       commands: [],
       errors: [],
+      savedMemory: false,
     });
   });
 
@@ -182,6 +183,7 @@ describe("claude-code transcript", () => {
       filesChanged: [],
       commands: [],
       errors: [],
+      savedMemory: false,
     });
   });
 
@@ -206,7 +208,19 @@ describe("claude-code transcript", () => {
       filesChanged: ["/p/a.ts", "/p/n.ipynb"],
       commands: ["bun test"],
       errors: ["1 fail\nexpected 2, received 3"],
+      savedMemory: false,
     });
+  });
+
+  test("notices when the agent saved a memory itself during the turn", () => {
+    const path = write(
+      user("p1", "remember this"),
+      toolUse("t1", "mcp__ai-mem__memory_save", { text: "We use pnpm.", kind: "convention" }),
+      user("p2", "next"),
+      toolUse("t2", "mcp__ai-mem__memory_search", { query: "pnpm" }),
+    );
+    expect(claudeCode.readTurnDetail(path, "p1").savedMemory).toBe(true);
+    expect(claudeCode.readTurnDetail(path, "p2").savedMemory).toBe(false);
   });
 
   test("without a turn id, reads the last turn", () => {
@@ -233,7 +247,7 @@ describe("claude-code transcript", () => {
   });
 
   test("a missing or unreadable transcript yields an empty detail", () => {
-    const empty = { filesRead: [], filesChanged: [], commands: [], errors: [] };
+    const empty = { filesRead: [], filesChanged: [], commands: [], errors: [], savedMemory: false };
     expect(claudeCode.readTurnDetail(join(dir, "nope.jsonl"), "p1")).toEqual(empty);
     expect(claudeCode.readTurnDetail(dir, "p1")).toEqual(empty);
   });

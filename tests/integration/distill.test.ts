@@ -31,9 +31,9 @@ afterEach(() => {
   rmSync(base, { recursive: true, force: true });
 });
 
-function hook(event: HookEvent, extra: Partial<HookInput> = {}): void {
+function hook(event: HookEvent, extra: Partial<HookInput> = {}): string {
   clock += 1000;
-  handleHook({ db, now: () => clock, spawnDistill: () => void spawned++ }, claudeCode, {
+  return handleHook({ db, now: () => clock, spawnDistill: () => void spawned++ }, claudeCode, {
     agent: "claude-code",
     event,
     sessionId: "s1",
@@ -299,6 +299,92 @@ describe("distill: the queue", () => {
     await drain();
     expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM hook_runs").get()?.n).toBe(2000);
     expect(db.query<{ at: number }, []>("SELECT min(at) AS at FROM hook_runs").get()?.at).toBe(101);
+  });
+});
+
+describe("distill: what must not become a memory", () => {
+  const RETRY_FIX =
+    "Fixed: the root cause was a missing rethrow in `retryWithBackoff`, which now rethrows after the last attempt.";
+
+  /** Learns the busy-timeout fix, then shows it to a second session. Returns what that session saw. */
+  async function toldTheNote(): Promise<string> {
+    turn("the tests fail with a timeout", FIX);
+    await drain();
+    db.run("DELETE FROM turns");
+    const out = hook("prompt", {
+      sessionId: "s2",
+      turnId: "q1",
+      prompt: "why is openDb slow here?",
+    });
+    const notes = JSON.parse(out).hookSpecificOutput.additionalContext as string;
+    expect(notes).toContain("the root cause was the busy timeout");
+    return notes;
+  }
+  const answer = (finalText: string) =>
+    hook("turn-end", { sessionId: "s2", turnId: "q1", finalText });
+
+  test("what the agent was told is not learned back when it repeats it", async () => {
+    const notes = await toldTheNote();
+    answer(`Here is what I was given:\n${notes}\nSo nothing needs to change here.`);
+    await drain();
+    expect(memories()).toHaveLength(1);
+    expect(memories()[0]?.evidence_count).toBe(1);
+    expect(turnStates()).toEqual(["skipped"]);
+  });
+
+  test("a note quoted without its wrapper is not learned back either", async () => {
+    await toldTheNote();
+    answer(
+      "As noted before: Fixed: the root cause was the busy timeout being set after the first query. Moved the pragma to the top of `openDb` in src/store/db.ts. So nothing new here.",
+    );
+    await drain();
+    expect(memories()).toHaveLength(1);
+    expect(memories()[0]?.evidence_count).toBe(1);
+  });
+
+  test("something new said alongside a repeated note is still learned, without the repeat", async () => {
+    const notes = await toldTheNote();
+    answer(`${notes}\n\nSeparately, the retry helper swallowed errors. ${RETRY_FIX}`);
+    await drain();
+    const [first, added] = memories();
+    expect(memories()).toHaveLength(2);
+    expect(first?.evidence_count).toBe(1);
+    expect(added?.title).toContain("retryWithBackoff");
+    expect(added?.body).not.toContain("busy timeout");
+    expect(added?.body).not.toContain("ai-mem-notes");
+  });
+
+  test("a turn in which the agent saved a memory itself is not distilled again", async () => {
+    const transcript = join(base, "saved.jsonl");
+    writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ type: "user", promptId: "m1", message: { role: "user", content: "x" } }),
+        JSON.stringify({
+          type: "assistant",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "tool_use",
+                id: "t",
+                name: "mcp__ai-mem__memory_save",
+                input: { text: "Never keep test data in staging.", kind: "gotcha" },
+              },
+            ],
+          },
+        }),
+      ].join("\n"),
+    );
+    hook("prompt", {
+      turnId: "m1",
+      prompt: "Remember this: never keep test data in staging, it is rebuilt every night.",
+      transcriptPath: transcript,
+    });
+    hook("turn-end", { turnId: "m1", finalText: "Saved.", transcriptPath: transcript });
+    await drain();
+    expect(memories()).toEqual([]);
+    expect(turnStates()).toEqual(["skipped"]);
   });
 });
 

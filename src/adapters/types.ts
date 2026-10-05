@@ -26,6 +26,8 @@ export interface TurnDetail {
   filesChanged: string[];
   commands: string[];
   errors: string[];
+  /** The agent stored a memory itself during the turn, through ai-mem's own tool. */
+  savedMemory: boolean;
 }
 
 /** What a host can and cannot do. The core degrades to match; it never simulates. */

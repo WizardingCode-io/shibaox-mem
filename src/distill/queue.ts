@@ -22,6 +22,7 @@ export interface DrainReport {
 
 interface ClaimRow {
   id: number;
+  sessionId: number;
   projectId: number;
   agent: string;
   cwd: string;
@@ -43,7 +44,8 @@ function claimNextTurn(db: Db, owner: string, now: number): QueuedTurn | null {
     for (;;) {
       const row = db
         .query<ClaimRow, [number]>(
-          `SELECT t.id, t.project_id AS projectId, s.agent, s.cwd, t.agent_turn_id AS agentTurnId,
+          `SELECT t.id, t.session_id AS sessionId, t.project_id AS projectId, s.agent, s.cwd,
+                  t.agent_turn_id AS agentTurnId,
                   t.prompt, t.final_text AS finalText, t.transcript_path AS transcriptPath,
                   t.branch, t.commit_sha AS "commit", t.attempts
              FROM turns t JOIN sessions s ON s.id = t.session_id

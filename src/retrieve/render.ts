@@ -69,3 +69,27 @@ export function renderBrief(last: LastTurn | null, notes: Note[]): string {
   lines.push(CLOSE);
   return lines.join("\n");
 }
+
+const NOTES_BLOCK = /<ai-mem-notes>[\s\S]*?<\/ai-mem-notes>/g;
+// A note heading, or one of the brief's own lines, with or without list and quote marks.
+const NOTE_LINE =
+  /^\s*(?:[-*>]\s*)*(?:#\d+ \[[a-z]+ · \d{4}-\d{2}-\d{2}|(?:Asked|Outcome): |Where things stood \(|Known about this project:|Notes saved from earlier sessions in this project\.)/;
+const MIN_ECHO_CHARS = 20;
+
+/**
+ * Removes from `text` what ai-mem itself put in front of the agent: rendered note
+ * blocks, lines shaped like its notes, and the sentences in `told`. An agent repeating
+ * what it was told has learned nothing new, and must not be taught it back.
+ */
+export function withoutNotes(text: string, told: string[]): string {
+  let out = text
+    .replace(NOTES_BLOCK, "\n")
+    .split("\n")
+    .filter((line) => !NOTE_LINE.test(line))
+    .join("\n");
+  for (const sentence of told) {
+    const echo = sentence.trim();
+    if (echo.length >= MIN_ECHO_CHARS) out = out.replaceAll(echo, " ");
+  }
+  return out;
+}

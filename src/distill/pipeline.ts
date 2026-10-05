@@ -3,6 +3,7 @@ import type { AgentAdapter, TurnDetail } from "../adapters/types.ts";
 import { readGitInfo } from "../core/git.ts";
 import { type Redacted, redact } from "../core/redact.ts";
 import type { DistillCandidate, DistillVerdict, Judge } from "../judge/types.ts";
+import { withoutNotes } from "../retrieve/render.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { insertMemory, reinforce, supersede } from "../store/memories.ts";
 import { clip } from "../util/text.ts";
@@ -21,6 +22,7 @@ export interface DistillDeps {
 /** A queued turn, as claimed from the queue. Its text was redacted when it was stored. */
 export interface QueuedTurn {
   id: number;
+  sessionId: number;
   projectId: number;
   agent: string;
   cwd: string;
@@ -36,7 +38,13 @@ export interface QueuedTurn {
 const MAX_CHANGED_FILES = 10;
 const MAX_READ_FILES = 5;
 const CONTEXT_MAX_CHARS = 160;
-const EMPTY: TurnDetail = { filesRead: [], filesChanged: [], commands: [], errors: [] };
+const EMPTY: TurnDetail = {
+  filesRead: [],
+  filesChanged: [],
+  commands: [],
+  errors: [],
+  savedMemory: false,
+};
 
 function realpath(path: string): string {
   try {
@@ -70,11 +78,12 @@ function readDetail(deps: DistillDeps, turn: QueuedTurn): TurnDetail {
     filesChanged: relativeTo(roots, raw.filesChanged),
     commands: raw.commands.map((command) => redact(command)),
     errors: raw.errors.map((error) => redact(error)),
+    savedMemory: raw.savedMemory,
   };
 }
 
 function buildDraft(
-  turn: QueuedTurn,
+  prompt: string,
   cands: DistillCandidate[],
   verdict: DistillVerdict,
   detail: TurnDetail,
@@ -95,7 +104,7 @@ function buildDraft(
 
   // What the user had asked gives the assistant's sentences their referent. A rule
   // taken from the prompt itself needs none.
-  const asked = turn.prompt.replace(/\s+/g, " ").trim();
+  const asked = prompt.replace(/\s+/g, " ").trim();
   if (title.source === "final" && asked !== "") {
     facts.push(`Context: ${clip(asked, CONTEXT_MAX_CHARS, "…")}`);
   }
@@ -112,6 +121,17 @@ function buildDraft(
       ...read.map((path) => ({ path, role: "read" as const })),
     ],
   };
+}
+
+/** The titles and facts of every note this session was shown. */
+function toldInSession(db: Db, sessionId: number): string[] {
+  return db
+    .query<{ title: string; body: string }, [number]>(
+      `SELECT DISTINCT m.title, m.body FROM injections i JOIN memories m ON m.id = i.memory_id
+        WHERE i.session_id = ?`,
+    )
+    .all(sessionId)
+    .flatMap((note) => [note.title, ...note.body.split("\n")]);
 }
 
 /**
@@ -136,26 +156,35 @@ export async function distillTurn(
     ],
   );
 
-  // Sentences cut from redacted text are themselves redacted.
-  const cands = candidates(turn.prompt, turn.finalText).map((candidate) => ({
+  const finish = (state: "done" | "skipped") =>
+    db.run(
+      "UPDATE turns SET state = ?, lease_owner = NULL, lease_until = NULL, last_error = NULL WHERE id = ?",
+      [state, turn.id],
+    );
+  // What the agent chose to save, it saved in its own words: nothing to add.
+  if (detail.savedMemory) {
+    finish("skipped");
+    return "skipped";
+  }
+
+  // Text cut from redacted text is itself redacted.
+  const told = toldInSession(db, turn.sessionId);
+  const prompt = withoutNotes(turn.prompt, told) as Redacted;
+  const finalText = withoutNotes(turn.finalText ?? "", told) as Redacted;
+  const cands = candidates(prompt, finalText).map((candidate) => ({
     ...candidate,
     text: candidate.text as Redacted,
   }));
   const verdict = await deps.judge.distill({
-    prompt: turn.prompt,
-    finalText: turn.finalText ?? ("" as Redacted),
+    prompt,
+    finalText,
     candidates: cands,
     filesChanged: detail.filesChanged,
     commands: detail.commands as Redacted[],
     hadErrors: detail.errors.length > 0,
   });
 
-  const draft = buildDraft(turn, cands, verdict, detail);
-  const finish = (state: "done" | "skipped") =>
-    db.run(
-      "UPDATE turns SET state = ?, lease_owner = NULL, lease_until = NULL, last_error = NULL WHERE id = ?",
-      [state, turn.id],
-    );
+  const draft = buildDraft(prompt, cands, verdict, detail);
   if (draft === null) {
     finish("skipped");
     return "skipped";
