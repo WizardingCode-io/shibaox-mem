@@ -37,6 +37,8 @@ function confirm(question: string): boolean {
   } catch {
     return false;
   }
+  // Enter means yes; end of input, with nothing typed, does not.
+  if (read === 0) return false;
   const answer = buffer.toString("utf8", 0, read).trim().toLowerCase();
   return answer === "" || answer === "y" || answer === "yes" || answer === "s" || answer === "sim";
 }

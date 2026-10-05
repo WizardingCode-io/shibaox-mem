@@ -16,6 +16,7 @@ Memória persistente entre sessões para agentes de código. Um binário, sem da
 - `bun run check` — typecheck, lint e testes
 - `bun run build` — compila os cinco binários para `dist/`
 - `bun run format` — formata e corrige lint
+- `ai-mem install claude-code` importa as memórias do claude-mem e retira-o (com confirmação); `ai-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
 
 O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 
