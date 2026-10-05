@@ -229,7 +229,7 @@ Cada passo é feito em TDD: o teste da coluna da direita é escrito primeiro.
 
 ## Depois da aprovação
 
-1. `git init` em `/Users/andreagroferreira/AIProjects/shibaox-mem` e primeiro commit com licença, `CLEAN-ROOM.md` e o documento de desenho (`docs/design/2026-10-05-shibaox-mem-design.md`, derivado deste plano).
+1. `git init` em no diretório do projeto e primeiro commit com licença, `CLEAN-ROOM.md` e o documento de desenho (`docs/design/2026-10-05-shibaox-mem-design.md`, derivado deste plano).
 2. M0 pela ordem da tabela. Os números dos spikes podem obrigar a rever decisões; se algum falhar o critério, paro e trago-te a alternativa antes de avançar.
 3. M1 em TDD, com commits pequenos por passo.
 
