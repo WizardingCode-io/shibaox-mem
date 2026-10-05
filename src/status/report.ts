@@ -32,12 +32,15 @@ export function percentile(sorted: number[], p: number): number {
   return sorted[Math.max(0, Math.ceil((p / 100) * sorted.length) - 1)] ?? 0;
 }
 
+/** Runs considered for latency: enough for a percentile, few enough to be about now. */
+const RECENT_RUNS = 200;
+
 export function hookLatency(db: Db): StatusReport["hooks"] {
   const rows = db
-    .query<{ event: string; ms: number; outcome: string }, []>(
-      "SELECT event, ms, outcome FROM hook_runs ORDER BY ms",
+    .query<{ event: string; ms: number; outcome: string }, [number]>(
+      `SELECT event, ms, outcome FROM (SELECT * FROM hook_runs ORDER BY id DESC LIMIT ?) ORDER BY ms`,
     )
-    .all();
+    .all(RECENT_RUNS);
   const byEvent = new Map<string, number[]>();
   for (const row of rows) byEvent.set(row.event, [...(byEvent.get(row.event) ?? []), row.ms]);
   const latency = [...byEvent]

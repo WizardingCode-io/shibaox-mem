@@ -202,6 +202,20 @@ describe("shibaox-mem doctor", () => {
     expect(line(result.stdout, "TypeSafe")).toStartWith("warn");
   });
 
+  // What was slow last week says nothing about today's binary.
+  test("hook speed is judged on the most recent runs only", async () => {
+    seed((db) => {
+      db.run(
+        `WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 300)
+         INSERT INTO hook_runs (at, agent, event, ms, outcome)
+         SELECT i, 'claude-code', 'prompt', CASE WHEN i <= 100 THEN 900 ELSE 20 END, 'ok' FROM n`,
+      );
+    });
+    const result = await cli("doctor");
+    expect(line(result.stdout, "hook speed")).toStartWith("ok");
+    expect(line(result.stdout, "hook speed")).toContain("200 runs");
+  });
+
   test("a data directory inside a synced folder is a warning", async () => {
     const synced = join(home, "Dropbox", "shibaox-mem");
     const result = await runCliWith({ env: { ...env(), SHIBAOX_MEM_DATA_DIR: synced } }, "doctor");
