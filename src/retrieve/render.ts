@@ -25,11 +25,14 @@ const MAX_FILES_SHOWN = 3;
 export const day = (epochMs: number) => new Date(epochMs).toISOString().slice(0, 10);
 const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
-function heading(note: Note): string {
+/** One line that identifies a note: its id, kind, date, files and title. */
+export function renderHeading(note: Note): string {
   const about = [note.kind, day(note.createdAt)];
   if (note.files.length > 0) about.push(note.files.slice(0, MAX_FILES_SHOWN).join(", "));
-  return `- #${note.id} [${about.join(" · ")}] ${note.title}`;
+  return `#${note.id} [${about.join(" · ")}] ${note.title}`;
 }
+
+const heading = (note: Note) => `- ${renderHeading(note)}`;
 
 /** One note in full: heading, then its facts, indented. */
 export function renderNote(note: Note): string {

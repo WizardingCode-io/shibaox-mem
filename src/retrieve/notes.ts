@@ -84,3 +84,23 @@ export function recordInjections(
     );
   }
 }
+
+/** Ranks by `score`, best first. Equal scores share a rank, so that ties decide nothing. */
+export function ranks<T>(items: T[], score: (item: T) => number): Map<T, number> {
+  const sorted = [...items].sort((a, b) => score(b) - score(a));
+  const result = new Map<T, number>();
+  let rank = 0;
+  let previous: number | undefined;
+  for (const item of sorted) {
+    const value = score(item);
+    if (
+      previous === undefined ||
+      Math.abs(value - previous) > 1e-6 * Math.max(1, Math.abs(value))
+    ) {
+      rank++;
+    }
+    previous = value;
+    result.set(item, rank);
+  }
+  return result;
+}

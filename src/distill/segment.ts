@@ -51,7 +51,8 @@ function endsWithAbbreviation(before: string): boolean {
   return token.length === 1 || ABBREVIATIONS.has(token);
 }
 
-function splitSentences(block: string): string[] {
+/** Splits one block of prose at sentence boundaries. Nothing is filtered or trimmed. */
+export function splitSentences(block: string): string[] {
   const sentences: string[] = [];
   let start = 0;
   for (const match of block.matchAll(BOUNDARY)) {

@@ -1,6 +1,6 @@
 import type { Db } from "../store/db.ts";
 import { anyOf } from "../util/words.ts";
-import { MEMORY_COLUMNS, type MemoryRow, prior, toNote } from "./notes.ts";
+import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "./notes.ts";
 import { buildQuery, type Query, searchTokens } from "./query.ts";
 import { type Note, renderNote, renderNotes } from "./render.ts";
 
@@ -65,26 +65,6 @@ function hasEvidence(candidate: Candidate, query: Query, isRare: (word: string) 
   if (matched.length >= 3) return true;
   if (matched.filter(isRare).length >= 2) return true;
   return candidate.overlap > 0 && matched.length >= 1;
-}
-
-/** Ranks by `score`, best first. Equal scores share a rank, so that ties decide nothing. */
-function ranks<T>(items: T[], score: (item: T) => number): Map<T, number> {
-  const sorted = [...items].sort((a, b) => score(b) - score(a));
-  const result = new Map<T, number>();
-  let rank = 0;
-  let previous: number | undefined;
-  for (const item of sorted) {
-    const value = score(item);
-    if (
-      previous === undefined ||
-      Math.abs(value - previous) > 1e-6 * Math.max(1, Math.abs(value))
-    ) {
-      rank++;
-    }
-    previous = value;
-    result.set(item, rank);
-  }
-  return result;
 }
 
 /**
