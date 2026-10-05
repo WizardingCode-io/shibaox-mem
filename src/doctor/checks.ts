@@ -2,6 +2,8 @@ import { Database } from "bun:sqlite";
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { HOOKED_EVENTS, inspectSettings } from "../install/claude-code.ts";
+import { Breaker } from "../judge/breaker.ts";
+import { keyFingerprint, readTypeSafeKey } from "../judge/key.ts";
 import { hookLatency } from "../status/report.ts";
 import { DB_FILE, type Db, LATEST_VERSION, openExisting, SchemaTooNewError } from "../store/db.ts";
 
@@ -165,6 +167,39 @@ function claudeCode(context: DoctorContext): Check {
   return { name, status: "ok", detail: `installed, running ${found.binaries.join(", ")}` };
 }
 
+/** Does not call the service: it only reads what the breaker remembers. */
+function typeSafe(context: DoctorContext, db: Db | null): Check {
+  const name = "TypeSafe";
+  const key = readTypeSafeKey(process.env, context.dataDir);
+  if (key === null) {
+    return {
+      name,
+      status: "ok",
+      detail: "not configured: the heuristic judge works alone and nothing leaves the machine",
+    };
+  }
+  const fingerprint = keyFingerprint(key);
+  if (db !== null) {
+    const state = new Breaker(db, { keyFingerprint: fingerprint }).state();
+    if (state.reason === "auth") {
+      return {
+        name,
+        status: "fail",
+        detail:
+          "the key was rejected by the service; check it at console.typesafe.ai/keys and save it again (the heuristic judge is standing in)",
+      };
+    }
+    if (state.openUntil !== null && state.openUntil > context.now) {
+      return {
+        name,
+        status: "warn",
+        detail: `unavailable lately (${state.reason}); the heuristic judge is standing in until ${new Date(state.openUntil).toISOString()}`,
+      };
+    }
+  }
+  return { name, status: "ok", detail: `configured (key …${fingerprint.slice(-6)})` };
+}
+
 /** Looks, and changes nothing: no directory, database or setting is created or altered. */
 export function runChecks(context: DoctorContext): Check[] {
   const { check: databaseCheck, db } = database(context);
@@ -177,6 +212,7 @@ export function runChecks(context: DoctorContext): Check[] {
         ? { name: "queue", status: "skip", detail: "the database could not be read" }
         : queue(db, context.now),
       hookSpeed(db),
+      typeSafe(context, db),
       claudeCode(context),
     ];
   } finally {

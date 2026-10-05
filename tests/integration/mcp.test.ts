@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { resolveProject } from "../../src/core/project.ts";
 import type { Redacted } from "../../src/core/redact.ts";
 import type { MemoryKind } from "../../src/core/types.ts";
+import { heuristicJudge } from "../../src/judge/heuristic.ts";
 import { getMemories, saveMemory, searchMemories } from "../../src/mcp/tools.ts";
 import { refreshStaleness } from "../../src/retrieve/staleness.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
@@ -56,7 +57,14 @@ function memory(
   });
 }
 
-const context = () => ({ db, projectId, root: project, branch: null, now: NOW });
+const context = () => ({
+  db,
+  judge: heuristicJudge,
+  projectId,
+  root: project,
+  branch: null,
+  now: NOW,
+});
 const search = (query: string, extra: { kind?: MemoryKind; limit?: number } = {}) =>
   searchMemories(context(), { query, ...extra });
 

@@ -1,8 +1,9 @@
 import { ADAPTERS } from "../../adapters/index.ts";
 import { drainQueue } from "../../distill/queue.ts";
-import { heuristicJudge } from "../../judge/heuristic.ts";
+import { makeJudge } from "../../judge/index.ts";
 import { type Db, openDb } from "../../store/db.ts";
 import { logError } from "../../util/log.ts";
+import { defaultDataDir } from "../../util/paths.ts";
 
 const MAX_TURNS = 50;
 const MAX_MS = 30_000;
@@ -14,9 +15,10 @@ const MAX_MS = 30_000;
 export async function run(): Promise<number> {
   let db: Db | undefined;
   try {
-    db = openDb({ busyTimeoutMs: 2000 });
+    const dataDir = defaultDataDir();
+    db = openDb({ dataDir, busyTimeoutMs: 2000 });
     const report = await drainQueue(
-      { db, judge: heuristicJudge, adapters: ADAPTERS, now: Date.now },
+      { db, judge: makeJudge({ db, dataDir }), adapters: ADAPTERS, now: Date.now },
       { owner: `${process.pid}-${crypto.randomUUID()}`, maxTurns: MAX_TURNS, maxMs: MAX_MS },
     );
     process.stdout.write(

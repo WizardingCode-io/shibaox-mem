@@ -1,6 +1,9 @@
 import pkg from "../../package.json" with { type: "json" };
 import type { ProjectRef } from "../core/project.ts";
+import { USAGE_KEYS } from "../judge/index.ts";
+import { readTypeSafeKey } from "../judge/key.ts";
 import type { Db } from "../store/db.ts";
+import { getMeta } from "../store/meta.ts";
 
 export interface Latency {
   event: string;
@@ -15,9 +18,9 @@ export interface StatusReport {
   memories: { active: number; stale: number; superseded: number };
   turns: { distilled: number; skipped: number; failed: number; queued: number };
   hooks: { latency: Latency[]; runs: number; errors: number };
-  judge: string;
   /** Requests shibaox-mem itself made to a model. The heuristic judge makes none. */
   modelCalls: number;
+  judge: JudgeReport;
   dataDir: string;
 }
 
@@ -48,6 +51,38 @@ export function hookLatency(db: Db): StatusReport["hooks"] {
   return { latency, runs: rows.length, errors: rows.filter((row) => row.outcome !== "ok").length };
 }
 
+export interface JudgeReport {
+  configured: "typesafe" | "heuristic";
+  requests: number;
+  inputTokens: number;
+  /** Active memories of the project, by the judge that produced them. */
+  byJudge: Record<string, number>;
+}
+
+/** TypeSafe's published input price, used only to show an estimate. */
+const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
+
+function judgeReport(db: Db | null, project: ProjectRef | null, dataDir: string): JudgeReport {
+  const configured = readTypeSafeKey(process.env, dataDir) === null ? "heuristic" : "typesafe";
+  if (db === null) return { configured, requests: 0, inputTokens: 0, byJudge: {} };
+  const byJudge: Record<string, number> = {};
+  if (project !== null) {
+    for (const row of db
+      .query<{ judge: string; n: number }, [number]>(
+        "SELECT judge, count(*) AS n FROM memories WHERE project_id = ? AND status = 'active' GROUP BY judge ORDER BY n DESC",
+      )
+      .all(project.id)) {
+      byJudge[row.judge] = row.n;
+    }
+  }
+  return {
+    configured,
+    requests: Number(getMeta(db, USAGE_KEYS.requests) ?? 0),
+    inputTokens: Number(getMeta(db, USAGE_KEYS.inputTokens) ?? 0),
+    byJudge,
+  };
+}
+
 export function statusReport(
   db: Db | null,
   project: ProjectRef | null,
@@ -73,8 +108,8 @@ export function statusReport(
       queued: count("turns WHERE project_id = ? AND state IN ('open', 'pending', 'processing')"),
     },
     hooks: db === null ? { latency: [], runs: 0, errors: 0 } : hookLatency(db),
-    judge: "heuristic",
     modelCalls: 0,
+    judge: judgeReport(db, project, dataDir),
     dataDir,
   };
 }
@@ -109,8 +144,14 @@ export function formatStatus(report: StatusReport): string {
       `hooks     ${[...speeds, `${plural(hooks.runs, "run")}, ${plural(hooks.errors, "error")}`].join(" · ")}`,
     );
   }
+  const { judge } = report;
+  const who = Object.entries(judge.byJudge)
+    .map(([name, n]) => `${name} ${n}`)
+    .join(", ");
   lines.push(
-    `judge     ${report.judge}, local · model calls made by shibaox-mem: ${report.modelCalls}`,
+    judge.configured === "typesafe"
+      ? `judge     typesafe, heuristic as fallback · ${judge.requests} requests, ${judge.inputTokens} input tokens (≈ $${(judge.inputTokens * USD_PER_INPUT_TOKEN).toFixed(4)})${who ? ` · memories by judge: ${who}` : ""}`
+      : `judge     heuristic only (no TypeSafe key) · model calls made by shibaox-mem: ${report.modelCalls}`,
     `data      ${report.dataDir}`,
   );
   return `${lines.join("\n")}\n`;

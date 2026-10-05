@@ -155,6 +155,53 @@ describe("shibaox-mem doctor", () => {
     expect(line(result.stdout, "queue")).toContain("2 failed");
   });
 
+  test("without a TypeSafe key, says the heuristic judge works alone and nothing leaves the machine", async () => {
+    const result = await cli("doctor");
+    expect(line(result.stdout, "TypeSafe")).toStartWith("ok");
+    expect(line(result.stdout, "TypeSafe")).toContain("not configured");
+  });
+
+  test("with a key, says so without showing it", async () => {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(join(dataDir, "env"), "TYPESAFE_API_KEY=apikey_test_0000000000000000\n");
+    const result = await cli("doctor");
+    expect(line(result.stdout, "TypeSafe")).toStartWith("ok");
+    expect(result.stdout).not.toContain("apikey_test");
+  });
+
+  test("a key the service rejected is a failure that says where to fix it", async () => {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(join(dataDir, "env"), "TYPESAFE_API_KEY=apikey_test_0000000000000000\n");
+    seed((db) => {
+      const { Breaker } = require("../../src/judge/breaker.ts");
+      const { keyFingerprint } = require("../../src/judge/key.ts");
+      new Breaker(db, { keyFingerprint: keyFingerprint("apikey_test_0000000000000000") }).failure(
+        "auth",
+        Date.now(),
+      );
+    });
+    const result = await cli("doctor");
+    expect(result.exitCode).toBe(1);
+    expect(line(result.stdout, "TypeSafe")).toStartWith("FAIL");
+    expect(line(result.stdout, "TypeSafe")).toContain("console.typesafe.ai");
+  });
+
+  test("a service that has been failing is a warning, and the heuristic judge is standing in", async () => {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(join(dataDir, "env"), "TYPESAFE_API_KEY=apikey_test_0000000000000000\n");
+    seed((db) => {
+      const { Breaker } = require("../../src/judge/breaker.ts");
+      const { keyFingerprint } = require("../../src/judge/key.ts");
+      const breaker = new Breaker(db, {
+        keyFingerprint: keyFingerprint("apikey_test_0000000000000000"),
+      });
+      for (let i = 0; i < 3; i++) breaker.failure("network", Date.now());
+    });
+    const result = await cli("doctor");
+    expect(result.exitCode).toBe(0);
+    expect(line(result.stdout, "TypeSafe")).toStartWith("warn");
+  });
+
   test("a data directory inside a synced folder is a warning", async () => {
     const synced = join(home, "Dropbox", "shibaox-mem");
     const result = await runCliWith({ env: { ...env(), SHIBAOX_MEM_DATA_DIR: synced } }, "doctor");
@@ -212,7 +259,7 @@ describe("shibaox-mem status", () => {
         "memories  3 active (1 stale) · 1 superseded",
         "turns     3 distilled · 1 skipped · 1 failed · 1 queued",
         "hooks     prompt p50 10 ms, p95 19 ms · turn-end p50 4 ms, p95 4 ms · 21 runs, 1 error",
-        "judge     heuristic, local · model calls made by shibaox-mem: 0",
+        "judge     heuristic only (no TypeSafe key) · model calls made by shibaox-mem: 0",
         `data      ${dataDir}`,
         "",
       ].join("\n"),
@@ -228,6 +275,30 @@ describe("shibaox-mem status", () => {
       memories: { active: 1, stale: 0, superseded: 0 },
       turns: { distilled: 0, skipped: 0, failed: 0, queued: 0 },
       modelCalls: 0,
+      judge: { configured: "heuristic", requests: 0, inputTokens: 0, byJudge: { heuristic: 1 } },
+    });
+  });
+
+  test("with a TypeSafe key, shows the judge, what it cost and who judged what", async () => {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(join(dataDir, "env"), "TYPESAFE_API_KEY=apikey_test_0000000000000000\n");
+    seed((db, projectId) => {
+      memory(db, projectId, "Judged by rules.");
+      db.run("UPDATE memories SET judge = 'typesafe'");
+      memory(db, projectId, "Judged by rules too.");
+      db.run(
+        "INSERT INTO meta (key, value) VALUES ('typesafe.requests', '12'), ('typesafe.input_tokens', '17000')",
+      );
+    });
+    const result = await cli("status");
+    expect(result.stdout).toContain(
+      "judge     typesafe, heuristic as fallback · 12 requests, 17000 input tokens (≈ $0.0007) · memories by judge: typesafe 1, heuristic 1",
+    );
+    expect(JSON.parse((await cli("status", "--json")).stdout).judge).toEqual({
+      configured: "typesafe",
+      requests: 12,
+      inputTokens: 17000,
+      byJudge: { typesafe: 1, heuristic: 1 },
     });
   });
 

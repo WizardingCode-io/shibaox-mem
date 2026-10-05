@@ -4,7 +4,7 @@ import type { MemoryKind } from "../core/types.ts";
 import { consolidate } from "../distill/consolidate.ts";
 import { TITLE_MAX_CHARS } from "../distill/policy.ts";
 import { splitSentences } from "../distill/segment.ts";
-import { heuristicJudge } from "../judge/heuristic.ts";
+import type { Judge } from "../judge/types.ts";
 import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "../retrieve/notes.ts";
 import { buildQuery, searchTokens } from "../retrieve/query.ts";
 import { renderHeading, renderNote } from "../retrieve/render.ts";
@@ -18,6 +18,7 @@ import { anyOf, searchTerms, stem } from "../util/words.ts";
 
 export interface ToolContext {
   db: Db;
+  judge: Judge;
   projectId: number;
   /** The project's working tree: file paths are stored relative to it. */
   root: string;
@@ -177,7 +178,7 @@ export async function saveMemory(
     })),
   };
 
-  const action = await consolidate({ db, judge: heuristicJudge }, projectId, draft);
+  const action = await consolidate({ db, judge: context.judge }, projectId, draft);
   if (action.type === "duplicate") {
     db.run("UPDATE memories SET evidence_count = evidence_count + 1, updated_at = ? WHERE id = ?", [
       now,

@@ -1,8 +1,10 @@
 import pkg from "../../package.json" with { type: "json" };
 import { resolveProject } from "../core/project.ts";
 import { MEMORY_KINDS } from "../core/types.ts";
+import { makeJudge } from "../judge/index.ts";
 import { openDb } from "../store/db.ts";
 import { logError } from "../util/log.ts";
+import { defaultDataDir } from "../util/paths.ts";
 import { getMemories, saveMemory, searchMemories, type ToolContext } from "./tools.ts";
 
 // Tool descriptions are sent to the model in every session, so each is one sentence.
@@ -25,7 +27,8 @@ export async function runMcpServer(): Promise<void> {
   /** Runs one tool call against a freshly opened database, for the project the host is in. */
   const call = async (name: string, run: (context: ToolContext) => string | Promise<string>) => {
     try {
-      const db = openDb({ busyTimeoutMs: 2000 });
+      const dataDir = defaultDataDir();
+      const db = openDb({ dataDir, busyTimeoutMs: 2000 });
       try {
         const now = Date.now();
         const project = resolveProject(db, process.env.CLAUDE_PROJECT_DIR || process.cwd(), now);
@@ -33,6 +36,7 @@ export async function runMcpServer(): Promise<void> {
         return answer(
           await run({
             db,
+            judge: makeJudge({ db, dataDir }),
             projectId: project.id,
             root: project.root,
             branch: project.branch,
