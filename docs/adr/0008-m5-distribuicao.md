@@ -21,7 +21,7 @@ Os dados ficam sempre em `~/.shibaox/mem`, seja qual for o canal.
 - **O plugin vive no repositório do produto, o marketplace à parte.** Cada produto da marca mantém o seu plugin junto do código; o marketplace só aponta para versões publicadas.
 - **Sem `postinstall` no npm.** Scripts de instalação são desativados em muitas organizações e correm sem o utilizador ver; o shim descarrega quando é chamado, com o checksum da release.
 - **Assinatura ad hoc, por agora.** Chega para o Apple Silicon executar binários obtidos por `curl`; um binário descarregado pelo browser fica em quarentena. Developer ID e notarização precisam da conta Apple da WizardingCode.
-- **Instalação direta e plugin não se acumulam bem.** Quem tiver os dois vê cada hook correr duas vezes. A recomendação é uma só via; detetar e avisar fica por fazer.
+- **Instalação direta e plugin juntos: o plugin cede.** O Claude Code correria cada hook duas vezes. A execução do plugin é a que sabe que o é (`CLAUDE_PLUGIN_ROOT`), por isso é ela que sai em silêncio quando o `settings.json` já tem os hooks diretos. Entra na 0.1.1; na 0.1.0 quem tiver os dois vê as notas a dobrar.
 
 ## Verificado
 
@@ -34,5 +34,4 @@ Os dados ficam sempre em `~/.shibaox/mem`, seja qual for o canal.
 - Homebrew tap (`WizardingCode-io/homebrew-shibaox`), fórmula a partir dos checksums da release.
 - Developer ID + notarização macOS; assinatura Authenticode no Windows.
 - `install.ps1` para Windows; o plugin depende de `sh`, que no Windows só existe com Git Bash.
-- Avisar quando a instalação direta e o plugin coexistem.
 - Página de comparação com números medidos; desenho dos serviços pagos (juízos geridos, sync, memória de equipa).

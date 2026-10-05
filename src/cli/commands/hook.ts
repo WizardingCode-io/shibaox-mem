@@ -39,6 +39,31 @@ function spawnDistill(): void {
 }
 
 /**
+ * Claude Code runs this binary twice per event when shibaox-mem is installed both in the
+ * user's settings and as a plugin. The plugin's run is the one that knows (the host sets
+ * CLAUDE_PLUGIN_ROOT for it), so it is the one that stands down.
+ */
+async function standsDownAsPlugin(): Promise<boolean> {
+  if (!process.env.CLAUDE_PLUGIN_ROOT) return false;
+  try {
+    // Loaded only on the plugin's path: the direct install never pays for it.
+    const [{ readFileSync }, { homedir }, { join }, { inspectSettings }] = await Promise.all([
+      import("node:fs"),
+      import("node:os"),
+      import("node:path"),
+      import("../../install/claude-code.ts"),
+    ]);
+    const settings = join(
+      process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
+      "settings.json",
+    );
+    return inspectSettings(readFileSync(settings, "utf8")).events.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * `shibaox-mem hook <agent> <event>`: reads the host's payload on stdin, may print context.
  *
  * Fails open, always. The host must see a successful hook whatever happens here:
@@ -52,6 +77,7 @@ export async function run(argv: string[]): Promise<number> {
   try {
     const adapter = agent === undefined ? undefined : ADAPTERS[agent];
     if (adapter === undefined || !isHookEvent(event) || process.stdin.isTTY) return 0;
+    if (agent === "claude-code" && (await standsDownAsPlugin())) return 0;
     const payload = await readStdin();
     if (payload === null) {
       // The host never closed the pipe. Leaving at once matters more than this event;

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DB_FILE, openDb } from "../../src/store/db.ts";
@@ -101,6 +101,50 @@ describe("shibaox-mem hook", () => {
     expect(rows("SELECT state, completeness, final_text FROM turns")).toEqual([
       { state: "pending", completeness: "full", final_text: "Because of X." },
     ]);
+  });
+
+  test("run as the Claude Code plugin while the direct install is also there, it stands down: one memory speaks", async () => {
+    const config = join(dir, "claude");
+    mkdirSync(config);
+    const direct = {
+      hooks: {
+        UserPromptSubmit: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: "/opt/shibaox-mem/bin/shibaox-mem",
+                args: ["hook", "claude-code", "prompt"],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    writeFileSync(join(config, "settings.json"), JSON.stringify(direct));
+    const asPlugin = (input: string, ...args: string[]) =>
+      runCliWith(
+        {
+          input,
+          env: {
+            SHIBAOX_MEM_DATA_DIR: dir,
+            SHIBAOX_MEM_DISTILL: "off",
+            CLAUDE_CONFIG_DIR: config,
+            CLAUDE_PLUGIN_ROOT: "/plugins/shibaox-mem",
+          },
+        },
+        "hook",
+        ...args,
+      );
+    expect(await asPlugin(payload("user-prompt-submit"), "claude-code", "prompt")).toEqual(
+      SILENT_SUCCESS,
+    );
+    expect(existsSync(join(dir, DB_FILE))).toBe(false);
+
+    // Without the direct install, the plugin is the one that speaks.
+    writeFileSync(join(config, "settings.json"), JSON.stringify({ hooks: {} }));
+    await asPlugin(payload("user-prompt-submit"), "claude-code", "prompt");
+    expect(rows("SELECT state FROM turns")).toEqual([{ state: "open" }]);
   });
 
   test("an interrupted turn is queued by the session end that follows it", async () => {
