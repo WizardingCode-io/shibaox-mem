@@ -6,6 +6,7 @@ import { installClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { cursorContext, installCursor } from "../../install/cursor.ts";
+import { AGENT_ORDER, detectAgents } from "../../install/detect.ts";
 import { geminiContext, installGemini } from "../../install/gemini.ts";
 import type { InstallResult } from "../../install/hooks-file.ts";
 import { installOpenCode, opencodePluginPath } from "../../install/opencode.ts";
@@ -30,9 +31,9 @@ export const AGENT_NAMES: Record<string, string> = {
   opencode: "OpenCode",
 };
 
-const USAGE = `Usage: shibaox-mem install <agent> [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
+const USAGE = `Usage: shibaox-mem install [<agent>] [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  <agent>             claude-code | codex | cursor | gemini | opencode
+  <agent>             claude-code | codex | cursor | gemini | opencode; none installs for every agent found
   --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
@@ -81,16 +82,38 @@ function confirm(question: string): boolean {
   return answer === "" || answer === "y" || answer === "yes" || answer === "s" || answer === "sim";
 }
 
-/** `shibaox-mem install <agent> [options]` */
+/** `shibaox-mem install [<agent>] [options]` */
 export function run(argv: string[]): number {
-  const [agent, ...rest] = argv;
-  if (agent === undefined || !SUPPORTED_AGENTS.includes(agent)) {
+  const named = argv[0] !== undefined && !argv[0].startsWith("--");
+  const agent = named ? argv[0] : undefined;
+  const rest = named ? argv.slice(1) : argv;
+  if (agent !== undefined && !SUPPORTED_AGENTS.includes(agent)) {
     process.stderr.write(
-      `shibaox-mem install: unknown agent "${agent ?? ""}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
+      `shibaox-mem install: unknown agent "${agent}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
     );
     return EXIT_USAGE;
   }
+  if (agent === undefined) {
+    const found = detectAgents({ env: process.env, which: (command) => Bun.which(command) });
+    if (found.length === 0) {
+      process.stderr.write(
+        "shibaox-mem install: No supported agent found on this machine. Name one: shibaox-mem install <agent>\n",
+      );
+      return 1;
+    }
+    let code = 0;
+    for (const each of found) code = Math.max(code, installOne(each, rest));
+    const missing = AGENT_ORDER.filter((each) => !found.includes(each)).map(
+      (each) => AGENT_NAMES[each],
+    );
+    if (missing.length > 0)
+      process.stdout.write(`Not found on this machine: ${missing.join(", ")}\n`);
+    return code;
+  }
+  return installOne(agent, rest);
+}
 
+function installOne(agent: string, rest: string[]): number {
   const flag = rest.indexOf("--binary");
   const explicit = flag === -1 ? undefined : rest[flag + 1];
   let binaryPath: string;
