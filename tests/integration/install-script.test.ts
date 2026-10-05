@@ -1,0 +1,99 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+// scripts/install.sh against a stand-in release: a tiny shell script in place of the
+// binary, served with its checksums the way GitHub serves a release's assets.
+
+const SCRIPT = new URL("../../scripts/install.sh", import.meta.url).pathname;
+const os = process.platform === "darwin" ? "darwin" : "linux";
+const arch = process.arch === "arm64" ? "arm64" : "x64";
+const FILE = `shibaox-mem-${os}-${arch}`;
+// The "binary": prints a version, and records how `install` was called.
+const FAKE = `#!/bin/sh\nif [ "$1" = "--version" ]; then echo 9.9.9; exit 0; fi\necho "called: $*" > "$(dirname "$0")/called.txt"\n`;
+
+let home: string;
+let server: ReturnType<typeof Bun.serve> | undefined;
+
+beforeEach(() => {
+  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-sh-"));
+});
+afterEach(() => {
+  server?.stop(true);
+  server = undefined;
+  rmSync(home, { recursive: true, force: true });
+});
+
+function release(options: { checksum?: string } = {}): string {
+  const sha = new Bun.CryptoHasher("sha256").update(FAKE).digest("hex");
+  const checksums = `${options.checksum ?? sha}  ${FILE}\n${"0".repeat(64)}  shibaox-mem-other\n`;
+  server = Bun.serve({
+    port: 0,
+    fetch: (request) => {
+      const path = new URL(request.url).pathname;
+      if (path.endsWith(`/${FILE}`)) return new Response(FAKE);
+      if (path.endsWith("/checksums.txt")) return new Response(checksums);
+      return new Response("not found", { status: 404 });
+    },
+  });
+  return `http://127.0.0.1:${server.port}/download/v9.9.9`;
+}
+
+async function run(base: string, ...args: string[]) {
+  const proc = Bun.spawn(["sh", SCRIPT, ...args], {
+    env: {
+      ...process.env,
+      HOME: home,
+      SHIBAOX_HOME: join(home, ".shibaox"),
+      SHIBAOX_MEM_RELEASE_BASE: base,
+    },
+    stdin: "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  return { stdout, stderr, exitCode };
+}
+
+describe("scripts/install.sh", () => {
+  test("downloads this platform's binary, checks it, puts it in place and runs install with the arguments given", async () => {
+    const result = await run(release(), "claude-code", "--yes");
+    expect(result.stderr).toBe("");
+    expect(result.exitCode).toBe(0);
+    const binary = join(home, ".shibaox", "mem", "bin", "shibaox-mem");
+    expect(existsSync(binary)).toBe(true);
+    expect(statSync(binary).mode & 0o111).not.toBe(0);
+    expect(result.stdout).toContain("installed 9.9.9");
+    expect(readFileSync(join(home, ".shibaox", "mem", "bin", "called.txt"), "utf8")).toBe(
+      "called: install claude-code --yes\n",
+    );
+  });
+
+  test("a binary whose checksum does not match is thrown away", async () => {
+    const result = await run(release({ checksum: "f".repeat(64) }));
+    expect(result.stderr).toContain("checksum mismatch");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("checksum mismatch");
+    expect(existsSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"))).toBe(false);
+  });
+
+  test("a release that does not list the binary is refused", async () => {
+    const base = release();
+    server?.stop(true);
+    server = Bun.serve({
+      port: 0,
+      fetch: (request) =>
+        new URL(request.url).pathname.endsWith("/checksums.txt")
+          ? new Response("")
+          : new Response(FAKE),
+    });
+    const result = await run(base.replace(/:\d+\//, `:${server.port}/`));
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("not in the release's checksums");
+  });
+});

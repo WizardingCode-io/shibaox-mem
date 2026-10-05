@@ -1,0 +1,98 @@
+name: release
+
+# A tag v<version> publishes a GitHub release holding the five binaries and their
+# checksums. The tag must match package.json; the macOS binaries are signed ad hoc on a
+# macOS runner because Apple Silicon refuses unsigned ones.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - name: The tag names the version in package.json
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(bun -e 'console.log(require("./package.json").version)')"
+          if [ "$tag" != "$version" ]; then
+            echo "tag v$tag does not match package.json version $version" >&2
+            exit 1
+          fi
+      - run: bun run check
+      - run: bun run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: unsigned
+          path: dist/
+          if-no-files-found: error
+
+  sign:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: unsigned
+          path: dist
+      - run: |
+          for file in dist/shibaox-mem-darwin-*; do
+            chmod +x "$file"
+            codesign --force --sign - "$file"
+            codesign --verify --verbose "$file"
+            "$file" --version
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binaries
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    needs: sign
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: binaries
+          path: dist
+      - name: Checksums
+        run: |
+          cd dist
+          chmod +x shibaox-mem-*
+          sha256sum shibaox-mem-* > checksums.txt
+          cat checksums.txt
+      - name: Release notes
+        run: |
+          {
+            echo "## Install"
+            echo
+            echo '```sh'
+            echo "curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/scripts/install.sh | sh"
+            echo '```'
+            echo
+            echo "Or download the binary for your platform below, make it executable and run \`shibaox-mem install\`."
+            echo
+            echo "## Changes"
+            echo
+            previous="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+            if [ -n "$previous" ]; then
+              git log --no-merges --format='- %s' "$previous..${GITHUB_REF_NAME}"
+            else
+              git log --no-merges --format='- %s' "${GITHUB_REF_NAME}" | head -50
+            fi
+          } > notes.md
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" --title "shibaox-mem ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/shibaox-mem-* dist/checksums.txt
