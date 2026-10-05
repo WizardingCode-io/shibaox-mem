@@ -27,6 +27,12 @@ This downloads the binary for your platform into `~/.shibaox/mem/bin`, checks it
 shibaox-mem install claude-code     # also: codex, cursor, gemini, opencode
 ```
 
+With Homebrew:
+
+```sh
+brew install wizardingcode-io/shibaox/shibaox-mem && shibaox-mem install
+```
+
 On Windows, download `shibaox-mem-windows-x64.exe` from the [releases](https://github.com/WizardingCode-io/shibaox-mem/releases) and run `shibaox-mem install`.
 
 ### As a Claude Code plugin
