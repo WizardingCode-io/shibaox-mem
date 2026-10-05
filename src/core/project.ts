@@ -96,12 +96,23 @@ export function resolveProject(db: Db, cwd: string, now: number = Date.now()): P
     return { id, settled: id !== null && owners.every((entry) => entry.id === id) };
   };
 
+  // Memories imported from another tool know their project only by its folder name.
+  // The first directory seen with that name, and not yet a project of its own, is it.
+  const adoptable = () => {
+    for (const name of new Set([basename(root), basename(remote ?? root)])) {
+      const id = owner.get(`imported:${name}`)?.project_id;
+      if (id !== undefined) return id;
+    }
+    return null;
+  };
+
   let { id, settled } = lookup();
   if (!settled) {
     id = withWrite(db, () => {
       // Looked up again under the write lock: another hook may have just created it.
       const projectId =
         lookup().id ??
+        adoptable() ??
         (db
           .query<{ id: number }, [string, string, number]>(
             "INSERT INTO projects (key, name, created_at) VALUES (?, ?, ?) RETURNING id",
