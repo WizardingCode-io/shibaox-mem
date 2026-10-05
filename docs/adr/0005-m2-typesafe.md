@@ -38,7 +38,8 @@ O importador só podia mapear o tipo do claude-mem no nosso e dar a mesma import
 | O quê | Resultado |
 |---|---|
 | Amostra de 200 memórias reais, 8 pedidos em paralelo | 6,9 s · 898 tokens por memória · $0,0075 |
-| Projeção para as 89 501 | ≈ 55 min · ≈ 80 M tokens · ≈ $3,40 (abaixo dos $5,40 estimados) |
+| As 89 501, de facto | ≈ 1 h 50 (o serviço abrandou a meio: de 29/s para 8/s) · 80 M tokens · ≈ $3,40 (abaixo dos $5,40 estimados) · 0 falhas |
+| Resultado final | 67 434 ativas · 22 067 arquivadas (24,7 %) · tipos: gotcha 81 → 4 023, convention 2 → 2 136, decision 5 031 → 2 255 · importância: 3 (23 623), 4 (40 303), 5 (3 119), 1–2 (389) |
 | Arquivadas | 51/200 (25 %): relatórios de estado, "testes a passar", "histórico git revela…", ramos que existiam |
 | Tipo corrigido | 21/200 (10 %): "Safety Protocol Established" decision→convention; "endpoint limitations" discovery→gotcha |
 | Importância das mantidas | antes todas 2 ou 3; depois 3 (55), 4 (90), 5 (4) e nenhuma em 1–2 |
