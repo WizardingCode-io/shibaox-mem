@@ -15,7 +15,16 @@ export async function withTempDir<T>(fn: (dir: string) => T | Promise<T>): Promi
   try {
     return await fn(dir);
   } finally {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    // On Windows a database file just closed can stay locked for a moment (EBUSY).
+    // A temporary directory left behind is not a failed probe, so this gives up quietly.
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+        break;
+      } catch {
+        Bun.sleepSync(100);
+      }
+    }
   }
 }
 
