@@ -204,8 +204,11 @@ describe("the compiled binary, driven as an agent drives it", () => {
       expect(detached.exitCode).toBe(0);
 
       const deadline = Date.now() + 10_000;
+      // By command line: the data directory is only in the environment, which pgrep cannot see.
       const running = () =>
-        Bun.spawnSync(["pgrep", "-f", dataDir], { stdout: "pipe" }).stdout.toString().trim();
+        Bun.spawnSync(["pgrep", "-f", `${binary} distill`], { stdout: "pipe" })
+          .stdout.toString()
+          .trim();
       const distilled = () =>
         rows<{ state: string }>("SELECT state FROM turns")[0]?.state === "done";
       while (Date.now() < deadline && !(distilled() && running() === "")) await Bun.sleep(50);

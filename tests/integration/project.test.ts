@@ -192,6 +192,27 @@ describe("core/project", () => {
     expect(aliases(after.id)).toContain("remote:github.com/org/grows");
   });
 
+  // Memories are scoped to a project. A folder that now holds another repository
+  // must not carry the first one's memories into it, or anywhere else.
+  test("a directory reused for another repository is another project", () => {
+    const dir = repo("scratch");
+    git(dir, "remote", "add", "origin", "https://github.com/acme/billing.git");
+    const first = resolveProject(db, dir);
+
+    rmSync(join(dir, ".git"), { recursive: true });
+    git(dir, "init", "-q", "-b", "main");
+    git(dir, "remote", "add", "origin", "https://github.com/someone/other-lib.git");
+    const second = resolveProject(db, dir);
+    expect(second.id).not.toBe(first.id);
+    expect(second.key).toBe("remote:github.com/someone/other-lib");
+
+    const elsewhere = repo("billing-again");
+    git(elsewhere, "remote", "add", "origin", "git@github.com:acme/billing.git");
+    expect(resolveProject(db, elsewhere).id).toBe(first.id);
+    expect(resolveProject(db, dir).id).toBe(second.id);
+    expect(aliases(first.id)).not.toContain(`path:${dir}`);
+  });
+
   test("credentials in a remote URL are never stored", () => {
     const dir = repo("leaky");
     git(dir, "remote", "add", "origin", "https://deploy:s3cretpass@github.com/org/leaky.git");

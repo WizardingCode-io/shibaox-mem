@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveProject } from "../../src/core/project.ts";
 import type { Redacted } from "../../src/core/redact.ts";
 import type { MemoryKind } from "../../src/core/types.ts";
 import { getMemories, saveMemory, searchMemories } from "../../src/mcp/tools.ts";
+import { refreshStaleness } from "../../src/retrieve/staleness.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
 import { insertMemory } from "../../src/store/memories.ts";
 
@@ -55,7 +56,7 @@ function memory(
   });
 }
 
-const context = () => ({ db, projectId, branch: null, now: NOW });
+const context = () => ({ db, projectId, root: project, branch: null, now: NOW });
 const search = (query: string, extra: { kind?: MemoryKind; limit?: number } = {}) =>
   searchMemories(context(), { query, ...extra });
 
@@ -189,6 +190,35 @@ describe("memory_save", () => {
       { path: "tests/integration/db.test.ts", role: "changed" },
     ]);
     expect(search("mocks")).toContain("#1 ");
+  });
+
+  test("file paths are kept relative to the project, whatever form they arrive in", async () => {
+    mkdirSync(join(project, "src"));
+    writeFileSync(join(project, "src/db.ts"), "");
+    await save("We open the database in WAL mode for the hooks.", "decision", {
+      files: [
+        join(project, "src/db.ts"),
+        "./src/other.ts",
+        "/etc/passwd",
+        `src/${"x".repeat(600)}.ts`,
+        ["config/AWS_SECRET_ACCESS_KEY=", "abcd1234efgh5678ijkl"].join(""),
+      ],
+    });
+    expect(db.query("SELECT path FROM memory_files ORDER BY path").all()).toEqual([
+      { path: "src/db.ts" },
+      { path: "src/other.ts" },
+    ]);
+    expect(JSON.stringify(db.query("SELECT terms FROM memories").all())).not.toContain("abcd1234");
+  });
+
+  test("a note saved with a file that exists is not marked stale", async () => {
+    mkdirSync(join(project, "src"));
+    writeFileSync(join(project, "src/db.ts"), "");
+    await save("We open the database in WAL mode for the hooks.", "decision", {
+      files: [join(project, "src/db.ts")],
+    });
+    refreshStaleness(db, projectId);
+    expect(db.query("SELECT stale FROM memories").all()).toEqual([{ stale: 0 }]);
   });
 
   test("a short note is kept as it is", async () => {

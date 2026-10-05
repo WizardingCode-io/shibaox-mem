@@ -70,42 +70,58 @@ export function findProject(db: Db, cwd: string): ProjectRef | null {
  */
 export function resolveProject(db: Db, cwd: string, now: number = Date.now()): ProjectRef {
   const { git, root, remote, aliases } = identify(cwd);
+  const remoteAlias = remote === null ? null : `remote:${remote}`;
 
   const owner = db.query<{ project_id: number }, [string]>(
     "SELECT project_id FROM project_aliases WHERE alias = ?",
   );
+  const hasRemote = db.query<{ n: number }, [number]>(
+    "SELECT count(*) AS n FROM project_aliases WHERE project_id = ? AND alias LIKE 'remote:%'",
+  );
+
+  /** Which project this is, and whether every alias already points at it. */
   const lookup = () => {
-    let id: number | undefined;
-    const unknown: string[] = [];
-    for (const alias of aliases) {
-      const row = owner.get(alias);
-      if (row === null) unknown.push(alias);
-      else id ??= row.project_id;
+    const owners = aliases.map((alias) => ({ alias, id: owner.get(alias)?.project_id ?? null }));
+    let id = owners.find((entry) => entry.alias === remoteAlias)?.id ?? null;
+    if (id === null) {
+      const local = owners.find((entry) => entry.alias !== remoteAlias && entry.id !== null);
+      // A folder known under another remote now holds a different repository. Its
+      // path must not carry the first repository's memories into this one.
+      const reused =
+        local !== undefined &&
+        remoteAlias !== null &&
+        (hasRemote.get(local.id as number)?.n ?? 0) > 0;
+      id = local === undefined || reused ? null : local.id;
     }
-    return { id, unknown };
+    return { id, settled: id !== null && owners.every((entry) => entry.id === id) };
   };
 
-  let { id, unknown } = lookup();
-  if (id === undefined || unknown.length > 0) {
+  let { id, settled } = lookup();
+  if (!settled) {
     id = withWrite(db, () => {
       // Looked up again under the write lock: another hook may have just created it.
-      const current = lookup();
       const projectId =
-        current.id ??
+        lookup().id ??
         (db
           .query<{ id: number }, [string, string, number]>(
             "INSERT INTO projects (key, name, created_at) VALUES (?, ?, ?) RETURNING id",
           )
           .get(aliases[0] as string, basename(remote ?? root), now)?.id as number);
-      for (const alias of current.unknown) {
-        db.run("INSERT OR IGNORE INTO project_aliases (alias, project_id) VALUES (?, ?)", [
-          alias,
-          projectId,
-        ]);
+      for (const alias of aliases) {
+        // A remote names one project for good. A folder or git directory names
+        // whichever project is in it now.
+        db.run(
+          alias === remoteAlias
+            ? "INSERT OR IGNORE INTO project_aliases (alias, project_id) VALUES (?, ?)"
+            : `INSERT INTO project_aliases (alias, project_id) VALUES (?, ?)
+               ON CONFLICT (alias) DO UPDATE SET project_id = excluded.project_id`,
+          [alias, projectId],
+        );
       }
       return projectId;
     });
   }
+  if (id === null) throw new Error("project could not be resolved");
 
   const row = db
     .query<{ key: string; name: string; disabled: number }, [number]>(

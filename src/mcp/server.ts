@@ -30,7 +30,15 @@ export async function runMcpServer(): Promise<void> {
         const now = Date.now();
         const project = resolveProject(db, process.env.CLAUDE_PROJECT_DIR || process.cwd(), now);
         if (project.disabled) return answer("Memory is turned off for this project.");
-        return answer(await run({ db, projectId: project.id, branch: project.branch, now }));
+        return answer(
+          await run({
+            db,
+            projectId: project.id,
+            root: project.root,
+            branch: project.branch,
+            now,
+          }),
+        );
       } finally {
         db.close();
       }

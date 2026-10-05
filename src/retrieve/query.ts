@@ -33,6 +33,20 @@ const IDENTIFIER = new RegExp(
 );
 
 /**
+ * Whether naming this is, by itself, evidence of what the prompt is about. `parseUser`,
+ * `busy_timeout`, `src/db.ts` and `Promise.race` are; `value` in backticks and
+ * "TypeScript" are ordinary words that happen to look like code.
+ */
+function isSpecific(identifier: string): boolean {
+  return (
+    /[\s/_]/.test(identifier) || // a phrase, a path, snake_case
+    /[\w)\]]\.[A-Za-z]\w*$/.test(identifier) || // member access, or a file name
+    /^[a-z][a-z0-9]*[A-Z]/.test(identifier) || // lowerCamelCase
+    (/\d/.test(identifier) && /[A-Za-z]/.test(identifier)) // letters with digits: sha256
+  );
+}
+
+/**
  * What to search for, given a prompt. The prompt is never used as it stands: common
  * words would match everything. Null when the prompt names too little to search for,
  * in which case nothing is injected.
@@ -44,6 +58,8 @@ export function buildQuery(prompt: string): Query | null {
     IDENTIFIER,
     (match: string, span?: string) => {
       const identifier = (span ?? match).trim().replace(/\.+$/, "");
+      // Left in the prose, it is searched for as the ordinary word it is.
+      if (!isSpecific(identifier)) return ` ${identifier} `;
       if (/[\p{L}\p{N}]/u.test(identifier) && identifier.length <= MAX_IDENTIFIER_CHARS) {
         if (!identifiers.includes(identifier)) identifiers.push(identifier);
       }

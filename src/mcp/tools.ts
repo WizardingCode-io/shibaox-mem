@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { type Redacted, redact } from "../core/redact.ts";
 import type { MemoryKind } from "../core/types.ts";
 import { consolidate } from "../distill/consolidate.ts";
@@ -18,6 +19,8 @@ import { anyOf, searchTerms, stem } from "../util/words.ts";
 export interface ToolContext {
   db: Db;
   projectId: number;
+  /** The project's working tree: file paths are stored relative to it. */
+  root: string;
   branch: string | null;
   now: number;
 }
@@ -111,6 +114,38 @@ export function getMemories(context: ToolContext, args: { ids: number[] }): stri
   return parts.join("\n");
 }
 
+const MAX_PATH_CHARS = 300;
+
+/**
+ * File paths as given by an agent, made relative to the project. Agents pass absolute
+ * paths; anchors are relative. What lies outside the project, is too long to be a path
+ * or carries a secret is dropped.
+ */
+function projectPaths(root: string, files: string[]): string[] {
+  const roots = [...new Set([root, realpath(root)])].map((dir) =>
+    dir.replaceAll("\\", "/").replace(/\/+$/, ""),
+  );
+  const paths = new Set<string>();
+  for (const raw of files) {
+    let path = raw.trim().replaceAll("\\", "/");
+    if (path === "" || path.length > MAX_PATH_CHARS || redact(path) !== path) continue;
+    const inside = roots.find((dir) => path.startsWith(`${dir}/`));
+    if (inside !== undefined) path = path.slice(inside.length + 1);
+    else if (path.startsWith("/") || /^[A-Za-z]:\//.test(path)) continue;
+    path = path.replace(/^(?:\.\/)+/, "");
+    if (path !== "" && !path.startsWith("../")) paths.add(path);
+  }
+  return [...paths].slice(0, MAX_FILES);
+}
+
+function realpath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
 /**
  * Stores what the agent was told to remember. The text is the agent's own; it is
  * redacted, split into a title and the rest, and consolidated like any other memory.
@@ -136,9 +171,10 @@ export async function saveMemory(
       "…",
     ) as Redacted,
     importance: Math.min(5, Math.max(1, Math.trunc(args.importance ?? 3))),
-    files: (args.files ?? [])
-      .slice(0, MAX_FILES)
-      .map((path) => ({ path, role: "changed" as const })),
+    files: projectPaths(context.root, args.files ?? []).map((path) => ({
+      path,
+      role: "changed" as const,
+    })),
   };
 
   const action = await consolidate({ db, judge: heuristicJudge }, projectId, draft);

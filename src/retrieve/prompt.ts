@@ -1,5 +1,5 @@
 import type { Db } from "../store/db.ts";
-import { anyOf, stem } from "../util/words.ts";
+import { anyOf, isGeneric, stem } from "../util/words.ts";
 import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "./notes.ts";
 import { buildQuery, type Query, searchTokens } from "./query.ts";
 import { type Note, renderNote, renderNotes } from "./render.ts";
@@ -11,6 +11,8 @@ const MAX_NOTES = 5;
 /** About 700 tokens. */
 const BUDGET_CHARS = 2400;
 const RRF_K = 60;
+/** Three ordinary shared words, or two rare ones. */
+const EVIDENCE_WEIGHT = 3;
 const RECENT_TURNS = 5;
 const MAX_SESSION_FILES = 50;
 
@@ -78,9 +80,20 @@ function hasEvidence(candidate: Candidate, query: Query, isRare: (word: string) 
 
   // Compared by stem, so that "query" in the prompt meets "queries" in the memory.
   const matched = query.words.filter((word) => stems.has(stem(searchTokens(word)[0] ?? "")));
-  if (matched.length >= 3) return true;
-  if (matched.filter(isRare).length >= 2) return true;
-  return candidate.overlap > 0 && matched.length >= 1;
+  // Shared words are weighed, not counted: a word few memories have says most, an
+  // ordinary one less, and one found in any talk about code ("fix", "test") least.
+  let weight = 0;
+  let telling = 0;
+  for (const word of matched) {
+    if (isGeneric(word)) {
+      weight += 0.5;
+    } else {
+      telling++;
+      weight += isRare(word) ? 1.5 : 1;
+    }
+  }
+  if (telling === 0) return false;
+  return candidate.overlap > 0 || weight >= EVIDENCE_WEIGHT;
 }
 
 /**
@@ -141,7 +154,8 @@ export function retrieveForPrompt(
         "SELECT count(*) AS n FROM memories WHERE project_id = ? AND status = 'active'",
       )
       .get(input.projectId)?.n ?? 0;
-  const rareLimit = Math.max(2, Math.ceil(total * 0.05));
+  // Never below one: in a small project, a word two memories share is not rare.
+  const rareLimit = Math.max(1, Math.ceil(total * 0.05));
   const frequency = db.query<{ n: number }, [string, number]>(
     `SELECT count(*) AS n FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
       WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'`,

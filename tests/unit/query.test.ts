@@ -34,6 +34,24 @@ describe("buildQuery", () => {
     );
   });
 
+  test("a plain word in backticks, or a capitalised name, is an ordinary word", () => {
+    const query = buildQuery(
+      "rename `value` to `total` where TypeScript complains about SessionStore",
+    );
+    expect(query?.identifiers).toEqual([]);
+    expect(query?.words).toEqual(
+      expect.arrayContaining(["value", "total", "typescript", "sessionstore"]),
+    );
+    // Its parts are not searched for: "type" and "script" say nothing about TypeScript.
+    expect(query?.words).not.toContain("script");
+  });
+
+  test("member access, digits in a name and phrases in backticks are identifiers", () => {
+    expect(
+      buildQuery("why does `Promise.race` with `bun test` break fts5 here?")?.identifiers,
+    ).toEqual(["Promise.race", "bun test"]);
+  });
+
   test.each(["continua", "ok", "sim, avança", "yes", "go on", "", "   ", "???", "faz isso"])(
     "a prompt with too little to search for gives no query: %p",
     (prompt) => {

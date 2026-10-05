@@ -117,6 +117,31 @@ describe("retrieveForPrompt", () => {
     expect(ids("please run the tests again")).toEqual([]);
   });
 
+  // Ordinary programming talk shares words with every memory. None of this is evidence.
+  test("a plain word in a code span is not an identifier", () => {
+    memory("The function parseUser returns null for an unknown value.");
+    expect(ids("Rename the variable `value` to `total` in the invoice module")).toEqual([]);
+  });
+
+  test("a product name alone is not evidence", () => {
+    memory("The build uses TypeScript 7 in strict mode.");
+    expect(ids("How do I center a div in CSS when using TypeScript?")).toEqual([]);
+  });
+
+  test("generic programming words are not evidence", () => {
+    memory("The test for the date parser fails when the code runs in another time zone.");
+    memory("Fixed an error in the function that reads the config file.");
+    expect(ids("please fix the failing test in the code for the pricing page")).toEqual([]);
+    expect(ids("add a new function to the utils file and check the error")).toEqual([]);
+  });
+
+  test("in a small project a word is rare only if one memory has it", () => {
+    memory("The parser rejects empty input since the last release.");
+    memory("The parser and the release script share one config.");
+    memory("Something unrelated about colours.");
+    expect(ids("when is the next parser release?")).toEqual([]);
+  });
+
   test("a prompt about something else gets nothing", () => {
     memory("The pragma busy_timeout must be the first statement on a connection.");
     expect(ids("write a haiku about autumn leaves falling")).toEqual([]);
@@ -377,6 +402,12 @@ describe("sessionBrief", () => {
     expect(result.notes.length).toBeGreaterThan(5);
     expect(result.notes.length).toBeLessThan(300);
     expect(result.text).toEndWith("</ai-mem-notes>");
+  });
+
+  test("one note too large to fit does not empty the brief", () => {
+    memory("An oversized note.", "", { importance: 5, files: [`src/${"x".repeat(6000)}.ts`] });
+    const small = memory("Never mock the database in tests.", "", { importance: 2 });
+    expect(brief().notes.map((note) => note.id)).toEqual([small]);
   });
 
   test("leaves out memories that were replaced or whose files are gone", () => {

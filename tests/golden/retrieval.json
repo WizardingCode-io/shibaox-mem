@@ -174,7 +174,10 @@
       "prompt": "why do the db tests get SQLITE_BUSY on the very first query?",
       "expect": ["busy-timeout"]
     },
-    { "prompt": "can I use a mock for the database in this new test?", "expect": ["no-mocks"] },
+    {
+      "prompt": "can I use a mock for the database in this new test?",
+      "expect": ["no-mocks"]
+    },
     {
       "prompt": "where should the turn row be created, at Stop or at UserPromptSubmit?",
       "expect": ["open-at-prompt"]
@@ -195,8 +198,14 @@
       "prompt": "searching for 'migracao' does not find 'migração', do we fold diacritics?",
       "expect": ["diacritics"]
     },
-    { "prompt": "the frequency query is very slow with many memories", "expect": ["cross-join"] },
-    { "prompt": "write the commit message for this change", "expect": ["commit-style"] },
+    {
+      "prompt": "the frequency query is very slow with many memories",
+      "expect": ["cross-join"]
+    },
+    {
+      "prompt": "write the commit message for this change",
+      "expect": ["commit-style"]
+    },
     {
       "prompt": "should we add a vector index with embeddings for retrieval?",
       "expect": ["no-embeddings"]
@@ -213,26 +222,50 @@
       "prompt": "two distill processes ran at the same time and duplicated a memory",
       "expect": ["drain-lease"]
     },
-    { "prompt": "em que língua devo responder ao utilizador?", "expect": ["pt-lingua"] },
+    {
+      "prompt": "em que língua devo responder ao utilizador?",
+      "expect": ["pt-lingua"]
+    },
     {
       "prompt": "posso copiar o esquema da base de dados do claude-mem para o importador?",
       "expect": ["pt-importador"]
     },
-    { "prompt": "o Cursor consegue receber memórias em cada prompt?", "expect": ["pt-cursor"] },
+    {
+      "prompt": "o Cursor consegue receber memórias em cada prompt?",
+      "expect": ["pt-cursor"]
+    },
     {
       "prompt": "add a --json option to the doctor command like status has",
       "expect": ["status-json"]
     },
-    { "prompt": "how do I match a Stop payload to its prompt?", "expect": ["prompt-id"] },
+    {
+      "prompt": "how do I match a Stop payload to its prompt?",
+      "expect": ["prompt-id"]
+    },
     {
       "prompt": "the test process hangs for ten seconds after it passes",
       "expect": ["pending-timer"]
     },
-    { "prompt": "should imports end in .js or .ts?", "expect": ["ts-extension"] },
-    { "prompt": "does uninstall restore my settings.json?", "expect": ["settings-backup"] },
-    { "prompt": "porque é que as tabelas não são STRICT?", "expect": ["pt-strict"] },
-    { "prompt": "where are hook timings stored?", "expect": ["hook-runs"] },
-    { "prompt": "the build should not autoload dotenv", "expect": ["dotenv"] }
+    {
+      "prompt": "should imports end in .js or .ts?",
+      "expect": ["ts-extension"]
+    },
+    {
+      "prompt": "does uninstall restore my settings.json?",
+      "expect": ["settings-backup"]
+    },
+    {
+      "prompt": "porque é que as tabelas não são STRICT?",
+      "expect": ["pt-strict"]
+    },
+    {
+      "prompt": "where are hook timings stored?",
+      "expect": ["hook-runs"]
+    },
+    {
+      "prompt": "the build should not autoload dotenv",
+      "expect": ["dotenv"]
+    }
   ],
   "unrelated": [
     "write a haiku about autumn leaves",
@@ -246,6 +279,17 @@
     "qual é a capital da Austrália?",
     "generate a logo for the landing page",
     "sort this list of numbers in descending order",
-    "what does the status code 418 mean?"
+    "what does the status code 418 mean?",
+    "Rename the variable `value` to `total` in the invoice module",
+    "How do I center a div in CSS when using TypeScript?",
+    "please fix the failing test in the code for the pricing page",
+    "add a new function to the utils file",
+    "why does this test fail?",
+    "refactor this function to use async await",
+    "can you check the error in the build output?",
+    "update the README with the install steps",
+    "the page loads slowly on mobile, any idea why?",
+    "cria um componente novo para a página de preços",
+    "corrige o erro no teste do formulário de login"
   ]
 }

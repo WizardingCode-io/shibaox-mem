@@ -93,3 +93,16 @@ export function searchTerms(title: string, body: string, paths: string[]): strin
   }
   return [...terms].join(" ");
 }
+
+// Words that turn up in almost any conversation about code, in English and Portuguese.
+// Sharing them with a memory says little about whether the memory is relevant.
+const GENERIC = new Set(
+  "fix fixed fail failed failing test code file function error bug add change update use make run work issue problem need want look check help create remove write read get set try show tell explain thing way line name value type data new please also corrigir corrige falha falhar teste código ficheiro função erro adicionar adiciona alterar altera mudar muda atualizar atualiza usar usa fazer faz criar cria remover escrever ler ver mostrar mostra explicar explica problema coisa forma linha nome valor tipo dados novo nova"
+    .split(" ")
+    .map((word) => stem(searchTokens(word)[0] ?? word)),
+);
+
+/** True for a word too common in talk about code to count as evidence of relevance. */
+export function isGeneric(word: string): boolean {
+  return GENERIC.has(stem(searchTokens(word)[0] ?? word));
+}

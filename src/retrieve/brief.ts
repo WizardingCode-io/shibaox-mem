@@ -38,7 +38,8 @@ export function sessionBrief(
   let text = renderBrief(last, notes);
   for (const row of ranked) {
     const next = renderBrief(last, [...notes, toNote(db, row)]);
-    if (next.length > BUDGET_CHARS) break;
+    // One note that does not fit must not keep out the smaller ones after it.
+    if (next.length > BUDGET_CHARS) continue;
     notes.push(toNote(db, row));
     text = next;
   }
