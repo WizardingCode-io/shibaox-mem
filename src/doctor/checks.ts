@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { CLAUDE_CODE } from "../install/claude-code.ts";
 import { CODEX } from "../install/codex.ts";
 import { CURSOR } from "../install/cursor.ts";
@@ -139,6 +139,91 @@ function hookSpeed(db: Db | null): Check {
     : { name, status: "ok", detail };
 }
 
+/** How each agent installs shibaox-mem itself; what `doctor` suggests when it is missing. */
+const NATIVE_INSTALL: Record<string, string> = {
+  "claude-code":
+    "run: claude plugin marketplace add WizardingCode-io/shibaox-plugins && claude plugin install shibaox-mem@shibaox-plugins",
+  codex:
+    "run: codex plugin marketplace add WizardingCode-io/shibaox-plugins && codex plugin add shibaox-mem@shibaox-plugins",
+  gemini: "run: gemini extensions install https://github.com/WizardingCode-io/shibaox-mem",
+  cursor: "run: shibaox-mem install cursor",
+  opencode: "run: opencode plugin shibaox-mem-opencode --global",
+};
+
+const readText = (path: string): string | null => {
+  try {
+    return existsSync(path) ? readFileSync(path, "utf8") : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Whether the agent has shibaox-mem as its own plugin or extension, and how to say so.
+ * Read from where each agent records what it has installed and enabled.
+ */
+function nativeInstall(agent: string, context: DoctorContext): string | null {
+  try {
+    switch (agent) {
+      case "claude-code": {
+        const settings = JSON.parse(readText(context.settingsPath) ?? "{}") as {
+          enabledPlugins?: Record<string, unknown>;
+        };
+        const key = Object.entries(settings.enabledPlugins ?? {}).find(
+          ([name, enabled]) => name.startsWith("shibaox-mem@") && enabled === true,
+        )?.[0];
+        return key === undefined ? null : `installed as a plugin (${key})`;
+      }
+      case "codex": {
+        const config = readText(join(dirname(context.codexHooksPath), "config.toml")) ?? "";
+        const section = /^\[plugins\."(shibaox-mem@[^"]+)"\]\s*\n((?:(?!\[)[^\n]*\n?)*)/m.exec(
+          config,
+        );
+        if (section === null || !/^enabled\s*=\s*true/m.test(section[2] ?? "")) return null;
+        return `installed as a plugin (${section[1]})`;
+      }
+      case "gemini": {
+        const manifest = readText(
+          join(
+            dirname(context.geminiSettingsPath),
+            "extensions",
+            "shibaox-mem",
+            "gemini-extension.json",
+          ),
+        );
+        if (manifest === null) return null;
+        const version = (JSON.parse(manifest) as { version?: string }).version ?? "unknown version";
+        return `installed as an extension (${version})`;
+      }
+      case "opencode": {
+        const dir = dirname(dirname(context.opencodePluginPath));
+        const listed = ["opencode.json", "opencode.jsonc"].some((file) =>
+          (readText(join(dir, file)) ?? "").includes('"shibaox-mem-opencode'),
+        );
+        return listed ? "installed as an npm plugin (shibaox-mem-opencode)" : null;
+      }
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** Not installed directly: installed natively, absent from the machine, or simply missing. */
+function withoutDirect(
+  name: string,
+  agent: string,
+  command: string | null,
+  context: DoctorContext,
+): Check {
+  const native = nativeInstall(agent, context);
+  if (native !== null) return { name, status: "ok", detail: native };
+  return command !== null && context.which(command) === null
+    ? { name, status: "skip", detail: "not found on this machine" }
+    : { name, status: "warn", detail: `not installed; ${NATIVE_INSTALL[agent]}` };
+}
+
 /** A host that keeps hooks in a JSON file: installed and whole, partly, pointing nowhere, or absent. */
 function hooksHost(
   name: string,
@@ -148,10 +233,7 @@ function hooksHost(
   context: DoctorContext,
 ): Check {
   const install = `run: shibaox-mem install ${spec.agent}`;
-  const absent = (): Check =>
-    command !== null && context.which(command) === null
-      ? { name, status: "skip", detail: `not found on this machine` }
-      : { name, status: "warn", detail: `not installed; ${install}` };
+  const absent = (): Check => withoutDirect(name, spec.agent, command, context);
   if (!existsSync(path)) return absent();
   let found: ReturnType<typeof inspectHooksFile>;
   try {
@@ -196,9 +278,7 @@ function openCode(context: DoctorContext): Check {
     source = null;
   }
   if (source === null || !source.includes(PLUGIN_MARKER)) {
-    return context.which("opencode") === null
-      ? { name, status: "skip", detail: "not found on this machine" }
-      : { name, status: "warn", detail: `not installed; ${install}` };
+    return withoutDirect(name, "opencode", "opencode", context);
   }
   const binary = /^const BINARY = (".*");$/m.exec(source)?.[1];
   const binaryPath = binary === undefined ? null : (JSON.parse(binary) as string);

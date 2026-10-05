@@ -116,7 +116,9 @@ describe("shibaox-mem doctor", () => {
     const result = await cli("doctor");
     expect(result.exitCode).toBe(0);
     expect(line(result.stdout, "Claude Code")).toStartWith("warn");
-    expect(line(result.stdout, "Claude Code")).toContain("shibaox-mem install claude-code");
+    expect(line(result.stdout, "Claude Code")).toContain(
+      "claude plugin install shibaox-mem@shibaox-plugins",
+    );
     expect(result.stdout).toContain("1 warning");
   });
 
@@ -134,8 +136,62 @@ describe("shibaox-mem doctor", () => {
     writeFileSync(join(bin, "codex"), "#!/bin/sh\n", { mode: 0o755 });
     const result = await cliWith({ PATH: bin }, "doctor");
     expect(line(result.stdout, "Codex")).toStartWith("warn");
-    expect(line(result.stdout, "Codex")).toContain("shibaox-mem install codex");
+    expect(line(result.stdout, "Codex")).toContain("codex plugin add shibaox-mem@shibaox-plugins");
     expect(line(result.stdout, "Gemini CLI")).toStartWith("skip");
+  });
+
+  test("an agent that has shibaox-mem as its own plugin or extension is installed, and says how", async () => {
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": true, "other@x": true } }),
+    );
+    mkdirSync(join(home, ".codex"));
+    writeFileSync(
+      join(home, ".codex", "config.toml"),
+      'model = "x"\n\n[plugins."other@x"]\nenabled = true\n\n[plugins."shibaox-mem@shibaox-plugins"]\nenabled = true\n',
+    );
+    mkdirSync(join(home, ".gemini", "extensions", "shibaox-mem", "bin"), { recursive: true });
+    writeFileSync(
+      join(home, ".gemini", "extensions", "shibaox-mem", "gemini-extension.json"),
+      JSON.stringify({ name: "shibaox-mem", version: "9.9.9" }),
+    );
+    writeFileSync(join(home, ".gemini", "extensions", "shibaox-mem", "bin", "shibaox-mem"), "");
+    mkdirSync(join(home, ".config", "opencode"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "opencode", "opencode.jsonc"),
+      '{\n  // plugins\n  "plugin": ["shibaox-mem-opencode"]\n}\n',
+    );
+    const nativeEnv = {
+      CODEX_HOME: join(home, ".codex"),
+      GEMINI_CLI_HOME: join(home, ".gemini"),
+      XDG_CONFIG_HOME: join(home, ".config"),
+    };
+    const result = await cliWith(nativeEnv, "doctor");
+    expect(line(result.stdout, "Claude Code")).toBe(
+      "ok    Claude Code: installed as a plugin (shibaox-mem@shibaox-plugins)",
+    );
+    expect(line(result.stdout, "Codex")).toBe(
+      "ok    Codex: installed as a plugin (shibaox-mem@shibaox-plugins)",
+    );
+    expect(line(result.stdout, "Gemini CLI")).toBe(
+      "ok    Gemini CLI: installed as an extension (9.9.9)",
+    );
+    expect(line(result.stdout, "OpenCode")).toBe(
+      "ok    OpenCode: installed as an npm plugin (shibaox-mem-opencode)",
+    );
+
+    // Turned off in the agent, it is not installed.
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": false } }),
+    );
+    writeFileSync(
+      join(home, ".codex", "config.toml"),
+      '[plugins."shibaox-mem@shibaox-plugins"]\nenabled = false\n',
+    );
+    const off = await cliWith(nativeEnv, "doctor");
+    expect(line(off.stdout, "Claude Code")).toStartWith("warn");
+    expect(line(off.stdout, "Codex")).not.toStartWith("ok");
   });
 
   test("agents with shibaox-mem installed are reported, whether or not their command is on PATH", async () => {
