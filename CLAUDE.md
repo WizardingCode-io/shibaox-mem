@@ -20,7 +20,8 @@ Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; v
 - `bun run check` — typecheck, lint e testes
 - `bun run build` — compila os cinco binários para `dist/`
 - `bun run format` — formata e corrige lint
-- `shibaox-mem install claude-code` importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
+- `shibaox-mem install [claude-code|codex|cursor|gemini|opencode]` instala para um agente; sem agente, para todos os que encontrar. No Claude Code importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
+- Adaptadores em `src/adapters/<agente>/`; instaladores em `src/install/`. O desenho por agente e o que foi ou não confirmado em sessões reais está no ADR 0006.
 - `shibaox-mem rejudge [--limit n] [--concurrency n]` pede ao TypeSafe tipo e importância das memórias importadas; o que não vale guardar fica `archived` (nunca apagado). Retomável; precisa de chave.
 
 O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
