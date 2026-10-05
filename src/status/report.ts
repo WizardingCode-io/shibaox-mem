@@ -1,0 +1,117 @@
+import pkg from "../../package.json" with { type: "json" };
+import type { ProjectRef } from "../core/project.ts";
+import type { Db } from "../store/db.ts";
+
+export interface Latency {
+  event: string;
+  p50: number;
+  p95: number;
+  runs: number;
+}
+
+export interface StatusReport {
+  version: string;
+  project: { name: string; key: string } | null;
+  memories: { active: number; stale: number; superseded: number };
+  turns: { distilled: number; skipped: number; failed: number; queued: number };
+  hooks: { latency: Latency[]; runs: number; errors: number };
+  judge: string;
+  /** Requests ai-mem itself made to a model. The heuristic judge makes none. */
+  modelCalls: number;
+  dataDir: string;
+}
+
+const EVENT_ORDER = ["session-start", "prompt", "turn-end", "session-end"];
+
+/** Nearest-rank percentile of an ascending list. */
+export function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  return sorted[Math.max(0, Math.ceil((p / 100) * sorted.length) - 1)] ?? 0;
+}
+
+export function hookLatency(db: Db): StatusReport["hooks"] {
+  const rows = db
+    .query<{ event: string; ms: number; outcome: string }, []>(
+      "SELECT event, ms, outcome FROM hook_runs ORDER BY ms",
+    )
+    .all();
+  const byEvent = new Map<string, number[]>();
+  for (const row of rows) byEvent.set(row.event, [...(byEvent.get(row.event) ?? []), row.ms]);
+  const latency = [...byEvent]
+    .sort(([a], [b]) => EVENT_ORDER.indexOf(a) - EVENT_ORDER.indexOf(b))
+    .map(([event, samples]) => ({
+      event,
+      p50: percentile(samples, 50),
+      p95: percentile(samples, 95),
+      runs: samples.length,
+    }));
+  return { latency, runs: rows.length, errors: rows.filter((row) => row.outcome !== "ok").length };
+}
+
+export function statusReport(
+  db: Db | null,
+  project: ProjectRef | null,
+  dataDir: string,
+): StatusReport {
+  const count = (sql: string) =>
+    db === null || project === null
+      ? 0
+      : (db.query<{ n: number }, [number]>(`SELECT count(*) AS n FROM ${sql}`).get(project.id)?.n ??
+        0);
+  return {
+    version: pkg.version,
+    project: project === null ? null : { name: project.name, key: project.key },
+    memories: {
+      active: count("memories WHERE project_id = ? AND status = 'active'"),
+      stale: count("memories WHERE project_id = ? AND status = 'active' AND stale = 1"),
+      superseded: count("memories WHERE project_id = ? AND status = 'superseded'"),
+    },
+    turns: {
+      distilled: count("turns WHERE project_id = ? AND state = 'done'"),
+      skipped: count("turns WHERE project_id = ? AND state = 'skipped'"),
+      failed: count("turns WHERE project_id = ? AND state = 'failed'"),
+      queued: count("turns WHERE project_id = ? AND state IN ('open', 'pending', 'processing')"),
+    },
+    hooks: db === null ? { latency: [], runs: 0, errors: 0 } : hookLatency(db),
+    judge: "heuristic",
+    modelCalls: 0,
+    dataDir,
+  };
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+export function formatStatus(report: StatusReport): string {
+  const lines = [`ai-mem ${report.version}`];
+  const { memories, turns, hooks } = report;
+  const empty =
+    report.project === null ||
+    memories.active +
+      memories.superseded +
+      turns.distilled +
+      turns.skipped +
+      turns.failed +
+      turns.queued ===
+      0;
+  if (empty) {
+    lines.push("No memories yet for this project.");
+  } else {
+    const stale = memories.stale > 0 ? ` (${memories.stale} stale)` : "";
+    lines.push(
+      `project   ${report.project?.name} (${report.project?.key})`,
+      `memories  ${memories.active} active${stale} · ${memories.superseded} superseded`,
+      `turns     ${turns.distilled} distilled · ${turns.skipped} skipped · ${turns.failed} failed · ${turns.queued} queued`,
+    );
+  }
+  if (hooks.runs > 0) {
+    const speeds = hooks.latency.map((l) => `${l.event} p50 ${l.p50} ms, p95 ${l.p95} ms`);
+    lines.push(
+      `hooks     ${[...speeds, `${plural(hooks.runs, "run")}, ${plural(hooks.errors, "error")}`].join(" · ")}`,
+    );
+  }
+  lines.push(
+    `judge     ${report.judge}, local · model calls made by ai-mem: ${report.modelCalls}`,
+    `data      ${report.dataDir}`,
+  );
+  return `${lines.join("\n")}\n`;
+}

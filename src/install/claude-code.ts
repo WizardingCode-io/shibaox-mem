@@ -242,3 +242,26 @@ export function uninstallClaudeCode(context: InstallContext): UninstallResult {
   rmSync(receiptPath(dataDir), { force: true });
   return { settingsPath, settings: outcome };
 }
+
+/** What of ours a settings file holds: which events are hooked, and to which binaries. */
+export function inspectSettings(text: string): { events: string[]; binaries: string[] } {
+  const settings = parseSettings("settings.json", text);
+  const events: string[] = [];
+  const binaries = new Set<string>();
+  if (isObject(settings.hooks)) {
+    for (const [hostEvent] of EVENTS) {
+      const groups = settings.hooks[hostEvent];
+      for (const group of Array.isArray(groups) ? groups : []) {
+        for (const hook of isObject(group) && Array.isArray(group.hooks) ? group.hooks : []) {
+          if (isOurs(hook)) {
+            if (!events.includes(hostEvent)) events.push(hostEvent);
+            binaries.add((hook as { command: string }).command);
+          }
+        }
+      }
+    }
+  }
+  return { events, binaries: [...binaries] };
+}
+
+export const HOOKED_EVENTS: readonly string[] = EVENTS.map(([hostEvent]) => hostEvent);

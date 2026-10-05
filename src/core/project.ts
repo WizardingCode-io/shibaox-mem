@@ -22,6 +22,44 @@ function realpath(path: string): string {
   }
 }
 
+/** The names a working directory's project may be known by, strongest first. */
+function identify(cwd: string) {
+  const git = readGitInfo(cwd);
+  const root = git?.root ?? realpath(cwd);
+  const remote = git?.originUrl ? normalizeRemote(git.originUrl) : null;
+  const aliases = [
+    ...(remote === null ? [] : [`remote:${remote}`]),
+    ...(git === null ? [] : [`gitdir:${git.commonDir}`]),
+    `path:${root}`,
+  ];
+  return { git, root, remote, aliases };
+}
+
+/** The project a working directory belongs to, if it is already known. Never writes. */
+export function findProject(db: Db, cwd: string): ProjectRef | null {
+  const { git, root, aliases } = identify(cwd);
+  for (const alias of aliases) {
+    const row = db
+      .query<{ id: number; key: string; name: string; disabled: number }, [string]>(
+        `SELECT p.id, p.key, p.name, p.disabled
+           FROM project_aliases a JOIN projects p ON p.id = a.project_id WHERE a.alias = ?`,
+      )
+      .get(alias);
+    if (row !== null) {
+      return {
+        id: row.id,
+        key: row.key,
+        name: row.name,
+        root,
+        branch: git?.branch ?? null,
+        commit: git?.head ?? null,
+        disabled: row.disabled === 1,
+      };
+    }
+  }
+  return null;
+}
+
 /**
  * Maps a working directory to a project, creating it on first sight.
  *
@@ -31,14 +69,7 @@ function realpath(path: string): string {
  * project. Forks have different remotes and are different projects.
  */
 export function resolveProject(db: Db, cwd: string, now: number = Date.now()): ProjectRef {
-  const git = readGitInfo(cwd);
-  const root = git?.root ?? realpath(cwd);
-  const remote = git?.originUrl ? normalizeRemote(git.originUrl) : null;
-  const aliases = [
-    ...(remote === null ? [] : [`remote:${remote}`]),
-    ...(git === null ? [] : [`gitdir:${git.commonDir}`]),
-    `path:${root}`,
-  ];
+  const { git, root, remote, aliases } = identify(cwd);
 
   const owner = db.query<{ project_id: number }, [string]>(
     "SELECT project_id FROM project_aliases WHERE alias = ?",

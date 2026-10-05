@@ -129,3 +129,22 @@ export function openDb(options: OpenOptions): Db {
 export function withWrite<T>(db: Db, fn: () => T): T {
   return db.transaction(fn).immediate();
 }
+
+/**
+ * Opens the database for reading only, without creating or migrating anything.
+ * Null when there is no database yet. For commands that inspect: status and doctor.
+ */
+export function openExisting(dataDir: string = defaultDataDir()): Db | null {
+  const path = join(dataDir, DB_FILE);
+  if (!existsSync(path)) return null;
+  const db = new Database(path, { readonly: true });
+  try {
+    db.run("PRAGMA busy_timeout = 2000");
+    const found = userVersion(db);
+    if (found > LATEST_VERSION) throw new SchemaTooNewError(found, LATEST_VERSION);
+  } catch (error) {
+    db.close();
+    throw error;
+  }
+  return db;
+}
