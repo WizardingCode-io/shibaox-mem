@@ -302,6 +302,52 @@ describe("distill: the queue", () => {
   });
 });
 
+describe("distill: upkeep", () => {
+  test("after a drain, memories whose files have disappeared are marked", async () => {
+    mkdirSync(join(project, "src"));
+    writeFileSync(join(project, "src/pool.ts"), "");
+    const transcript = join(base, "upkeep.jsonl");
+    writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ type: "user", promptId: "u1", message: { role: "user", content: "x" } }),
+        JSON.stringify({
+          type: "assistant",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "tool_use",
+                id: "t",
+                name: "Edit",
+                input: { file_path: join(project, "src/pool.ts") },
+              },
+            ],
+          },
+        }),
+      ].join("\n"),
+    );
+    hook("prompt", {
+      turnId: "u1",
+      prompt: "the pool leaks connections",
+      transcriptPath: transcript,
+    });
+    hook("turn-end", {
+      turnId: "u1",
+      finalText:
+        "Fixed: the root cause was that `workerPool` never released its connection. The pool in src/pool.ts now releases it in a finally block.",
+      transcriptPath: transcript,
+    });
+    await drain();
+    expect(db.query("SELECT stale FROM memories").all()).toEqual([{ stale: 0 }]);
+
+    rmSync(join(project, "src/pool.ts"));
+    turn("thanks!", "You're welcome!");
+    await drain();
+    expect(db.query("SELECT stale FROM memories").all()).toEqual([{ stale: 1 }]);
+  });
+});
+
 describe("distill: consolidation", () => {
   test("the same lesson learned twice reinforces one memory", async () => {
     turn("the tests fail with a timeout", FIX);

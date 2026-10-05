@@ -104,6 +104,22 @@ describe("ai-mem hook", () => {
     expect(rows("SELECT count(*) AS n FROM turns")).toEqual([{ n: 0 }]);
   });
 
+  test("a database locked by another process is a quick, silent success", async () => {
+    const db = openDb({ dataDir: dir, busyTimeoutMs: 2000 });
+    db.run("BEGIN IMMEDIATE");
+    try {
+      const started = performance.now();
+      const result = await hook(payload("user-prompt-submit"), "claude-code", "prompt");
+      expect(result).toEqual(SILENT_SUCCESS);
+      // The prompt hook waits about a tenth of a second for the lock, never the user's patience.
+      expect(performance.now() - started).toBeLessThan(2000);
+    } finally {
+      db.run("ROLLBACK");
+      db.close();
+    }
+    expect(readFileSync(join(dir, "logs", "ai-mem.log"), "utf8")).toContain("SQLITE_BUSY");
+  });
+
   test("an unusable data directory is still a silent success", async () => {
     const file = join(dir, "not-a-directory");
     writeFileSync(file, "");

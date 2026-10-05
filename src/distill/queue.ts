@@ -1,4 +1,5 @@
 import { type Redacted, redact } from "../core/redact.ts";
+import { refreshStaleness } from "../retrieve/staleness.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { claimDrain, releaseDrain } from "../store/meta.ts";
 import { clip } from "../util/text.ts";
@@ -101,11 +102,13 @@ export async function drainQueue(
   if (!claimDrain(db, options.owner, deps.now(), DRAIN_LEASE_MS)) return report;
 
   const started = performance.now();
+  const projects = new Set<number>();
   try {
     while (report.claimed < options.maxTurns && performance.now() - started < options.maxMs) {
       const turn = claimNextTurn(db, options.owner, deps.now());
       if (turn === null) break;
       report.claimed++;
+      projects.add(turn.projectId);
       claimDrain(db, options.owner, deps.now(), DRAIN_LEASE_MS);
       try {
         report[await distillTurn(deps, turn)]++;
@@ -113,6 +116,8 @@ export async function drainQueue(
         if (releaseTurn(db, turn, error) === "failed") report.failed++;
       }
     }
+    // Upkeep rides along with the drain, so no hook ever pays for it.
+    for (const projectId of projects) refreshStaleness(db, projectId);
     db.run("DELETE FROM hook_runs WHERE id <= (SELECT max(id) - ? FROM hook_runs)", [
       HOOK_RUNS_KEPT,
     ]);

@@ -2,7 +2,7 @@ import { ADAPTERS } from "../../adapters/index.ts";
 import type { HookEvent } from "../../core/types.ts";
 import { handleHook } from "../../hooks/handle.ts";
 import { type Db, openDb } from "../../store/db.ts";
-import { logError } from "../../util/log.ts";
+import { errorLabel, logError } from "../../util/log.ts";
 import { spawnDetached } from "../../util/self.ts";
 
 // How long each event may wait for another process's database lock. The two events
@@ -53,7 +53,7 @@ export async function run(argv: string[]): Promise<number> {
     );
     if (out !== "") process.stdout.write(out);
   } catch (error) {
-    outcome = error instanceof Error ? error.name : "Error";
+    outcome = errorLabel(error);
     logError(`hook ${agent} ${event}`, error);
   } finally {
     if (db !== undefined) {
