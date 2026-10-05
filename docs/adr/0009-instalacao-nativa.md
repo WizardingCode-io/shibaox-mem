@@ -36,6 +36,14 @@ Tudo o que os agentes leem é gerado por `scripts/plugins.ts` a partir de uma s�
 | OpenCode (tarball do pacote) | sim | `session-start`, `prompt` |
 | Cursor | não há Cursor para correr | — |
 
+## Provado com a 0.2.0 publicada
+
+Com os comandos do README, em HOMEs isolados, a partir dos repositórios e da release públicos: Claude Code (`shibaox-plugins` → plugin 0.2.0), Codex (`shibaox-plugins` → `plugins/codex` na tag, por `git-subdir`) e Gemini CLI (arquivo `darwin.arm64.shibaox-mem.tar.gz` da release) instalam, vão buscar ou trazem o binário 0.2.0 e registam `session-start`, `prompt` (onde o agente chega lá sem login) e `session-end`. A pré-release `v0.2.0-rc.1` serviu para provar o mesmo antes da versão final, incluindo a escolha do arquivo por plataforma pelo Gemini.
+
+O marketplace `shibaox-plugins` serve os dois: `.claude-plugin/marketplace.json` para o Claude Code e `.agents/plugins/marketplace.json` para o Codex.
+
+`doctor` reconhece as instalações nativas (e sugere os comandos nativos quando falta) a partir da versão seguinte à 0.2.0.
+
 ## Por confirmar
 
 - Servidor MCP do plugin Codex: declarado como a documentação descreve, mas não arrancou numa sessão sem login válido.
