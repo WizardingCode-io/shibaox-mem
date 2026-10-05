@@ -1,0 +1,13 @@
+{
+  "name": "shibaox-mem",
+  "version": "0.1.1",
+  "description": "Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
+  "mcpServers": {
+    "shibaox-mem": {
+      "command": "${extensionPath}${/}bin${/}shibaox-mem",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

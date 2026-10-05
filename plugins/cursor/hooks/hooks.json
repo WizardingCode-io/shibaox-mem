@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "sh \"${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh\" hook cursor session-start",
+        "timeout": 90
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "sh \"${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh\" hook cursor prompt",
+        "timeout": 5
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "sh \"${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh\" hook cursor turn-end",
+        "timeout": 5
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "sh \"${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh\" hook cursor session-end",
+        "timeout": 5
+      }
+    ]
+  }
+}

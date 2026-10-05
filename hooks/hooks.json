@@ -6,7 +6,12 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/hook.sh", "session-start"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "hook",
+              "claude-code",
+              "session-start"
+            ],
             "timeout": 90
           }
         ]
@@ -18,7 +23,12 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/hook.sh", "prompt"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "hook",
+              "claude-code",
+              "prompt"
+            ],
             "timeout": 5
           }
         ]
@@ -30,7 +40,12 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/hook.sh", "turn-end"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "hook",
+              "claude-code",
+              "turn-end"
+            ],
             "timeout": 5
           }
         ]
@@ -42,7 +57,12 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/hook.sh", "session-end"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "hook",
+              "claude-code",
+              "session-end"
+            ],
             "timeout": 5
           }
         ]

@@ -72,16 +72,22 @@ jobs:
           chmod +x shibaox-mem-*
           sha256sum shibaox-mem-* > checksums.txt
           cat checksums.txt
+      # The Gemini CLI extension: one archive per platform, the binary inside.
+      - name: Gemini extension archives
+        run: sh scripts/package-gemini.sh dist
       - name: Release notes
         run: |
           {
             echo "## Install"
             echo
+            echo "From inside your agent — see the [README](https://github.com/${GITHUB_REPOSITORY}#install) for each one. For example:"
+            echo
             echo '```sh'
-            echo "curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/scripts/install.sh | sh"
+            echo "claude plugin marketplace add WizardingCode-io/shibaox-plugins && claude plugin install shibaox-mem@shibaox-plugins"
+            echo "gemini extensions install https://github.com/${GITHUB_REPOSITORY}"
             echo '```'
             echo
-            echo "Or download the binary for your platform below, make it executable and run \`shibaox-mem install\`."
+            echo "The \`*.shibaox-mem.tar.gz\` files are the Gemini CLI extension; the \`shibaox-mem-*\` files are the binaries the other plugins fetch."
             echo
             echo "## Changes"
             echo
@@ -95,4 +101,5 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" --title "shibaox-mem ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/shibaox-mem-* dist/checksums.txt
+          case "${GITHUB_REF_NAME}" in *-*) prerelease="--prerelease" ;; *) prerelease="" ;; esac
+          gh release create "${GITHUB_REF_NAME}" $prerelease --title "shibaox-mem ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/shibaox-mem-* dist/*.shibaox-mem.tar.gz dist/checksums.txt

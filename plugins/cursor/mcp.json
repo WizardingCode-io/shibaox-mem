@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "shibaox-mem": {
+      "command": "sh",
+      "args": [
+        "${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh",
+        "mcp"
+      ]
+    }
+  }
+}

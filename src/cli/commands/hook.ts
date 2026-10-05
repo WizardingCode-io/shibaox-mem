@@ -39,25 +39,45 @@ function spawnDistill(): void {
 }
 
 /**
- * Claude Code runs this binary twice per event when shibaox-mem is installed both in the
- * user's settings and as a plugin. The plugin's run is the one that knows (the host sets
- * CLAUDE_PLUGIN_ROOT for it), so it is the one that stands down.
+ * An agent runs this binary twice per event when shibaox-mem is installed in it both
+ * directly (its own hooks file) and as a plugin. The plugin's run is the one that knows
+ * what it is (it passes --via-plugin; Claude Code also sets CLAUDE_PLUGIN_ROOT), so it is
+ * the one that stands down when the direct install is there.
  */
-async function standsDownAsPlugin(): Promise<boolean> {
-  if (!process.env.CLAUDE_PLUGIN_ROOT) return false;
+async function standsDownAsPlugin(agent: string, flags: string[]): Promise<boolean> {
+  const viaPlugin =
+    flags.includes("--via-plugin") || (agent === "claude-code" && !!process.env.CLAUDE_PLUGIN_ROOT);
+  if (!viaPlugin) return false;
   try {
     // Loaded only on the plugin's path: the direct install never pays for it.
-    const [{ readFileSync }, { homedir }, { join }, { inspectSettings }] = await Promise.all([
-      import("node:fs"),
-      import("node:os"),
-      import("node:path"),
-      import("../../install/claude-code.ts"),
-    ]);
-    const settings = join(
-      process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
-      "settings.json",
-    );
-    return inspectSettings(readFileSync(settings, "utf8")).events.length > 0;
+    const { readFileSync } = await import("node:fs");
+    const { inspectHooksFile } = await import("../../install/hooks-file.ts");
+    const direct = async () => {
+      switch (agent) {
+        case "claude-code": {
+          const { CLAUDE_CODE } = await import("../../install/claude-code.ts");
+          const { claudeCodeContext } = await import("../../install/context.ts");
+          return { spec: CLAUDE_CODE, path: claudeCodeContext("").settingsPath };
+        }
+        case "codex": {
+          const { CODEX, codexContext } = await import("../../install/codex.ts");
+          return { spec: CODEX, path: codexContext("").settingsPath };
+        }
+        case "gemini": {
+          const { GEMINI, geminiContext } = await import("../../install/gemini.ts");
+          return { spec: GEMINI, path: geminiContext("").settingsPath };
+        }
+        case "cursor": {
+          const { CURSOR, cursorContext } = await import("../../install/cursor.ts");
+          return { spec: CURSOR, path: cursorContext("").settingsPath };
+        }
+        default:
+          return null;
+      }
+    };
+    const found = await direct();
+    if (found === null) return false;
+    return inspectHooksFile(found.spec, readFileSync(found.path, "utf8")).events.length > 0;
   } catch {
     return false;
   }
@@ -71,13 +91,13 @@ async function standsDownAsPlugin(): Promise<boolean> {
  */
 export async function run(argv: string[]): Promise<number> {
   const started = performance.now();
-  const [agent, event] = argv;
+  const [agent, event, ...flags] = argv;
   let db: Db | undefined;
   let outcome = "ok";
   try {
     const adapter = agent === undefined ? undefined : ADAPTERS[agent];
     if (adapter === undefined || !isHookEvent(event) || process.stdin.isTTY) return 0;
-    if (agent === "claude-code" && (await standsDownAsPlugin())) return 0;
+    if (agent !== undefined && (await standsDownAsPlugin(agent, flags))) return 0;
     const payload = await readStdin();
     if (payload === null) {
       // The host never closed the pipe. Leaving at once matters more than this event;

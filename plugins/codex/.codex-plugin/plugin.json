@@ -1,6 +1,5 @@
 {
   "name": "shibaox-mem",
-  "displayName": "shibaox-mem",
   "version": "0.1.1",
   "description": "Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
   "author": {
@@ -17,13 +16,5 @@
     "sqlite",
     "local-first"
   ],
-  "mcpServers": {
-    "shibaox-mem": {
-      "command": "sh",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
-        "mcp"
-      ]
-    }
-  }
+  "mcpServers": "./.mcp.json"
 }

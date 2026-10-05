@@ -147,6 +147,61 @@ describe("shibaox-mem hook", () => {
     expect(rows("SELECT state FROM turns")).toEqual([{ state: "open" }]);
   });
 
+  test.each([
+    ["codex", { CODEX_HOME: "codex" }, "codex/hooks.json", "user-prompt-submit"],
+    ["gemini", { GEMINI_CLI_HOME: "gemini" }, "gemini/settings.json", "before-agent"],
+  ] as const)(
+    "%s: run through its plugin while the direct install is also there, it stands down",
+    async (agent, homes, file, fixture) => {
+      const binary = join(dir, "shibaox-mem");
+      writeFileSync(binary, "");
+      const env = Object.fromEntries(
+        Object.entries(homes).map(([name, sub]) => [name, join(dir, sub)]),
+      );
+      const direct = await runCliWith(
+        {
+          env: { ...env, HOME: dir, SHIBAOX_MEM_DATA_DIR: join(dir, "data"), PATH: "/nonexistent" },
+        },
+        "install",
+        agent,
+        "--binary",
+        binary,
+      );
+      expect(direct.exitCode).toBe(0);
+      expect(existsSync(join(dir, file))).toBe(true);
+      const viaPlugin = (...flags: string[]) =>
+        runCliWith(
+          {
+            input: payload(fixture, agent),
+            env: {
+              ...env,
+              HOME: dir,
+              SHIBAOX_MEM_DATA_DIR: join(dir, "data"),
+              SHIBAOX_MEM_DISTILL: "off",
+            },
+          },
+          "hook",
+          agent,
+          "prompt",
+          ...flags,
+        );
+      const turns = () => {
+        if (!existsSync(join(dir, "data", DB_FILE))) return 0;
+        const db = new Database(join(dir, "data", DB_FILE), { readonly: true });
+        try {
+          return db.query<{ n: number }, []>("SELECT count(*) AS n FROM turns").get()?.n;
+        } finally {
+          db.close();
+        }
+      };
+      expect(await viaPlugin("--via-plugin")).toEqual(SILENT_SUCCESS);
+      expect(turns()).toBe(0);
+      // The direct install's own run, without the flag, is the one that records.
+      await viaPlugin();
+      expect(turns()).toBe(1);
+    },
+  );
+
   test("an interrupted turn is queued by the session end that follows it", async () => {
     await hook(payload("interrupted.user-prompt-submit"), "claude-code", "prompt");
     await hook(payload("interrupted.session-end"), "claude-code", "session-end");

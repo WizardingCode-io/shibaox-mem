@@ -1,0 +1,35 @@
+{
+  "name": "shibaox-mem-opencode",
+  "version": "0.1.1",
+  "description": "shibaox-mem for OpenCode. Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "binary.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "@opencode-ai/plugin": ">=1.0.0"
+  },
+  "license": "Apache-2.0",
+  "author": "WizardingCode",
+  "homepage": "https://github.com/WizardingCode-io/shibaox-mem",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WizardingCode-io/shibaox-mem.git",
+    "directory": "plugins/opencode"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "memory",
+    "context",
+    "shibaox",
+    "sqlite",
+    "local-first"
+  ]
+}
