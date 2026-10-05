@@ -15,7 +15,7 @@ export interface Latency {
 export interface StatusReport {
   version: string;
   project: { name: string; key: string } | null;
-  memories: { active: number; stale: number; superseded: number };
+  memories: { active: number; stale: number; superseded: number; archived: number };
   turns: { distilled: number; skipped: number; failed: number; queued: number };
   hooks: { latency: Latency[]; runs: number; errors: number };
   /** Requests shibaox-mem itself made to a model. The heuristic judge makes none. */
@@ -103,6 +103,7 @@ export function statusReport(
       active: count("memories WHERE project_id = ? AND status = 'active'"),
       stale: count("memories WHERE project_id = ? AND status = 'active' AND stale = 1"),
       superseded: count("memories WHERE project_id = ? AND status = 'superseded'"),
+      archived: count("memories WHERE project_id = ? AND status = 'archived'"),
     },
     turns: {
       distilled: count("turns WHERE project_id = ? AND state = 'done'"),
@@ -126,6 +127,7 @@ export function formatStatus(report: StatusReport): string {
     report.project === null ||
     memories.active +
       memories.superseded +
+      memories.archived +
       turns.distilled +
       turns.skipped +
       turns.failed +
@@ -137,7 +139,7 @@ export function formatStatus(report: StatusReport): string {
     const stale = memories.stale > 0 ? ` (${memories.stale} stale)` : "";
     lines.push(
       `project   ${report.project?.name} (${report.project?.key})`,
-      `memories  ${memories.active} active${stale} · ${memories.superseded} superseded`,
+      `memories  ${memories.active} active${stale} · ${memories.superseded} superseded${memories.archived > 0 ? ` · ${memories.archived} archived` : ""}`,
       `turns     ${turns.distilled} distilled · ${turns.skipped} skipped · ${turns.failed} failed · ${turns.queued} queued`,
     );
   }

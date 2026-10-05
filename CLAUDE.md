@@ -21,6 +21,7 @@ Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; v
 - `bun run build` — compila os cinco binários para `dist/`
 - `bun run format` — formata e corrige lint
 - `shibaox-mem install claude-code` importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
+- `shibaox-mem rejudge [--limit n] [--concurrency n]` pede ao TypeSafe tipo e importância das memórias importadas; o que não vale guardar fica `archived` (nunca apagado). Retomável; precisa de chave.
 
 O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 

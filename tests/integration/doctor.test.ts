@@ -237,10 +237,12 @@ describe("shibaox-mem status", () => {
       const current = memory(db, projectId, "The limit is five.");
       memory(db, projectId, "Never mock the database.");
       const stale = memory(db, projectId, "The gone module holds the limit.");
+      const archived = memory(db, projectId, "All tests passing after the change.");
       db.run("UPDATE memories SET status = 'superseded', superseded_by = ? WHERE id = ?", [
         current,
         old,
       ]);
+      db.run("UPDATE memories SET status = 'archived' WHERE id = ?", [archived]);
       db.run("UPDATE memories SET stale = 1 WHERE id = ?", [stale]);
       db.run(
         "INSERT INTO sessions (agent, agent_session_id, project_id, cwd, started_at, last_seen_at) VALUES ('claude-code', 's', ?, ?, 1, 1)",
@@ -270,7 +272,7 @@ describe("shibaox-mem status", () => {
       [
         `shibaox-mem ${pkg.version}`,
         `project   demo (path:${project})`,
-        "memories  3 active (1 stale) · 1 superseded",
+        "memories  3 active (1 stale) · 1 superseded · 1 archived",
         "turns     3 distilled · 1 skipped · 1 failed · 1 queued",
         "hooks     prompt p50 10 ms, p95 19 ms · turn-end p50 4 ms, p95 4 ms · 21 runs, 1 error",
         "judge     heuristic only (no TypeSafe key) · model calls made by shibaox-mem: 0",
@@ -286,7 +288,7 @@ describe("shibaox-mem status", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       version: pkg.version,
       project: { name: "demo" },
-      memories: { active: 1, stale: 0, superseded: 0 },
+      memories: { active: 1, stale: 0, superseded: 0, archived: 0 },
       turns: { distilled: 0, skipped: 0, failed: 0, queued: 0 },
       modelCalls: 0,
       judge: { configured: "heuristic", requests: 0, inputTokens: 0, byJudge: { heuristic: 1 } },
