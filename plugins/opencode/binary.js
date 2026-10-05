@@ -4,7 +4,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSy
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const VERSION = "0.2.0-rc.1";
+const VERSION = "0.2.0";
 const REPO = "WizardingCode-io/shibaox-mem";
 const MARKER = "@shibaox-mem-plugin";
 const windows = process.platform === "win32";
