@@ -11,11 +11,11 @@ export interface Target {
 // x64 Linux and Windows use the baseline runtime: the default one needs AVX2 and
 // dies with "Illegal instruction" on older CPUs and some virtual machines.
 export const TARGETS = [
-  { target: "bun-darwin-arm64", file: "ai-mem-darwin-arm64" },
-  { target: "bun-darwin-x64", file: "ai-mem-darwin-x64" },
-  { target: "bun-linux-x64-baseline", file: "ai-mem-linux-x64" },
-  { target: "bun-linux-arm64", file: "ai-mem-linux-arm64" },
-  { target: "bun-windows-x64-baseline", file: "ai-mem-windows-x64.exe" },
+  { target: "bun-darwin-arm64", file: "shibaox-mem-darwin-arm64" },
+  { target: "bun-darwin-x64", file: "shibaox-mem-darwin-x64" },
+  { target: "bun-linux-x64-baseline", file: "shibaox-mem-linux-x64" },
+  { target: "bun-linux-arm64", file: "shibaox-mem-linux-arm64" },
+  { target: "bun-windows-x64-baseline", file: "shibaox-mem-windows-x64.exe" },
 ] as const satisfies readonly Target[];
 
 const ENTRY = "src/cli/main.ts";

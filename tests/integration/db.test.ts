@@ -15,7 +15,7 @@ import {
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "ai-mem-db-"));
+  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-db-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

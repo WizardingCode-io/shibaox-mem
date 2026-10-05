@@ -19,7 +19,7 @@ let dataDir: string;
 let project: string;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-e2e-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-e2e-")));
   dataDir = join(base, "data");
   project = join(base, "project");
   mkdirSync(project);
@@ -28,7 +28,7 @@ afterEach(() => {
   rmSync(base, { recursive: true, force: true });
 });
 
-const env = () => ({ AI_MEM_DATA_DIR: dataDir, AI_MEM_DISTILL: "off" });
+const env = () => ({ SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "off" });
 
 /** One agent session against the binary. Each call is one hook invocation. */
 function agent(sessionId: string) {
@@ -199,7 +199,7 @@ describe("the compiled binary, driven as an agent drives it", () => {
           prompt_id: "s1-p1",
           last_assistant_message: POOL_FIX,
         }),
-        env: { AI_MEM_DATA_DIR: dataDir, AI_MEM_DISTILL: "" },
+        env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "" },
       });
       expect(detached.exitCode).toBe(0);
 

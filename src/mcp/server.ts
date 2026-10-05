@@ -44,12 +44,12 @@ export async function runMcpServer(): Promise<void> {
       }
     } catch (error) {
       logError(`mcp ${name}`, error);
-      return answer(`ai-mem: ${error instanceof Error ? error.message : String(error)}`, true);
+      return answer(`shibaox-mem: ${error instanceof Error ? error.message : String(error)}`, true);
     }
   };
 
   const kind = z.enum(MEMORY_KINDS);
-  const server = new McpServer({ name: "ai-mem", version: pkg.version });
+  const server = new McpServer({ name: "shibaox-mem", version: pkg.version });
 
   server.registerTool(
     "memory_search",

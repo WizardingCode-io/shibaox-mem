@@ -18,7 +18,7 @@ let clock: number;
 let spawned: number;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-hooks-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-hooks-")));
   project = join(base, "project");
   mkdirSync(project);
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
@@ -342,7 +342,7 @@ describe("hook: what the agent is told", () => {
     remember(RULE);
     const out = told(hook("session-start", { source: "startup" }));
     expect(out?.hookEventName).toBe("SessionStart");
-    expect(out?.additionalContext).toStartWith("<ai-mem-notes>");
+    expect(out?.additionalContext).toStartWith("<shibaox-mem-notes>");
     expect(out?.additionalContext).toContain(RULE);
     expect(injections()).toEqual([{ event: "session-start", context_epoch: 0 }]);
   });

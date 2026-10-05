@@ -18,9 +18,9 @@ import { EXIT_USAGE } from "../exit.ts";
 
 export const SUPPORTED_AGENTS = ["claude-code"];
 
-const USAGE = `Usage: ai-mem install claude-code [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
+const USAGE = `Usage: shibaox-mem install claude-code [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  --binary <path>     The ai-mem binary the hooks will run (needed when running from source)
+  --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
   --no-import         Do not import claude-mem's memories
@@ -43,12 +43,12 @@ function confirm(question: string): boolean {
   return answer === "" || answer === "y" || answer === "yes" || answer === "s" || answer === "sim";
 }
 
-/** `ai-mem install <agent> [options]` */
+/** `shibaox-mem install <agent> [options]` */
 export function run(argv: string[]): number {
   const [agent, ...rest] = argv;
   if (agent === undefined || !SUPPORTED_AGENTS.includes(agent)) {
     process.stderr.write(
-      `ai-mem install: unknown agent "${agent ?? ""}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
+      `shibaox-mem install: unknown agent "${agent ?? ""}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
     );
     return EXIT_USAGE;
   }
@@ -59,14 +59,14 @@ export function run(argv: string[]): number {
   if (explicit !== undefined) {
     binaryPath = resolve(explicit);
     if (!existsSync(binaryPath)) {
-      process.stderr.write(`ai-mem install: ${binaryPath} does not exist\n`);
+      process.stderr.write(`shibaox-mem install: ${binaryPath} does not exist\n`);
       return 1;
     }
   } else if (isCompiled()) {
     binaryPath = stageBinary(process.execPath, defaultDataDir());
   } else {
     process.stderr.write(
-      "ai-mem install: running from source. Build a binary with `bun run build` and pass it with --binary <path>.\n",
+      "shibaox-mem install: running from source. Build a binary with `bun run build` and pass it with --binary <path>.\n",
     );
     return 1;
   }
@@ -112,7 +112,7 @@ export function run(argv: string[]): number {
         : `not registered. Run: ${result.mcpCommand.join(" ")}`;
     process.stdout.write(
       [
-        "Installed ai-mem for Claude Code.",
+        "Installed shibaox-mem for Claude Code.",
         `  hooks:  ${result.settingsPath}${result.changed ? "" : " (already up to date)"}`,
         `  binary: ${binaryPath}`,
         `  MCP:    ${mcp}`,
@@ -124,7 +124,7 @@ export function run(argv: string[]): number {
     return 0;
   } catch (error) {
     process.stderr.write(
-      `ai-mem install: ${error instanceof Error ? error.message : String(error)}\n`,
+      `shibaox-mem install: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

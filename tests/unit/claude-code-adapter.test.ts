@@ -139,7 +139,7 @@ describe("claude-code render", () => {
 describe("claude-code transcript", () => {
   let dir: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "ai-mem-transcript-"));
+    dir = mkdtempSync(join(tmpdir(), "shibaox-mem-transcript-"));
   });
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -214,17 +214,17 @@ describe("claude-code transcript", () => {
 
   test("notices when the agent saved a memory itself during the turn, if the save worked", () => {
     const save = (id: string) =>
-      toolUse(id, "mcp__ai-mem__memory_save", { text: "We use pnpm.", kind: "convention" });
+      toolUse(id, "mcp__shibaox-mem__memory_save", { text: "We use pnpm.", kind: "convention" });
     const path = write(
       user("p1", "remember this"),
       save("t1"),
       toolResult("p1", "t1", "Saved as #3."),
       user("p2", "search"),
-      toolUse("t2", "mcp__ai-mem__memory_search", { query: "pnpm" }),
+      toolUse("t2", "mcp__shibaox-mem__memory_search", { query: "pnpm" }),
       toolResult("p2", "t2", "#3 [convention] We use pnpm."),
       user("p3", "remember that too"),
       save("t3"),
-      toolResult("p3", "t3", "ai-mem: database is locked", true),
+      toolResult("p3", "t3", "shibaox-mem: database is locked", true),
       user("p4", "and this"),
       save("t4"),
     );

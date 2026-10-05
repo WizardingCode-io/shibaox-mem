@@ -1,6 +1,10 @@
-# ai-mem
+# shibaox-mem
 
-Memória persistente entre sessões para agentes de código. Um binário, sem daemon, sem LLM generativo, local por omissão.
+Memória persistente entre sessões para agentes de código, da marca **shibaox** (WizardingCode). Um binário, sem daemon, sem LLM generativo, local por omissão.
+
+Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; variáveis `SHIBAOX_<COISA>_*`; dados em `~/.shibaox/<coisa>` (respeitar `SHIBAOX_HOME`). Ver `docs/adr/0004-marca-e-nome.md`.
+
+Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; variáveis `SHIBAOX_<COISA>_*`; dados em `~/.shibaox/<coisa>` (respeitar `SHIBAOX_HOME`).
 
 ## Regra inegociável
 
@@ -8,7 +12,7 @@ Memória persistente entre sessões para agentes de código. Um binário, sem da
 
 ## Onde está o quê
 
-- Desenho e decisões: `docs/design/2026-10-05-ai-mem-design.md`
+- Desenho e decisões: `docs/design/2026-10-05-shibaox-mem-design.md`
 - Decisões medidas e desvios ao desenho: `docs/adr/` (ler o mais recente antes de mexer no esquema ou na recuperação)
 
 ## Comandos
@@ -16,7 +20,7 @@ Memória persistente entre sessões para agentes de código. Um binário, sem da
 - `bun run check` — typecheck, lint e testes
 - `bun run build` — compila os cinco binários para `dist/`
 - `bun run format` — formata e corrige lint
-- `ai-mem install claude-code` importa as memórias do claude-mem e retira-o (com confirmação); `ai-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
+- `shibaox-mem install claude-code` importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
 
 O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 

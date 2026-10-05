@@ -30,10 +30,10 @@ let commands: string[][];
 let hostCliWorks: boolean;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "ai-mem-install-"));
+  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-"));
   mkdirSync(join(home, ".claude"));
   settingsPath = join(home, ".claude", "settings.json");
-  dataDir = join(home, ".ai-mem");
+  dataDir = join(home, ".shibaox-mem");
   commands = [];
   hostCliWorks = true;
 });
@@ -41,7 +41,7 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
-const BIN = "/opt/ai-mem/bin/ai-mem";
+const BIN = "/opt/shibaox-mem/bin/shibaox-mem";
 const context = (binaryPath = BIN): InstallContext => ({
   settingsPath,
   dataDir,
@@ -112,7 +112,7 @@ describe("install claude-code", () => {
   });
 
   test("installing a binary at a new path replaces the old entries", () => {
-    installClaudeCode(context("/old/place/ai-mem"));
+    installClaudeCode(context("/old/place/shibaox-mem"));
     installClaudeCode(context());
     const text = readFileSync(settingsPath, "utf8");
     expect(text).not.toContain("/old/place");
@@ -160,8 +160,8 @@ describe("install claude-code", () => {
   test("registers the MCP server through the host's own command", () => {
     const result = installClaudeCode(context());
     expect(commands).toEqual([
-      ["claude", "mcp", "remove", "--scope", "user", "ai-mem"],
-      ["claude", "mcp", "add", "--scope", "user", "ai-mem", "--", BIN, "mcp"],
+      ["claude", "mcp", "remove", "--scope", "user", "shibaox-mem"],
+      ["claude", "mcp", "add", "--scope", "user", "shibaox-mem", "--", BIN, "mcp"],
     ]);
     expect(result.mcp).toBe("registered");
   });
@@ -171,7 +171,9 @@ describe("install claude-code", () => {
     const result = installClaudeCode(context());
     expect(result.changed).toBe(true);
     expect(result.mcp).toBe("manual");
-    expect(result.mcpCommand.join(" ")).toBe(`claude mcp add --scope user ai-mem -- ${BIN} mcp`);
+    expect(result.mcpCommand.join(" ")).toBe(
+      `claude mcp add --scope user shibaox-mem -- ${BIN} mcp`,
+    );
   });
 });
 
@@ -222,12 +224,12 @@ describe("uninstall claude-code", () => {
   test("unregisters the MCP server and forgets the receipt, but keeps the memories", () => {
     installClaudeCode(context());
     mkdirSync(dataDir, { recursive: true });
-    writeFileSync(join(dataDir, "ai-mem.db"), "data");
+    writeFileSync(join(dataDir, "shibaox-mem.db"), "data");
     commands = [];
     uninstallClaudeCode(context());
-    expect(commands).toEqual([["claude", "mcp", "remove", "--scope", "user", "ai-mem"]]);
+    expect(commands).toEqual([["claude", "mcp", "remove", "--scope", "user", "shibaox-mem"]]);
     expect(receipts()).toEqual([]);
-    expect(readFileSync(join(dataDir, "ai-mem.db"), "utf8")).toBe("data");
+    expect(readFileSync(join(dataDir, "shibaox-mem.db"), "utf8")).toBe("data");
   });
 });
 
@@ -235,7 +237,7 @@ describe("install and uninstall, over time", () => {
   // Reinstalling happens on every upgrade. What the user did to the file in between is theirs.
   test("changes made between two installs survive an uninstall", () => {
     writeFileSync(settingsPath, JSON.stringify({ model: "opus" }, null, 2));
-    installClaudeCode(context("/old/place/ai-mem"));
+    installClaudeCode(context("/old/place/shibaox-mem"));
     const edited = settings();
     edited.permissions = { allow: ["Bash(npm test:*)"] };
     writeFileSync(settingsPath, JSON.stringify(edited, null, 2));
@@ -245,8 +247,8 @@ describe("install and uninstall, over time", () => {
     expect(settings()).toEqual({ model: "opus", permissions: { allow: ["Bash(npm test:*)"] } });
   });
 
-  test("a file ai-mem created is not deleted once the user has put settings in it", () => {
-    installClaudeCode(context("/old/place/ai-mem"));
+  test("a file shibaox-mem created is not deleted once the user has put settings in it", () => {
+    installClaudeCode(context("/old/place/shibaox-mem"));
     const edited = settings();
     edited.model = "sonnet";
     writeFileSync(settingsPath, JSON.stringify(edited, null, 2));
@@ -259,7 +261,7 @@ describe("install and uninstall, over time", () => {
   test("reinstalling over an untouched install still restores the original exactly", () => {
     const original = '{\n    "model":   "opus"\n}';
     writeFileSync(settingsPath, original);
-    installClaudeCode(context("/old/place/ai-mem"));
+    installClaudeCode(context("/old/place/shibaox-mem"));
     installClaudeCode(context());
     expect(uninstallClaudeCode(context()).settings).toBe("restored");
     expect(readFileSync(settingsPath, "utf8")).toBe(original);
@@ -307,18 +309,18 @@ describe("install and uninstall, over time", () => {
 
 describe("stageBinary", () => {
   test("copies the binary to a stable, executable place inside the data directory", () => {
-    const source = join(home, "downloaded-ai-mem");
+    const source = join(home, "downloaded-shibaox-mem");
     writeFileSync(source, "#!/bin/sh\necho hi\n");
     const staged = stageBinary(source, dataDir);
     expect(staged).toBe(
-      join(dataDir, "bin", process.platform === "win32" ? "ai-mem.exe" : "ai-mem"),
+      join(dataDir, "bin", process.platform === "win32" ? "shibaox-mem.exe" : "shibaox-mem"),
     );
     expect(readFileSync(staged, "utf8")).toBe("#!/bin/sh\necho hi\n");
     if (process.platform !== "win32") expect(statSync(staged).mode & 0o111).not.toBe(0);
   });
 
   test("a binary already in place is left alone", () => {
-    const source = join(home, "downloaded-ai-mem");
+    const source = join(home, "downloaded-shibaox-mem");
     writeFileSync(source, "v1");
     const staged = stageBinary(source, dataDir);
     expect(stageBinary(staged, dataDir)).toBe(staged);
@@ -326,18 +328,18 @@ describe("stageBinary", () => {
   });
 });
 
-describe("ai-mem install, with claude-mem present", () => {
+describe("shibaox-mem install, with claude-mem present", () => {
   const env = () => ({
     HOME: home,
     CLAUDE_CONFIG_DIR: join(home, ".claude"),
-    AI_MEM_DATA_DIR: dataDir,
-    AI_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
+    SHIBAOX_MEM_DATA_DIR: dataDir,
+    SHIBAOX_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
     PATH: "/nonexistent",
   });
   let binary: string;
 
   beforeEach(() => {
-    binary = join(home, "ai-mem");
+    binary = join(home, "shibaox-mem");
     writeFileSync(binary, "");
     mkdirSync(join(home, ".claude-mem"));
     makeClaudeMemDb(join(home, ".claude-mem", "claude-mem.db"), [
@@ -419,7 +421,7 @@ describe("ai-mem install, with claude-mem present", () => {
       "--keep-claude-mem",
     );
     expect(result.exitCode).toBe(0);
-    expect(existsSync(join(dataDir, "ai-mem.db"))).toBe(false);
+    expect(existsSync(join(dataDir, "shibaox-mem.db"))).toBe(false);
   });
 
   test("installing again does not import again", async () => {
@@ -444,11 +446,11 @@ describe("ai-mem install, with claude-mem present", () => {
   });
 });
 
-describe("ai-mem import claude-mem", () => {
+describe("shibaox-mem import claude-mem", () => {
   const env = () => ({
     HOME: home,
-    AI_MEM_DATA_DIR: dataDir,
-    AI_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
+    SHIBAOX_MEM_DATA_DIR: dataDir,
+    SHIBAOX_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
   });
 
   test("imports from the default location and reports", async () => {
@@ -481,17 +483,17 @@ describe("ai-mem import claude-mem", () => {
   });
 });
 
-describe("ai-mem install / uninstall", () => {
+describe("shibaox-mem install / uninstall", () => {
   // PATH is emptied so that the host's real command can never run from a test.
   const env = () => ({
     HOME: home,
     CLAUDE_CONFIG_DIR: join(home, ".claude"),
-    AI_MEM_DATA_DIR: dataDir,
+    SHIBAOX_MEM_DATA_DIR: dataDir,
     PATH: "/nonexistent",
   });
 
   test("installs with an explicit binary, then uninstalls cleanly", async () => {
-    const binary = join(home, "ai-mem");
+    const binary = join(home, "shibaox-mem");
     writeFileSync(binary, "");
     const original = '{\n  "model": "opus"\n}\n';
     writeFileSync(settingsPath, original);
@@ -505,7 +507,7 @@ describe("ai-mem install / uninstall", () => {
     expect(installed.stderr).toBe("");
     expect(installed.exitCode).toBe(0);
     expect(installed.stdout).toContain(settingsPath);
-    expect(installed.stdout).toContain(`claude mcp add --scope user ai-mem -- ${binary} mcp`);
+    expect(installed.stdout).toContain(`claude mcp add --scope user shibaox-mem -- ${binary} mcp`);
     expect(settings().hooks.Stop[0].hooks[0]).toEqual({
       type: "command",
       command: binary,

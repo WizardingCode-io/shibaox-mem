@@ -124,7 +124,7 @@ export async function run(argv: string[]): Promise<number> {
       );
     }
     default:
-      process.stderr.write(`ai-mem: unknown spike "${name ?? ""}"\n`);
+      process.stderr.write(`shibaox-mem: unknown spike "${name ?? ""}"\n`);
       return EXIT_USAGE;
   }
 }

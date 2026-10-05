@@ -8,7 +8,7 @@ const MAX_TURNS = 50;
 const MAX_MS = 30_000;
 
 /**
- * `ai-mem distill`: turns queued turns into memories. Hooks start it in the
+ * `shibaox-mem distill`: turns queued turns into memories. Hooks start it in the
  * background; it can also be run by hand. Only one instance works at a time.
  */
 export async function run(): Promise<number> {
@@ -25,7 +25,9 @@ export async function run(): Promise<number> {
     return 0;
   } catch (error) {
     logError("distill", error);
-    process.stderr.write(`ai-mem: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 1;
   } finally {
     db?.close();

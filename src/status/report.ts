@@ -16,7 +16,7 @@ export interface StatusReport {
   turns: { distilled: number; skipped: number; failed: number; queued: number };
   hooks: { latency: Latency[]; runs: number; errors: number };
   judge: string;
-  /** Requests ai-mem itself made to a model. The heuristic judge makes none. */
+  /** Requests shibaox-mem itself made to a model. The heuristic judge makes none. */
   modelCalls: number;
   dataDir: string;
 }
@@ -82,7 +82,7 @@ export function statusReport(
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export function formatStatus(report: StatusReport): string {
-  const lines = [`ai-mem ${report.version}`];
+  const lines = [`shibaox-mem ${report.version}`];
   const { memories, turns, hooks } = report;
   const empty =
     report.project === null ||
@@ -110,7 +110,7 @@ export function formatStatus(report: StatusReport): string {
     );
   }
   lines.push(
-    `judge     ${report.judge}, local · model calls made by ai-mem: ${report.modelCalls}`,
+    `judge     ${report.judge}, local · model calls made by shibaox-mem: ${report.modelCalls}`,
     `data      ${report.dataDir}`,
   );
   return `${lines.join("\n")}\n`;

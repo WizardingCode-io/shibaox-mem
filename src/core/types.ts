@@ -1,6 +1,6 @@
 export type AgentId = "claude-code" | "codex" | "cursor" | "gemini" | "opencode";
 
-/** The four moments ai-mem acts on, whatever each host agent calls them. */
+/** The four moments shibaox-mem acts on, whatever each host agent calls them. */
 export type HookEvent = "session-start" | "prompt" | "turn-end" | "session-end";
 
 export const MEMORY_KINDS = [

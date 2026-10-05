@@ -1,8 +1,16 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-/** Where all of ai-mem's state lives. Never inside a host agent's plugin directory. */
+const set = (value: string | undefined): value is string => value !== undefined && value !== "";
+
+/**
+ * Where all of shibaox-mem's state lives: `~/.shibaox/mem`, the memory product's corner
+ * of the brand's home. Never inside a host agent's plugin directory, which is deleted
+ * on uninstall. `SHIBAOX_HOME` moves the brand's home; `SHIBAOX_MEM_DATA_DIR` moves
+ * only this product.
+ */
 export function defaultDataDir(env: Record<string, string | undefined> = process.env): string {
-  const override = env.AI_MEM_DATA_DIR;
-  return override !== undefined && override !== "" ? override : join(homedir(), ".ai-mem");
+  if (set(env.SHIBAOX_MEM_DATA_DIR)) return env.SHIBAOX_MEM_DATA_DIR;
+  const home = set(env.SHIBAOX_HOME) ? env.SHIBAOX_HOME : join(homedir(), ".shibaox");
+  return join(home, "mem");
 }

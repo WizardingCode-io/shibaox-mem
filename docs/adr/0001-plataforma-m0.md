@@ -6,7 +6,7 @@ Data: 2026-10-05 · Estado: aceite para macOS arm64; **pendente de CI** nas outr
 
 O desenho assenta em cinco apostas de plataforma: um binário compilado com Bun arranca depressa o suficiente para correr em cada prompt; o FTS5 existe em todos os alvos; vários processos curtos podem escrever no mesmo ficheiro SQLite; um processo filho destacado sobrevive ao hook; e o SDK oficial de MCP funciona dentro do binário. Este ADR regista o que foi medido.
 
-Todas as medições abaixo foram feitas com o **binário compilado** (`dist/ai-mem-darwin-arm64`, Bun 1.4.2, macOS 26 arm64) através de `ai-mem __spike all`.
+Todas as medições abaixo foram feitas com o **binário compilado** (`dist/shibaox-mem-darwin-arm64`, Bun 1.4.2, macOS 26 arm64) através de `shibaox-mem __spike all`.
 
 ## Resultados
 
@@ -33,7 +33,7 @@ Todas as medições abaixo foram feitas com o **binário compilado** (`dist/ai-m
 
 ## Contrato real dos hooks do Claude Code 2.1.289
 
-Capturado com um hook de registo (`ai-mem __spike log-payload`) em sessões `claude -p`. Fixtures sanitizadas em `tests/fixtures/claude-code/`.
+Capturado com um hook de registo (`shibaox-mem __spike log-payload`) em sessões `claude -p`. Fixtures sanitizadas em `tests/fixtures/claude-code/`.
 
 | Evento | Campos observados |
 |---|---|

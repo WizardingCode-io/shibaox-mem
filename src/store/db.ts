@@ -16,22 +16,22 @@ export interface Migration {
 export const MIGRATIONS: readonly Migration[] = [{ version: 1, name: "init", sql: init }];
 export const LATEST_VERSION = MIGRATIONS.length;
 
-export const DB_FILE = "ai-mem.db";
+export const DB_FILE = "shibaox-mem.db";
 const BACKUPS_DIR = "backups";
 const BACKUPS_KEPT = 2;
 
-/** The database was written by a newer ai-mem. Callers must leave it alone. */
+/** The database was written by a newer shibaox-mem. Callers must leave it alone. */
 export class SchemaTooNewError extends Error {
   constructor(found: number, supported: number) {
     super(
-      `database schema version ${found} is newer than this ai-mem supports (${supported}); upgrade ai-mem`,
+      `database schema version ${found} is newer than this shibaox-mem supports (${supported}); upgrade shibaox-mem`,
     );
     this.name = "SchemaTooNewError";
   }
 }
 
 export interface OpenOptions {
-  /** Defaults to AI_MEM_DATA_DIR, then ~/.ai-mem. */
+  /** Defaults to SHIBAOX_MEM_DATA_DIR, then ~/.shibaox/mem. */
   dataDir?: string;
   /** How long a statement waits for another process's lock. Keep it below the caller's own deadline. */
   busyTimeoutMs: number;
@@ -51,7 +51,7 @@ function backup(db: Db, dir: string, version: number): void {
   const backups = join(dir, BACKUPS_DIR);
   mkdirSync(backups, { recursive: true, mode: 0o700 });
   // Timestamp first, so that sorting by name is sorting by age.
-  const target = join(backups, `ai-mem-${Date.now()}-v${version}.db`);
+  const target = join(backups, `shibaox-mem-${Date.now()}-v${version}.db`);
   db.run(`VACUUM INTO '${target.replaceAll("'", "''")}'`);
   restrict(target, 0o600);
   const old = readdirSync(backups)

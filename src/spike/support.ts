@@ -11,7 +11,7 @@ export interface SpikeResult {
 }
 
 export async function withTempDir<T>(fn: (dir: string) => T | Promise<T>): Promise<T> {
-  const dir = mkdtempSync(join(tmpdir(), "ai-mem-spike-"));
+  const dir = mkdtempSync(join(tmpdir(), "shibaox-mem-spike-"));
   try {
     return await fn(dir);
   } finally {

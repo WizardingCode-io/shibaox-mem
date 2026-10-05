@@ -1,8 +1,8 @@
 {
-  "name": "ai-mem",
+  "name": "shibaox-mem",
   "version": "0.0.0",
   "private": true,
-  "description": "Persistent cross-session memory for coding agents. No daemon, no generative LLM, local by default.",
+  "description": "shibaox-mem: persistent cross-session memory for coding agents. One binary, no daemon, no generative LLM, local by default.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {

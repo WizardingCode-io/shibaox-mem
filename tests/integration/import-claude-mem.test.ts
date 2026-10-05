@@ -14,7 +14,7 @@ let source: string;
 const NOW = Date.UTC(2026, 9, 5);
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-import-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-import-")));
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
   source = join(base, "claude-mem.db");
 });

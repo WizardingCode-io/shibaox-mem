@@ -5,19 +5,19 @@ import { EXIT_USAGE } from "../exit.ts";
 
 const SOURCES = ["claude-mem"];
 
-/** `ai-mem import claude-mem [--db <path>]`: brings another tool's memories in. Safe to run again. */
+/** `shibaox-mem import claude-mem [--db <path>]`: brings another tool's memories in. Safe to run again. */
 export function run(argv: string[]): number {
   const [source, ...rest] = argv;
   if (source === undefined || !SOURCES.includes(source)) {
     process.stderr.write(
-      `ai-mem import: unknown source "${source ?? ""}". Supported: ${SOURCES.join(", ")}\nUsage: ai-mem import claude-mem [--db <path>]\n`,
+      `shibaox-mem import: unknown source "${source ?? ""}". Supported: ${SOURCES.join(", ")}\nUsage: shibaox-mem import claude-mem [--db <path>]\n`,
     );
     return EXIT_USAGE;
   }
   const flag = rest.indexOf("--db");
   const database = flag === -1 ? join(claudeMemDir(), "claude-mem.db") : (rest[flag + 1] ?? "");
   if (!existsSync(database)) {
-    process.stderr.write(`ai-mem import: no claude-mem database at ${database}\n`);
+    process.stderr.write(`shibaox-mem import: no claude-mem database at ${database}\n`);
     return 1;
   }
   try {
@@ -26,7 +26,7 @@ export function run(argv: string[]): number {
     return 0;
   } catch (error) {
     process.stderr.write(
-      `ai-mem import: ${error instanceof Error ? error.message : String(error)}\n`,
+      `shibaox-mem import: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

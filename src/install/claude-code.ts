@@ -12,7 +12,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-// Installs ai-mem into Claude Code's user settings and removes it again.
+// Installs shibaox-mem into Claude Code's user settings and removes it again.
 //
 // The settings file belongs to the user. It is backed up before it is touched, only
 // entries that are recognisably ours are ever changed, and a receipt records enough
@@ -62,7 +62,7 @@ const EVENTS = [
   ["SessionEnd", "session-end"],
 ] as const;
 const HOOK_TIMEOUT_SECONDS = 5;
-const MCP_NAME = "ai-mem";
+const MCP_NAME = "shibaox-mem";
 
 type Json = Record<string, unknown>;
 
@@ -87,7 +87,7 @@ function isOurs(hook: unknown): boolean {
   if (!isObject(hook) || typeof hook.command !== "string" || !Array.isArray(hook.args))
     return false;
   return (
-    basename(hook.command).startsWith("ai-mem") &&
+    basename(hook.command).startsWith("shibaox-mem") &&
     hook.args[0] === "hook" &&
     hook.args[1] === "claude-code"
   );
@@ -166,7 +166,7 @@ function serialise(settings: Json, previous: string | null): string {
 
 function writeAtomically(path: string, text: string): void {
   const mode = existsSync(path) ? statSync(path).mode & 0o777 : 0o600;
-  const temporary = `${path}.ai-mem-new`;
+  const temporary = `${path}.shibaox-mem-new`;
   writeFileSync(temporary, text, { mode });
   renameSync(temporary, path);
 }

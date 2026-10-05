@@ -19,7 +19,7 @@ let clock: number;
 let spawned: number;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-distill-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-distill-")));
   project = join(base, "project");
   mkdirSync(project);
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
@@ -402,7 +402,7 @@ describe("distill: what must not become a memory", () => {
     expect(first?.evidence_count).toBe(1);
     expect(added?.title).toContain("retryWithBackoff");
     expect(added?.body).not.toContain("busy timeout");
-    expect(added?.body).not.toContain("ai-mem-notes");
+    expect(added?.body).not.toContain("shibaox-mem-notes");
   });
 
   function savingTurn(outcome: { content: string; is_error?: boolean }): void {
@@ -419,7 +419,7 @@ describe("distill: what must not become a memory", () => {
               {
                 type: "tool_use",
                 id: "t",
-                name: "mcp__ai-mem__memory_save",
+                name: "mcp__shibaox-mem__memory_save",
                 input: { text: "Never keep test data in staging.", kind: "gotcha" },
               },
             ],
@@ -451,7 +451,7 @@ describe("distill: what must not become a memory", () => {
   });
 
   test("if that save failed, the turn is distilled after all", async () => {
-    savingTurn({ content: "ai-mem: database is locked", is_error: true });
+    savingTurn({ content: "shibaox-mem: database is locked", is_error: true });
     await drain();
     expect(memories().map((memory) => memory.kind)).toEqual(["convention"]);
     expect(turnStates()).toEqual(["done"]);

@@ -19,7 +19,7 @@ let processes: { pid: number; command: string }[];
 let alive: Set<number>;
 
 beforeEach(() => {
-  home = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-takeover-")));
+  home = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-takeover-")));
   configDir = join(home, ".claude");
   settingsPath = join(configDir, "settings.json");
   claudeMemDir = join(home, ".claude-mem");
@@ -120,7 +120,7 @@ describe("stopClaudeMem", () => {
     running(999, "/usr/bin/node /Users/dev/other/chroma-mcp-fan-site/server.js");
     running(998, `/usr/bin/node /Users/dev/code/claude-mem-fork/scripts/worker-service.cjs`);
     running(997, "claude");
-    running(process.pid, "ai-mem install claude-code");
+    running(process.pid, "shibaox-mem install claude-code");
 
     const report = stopClaudeMem(context(), "claude-mem@thedotmack");
     expect(commands).toEqual([["claude", "plugin", "disable", "claude-mem@thedotmack"]]);

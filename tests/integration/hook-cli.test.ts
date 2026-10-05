@@ -11,14 +11,18 @@ const payload = (name: string) => readFileSync(join(FIXTURES, `${name}.json`), "
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "ai-mem-hook-cli-"));
+  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-hook-cli-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
 const hook = (input: string, ...args: string[]) =>
-  runCliWith({ input, env: { AI_MEM_DATA_DIR: dir, AI_MEM_DISTILL: "off" } }, "hook", ...args);
+  runCliWith(
+    { input, env: { SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off" } },
+    "hook",
+    ...args,
+  );
 
 function rows<T>(sql: string): T[] {
   const db = new Database(join(dir, DB_FILE), { readonly: true });
@@ -31,7 +35,7 @@ function rows<T>(sql: string): T[] {
 
 const SILENT_SUCCESS = { exitCode: 0, stdout: "", stderr: "" };
 
-describe("ai-mem hook", () => {
+describe("shibaox-mem hook", () => {
   test("a prompt payload from Claude Code is stored, silently", async () => {
     expect(await hook(payload("user-prompt-submit"), "claude-code", "prompt")).toEqual(
       SILENT_SUCCESS,
@@ -96,7 +100,7 @@ describe("ai-mem hook", () => {
     expect(await hook(payload("user-prompt-submit"), "claude-code", "prompt")).toEqual(
       SILENT_SUCCESS,
     );
-    const log = readFileSync(join(dir, "logs", "ai-mem.log"), "utf8");
+    const log = readFileSync(join(dir, "logs", "shibaox-mem.log"), "utf8");
     expect(log.trim().split("\n")).toHaveLength(1);
     expect(log).toContain("hook claude-code prompt");
     expect(log).toContain("SchemaTooNewError");
@@ -117,7 +121,7 @@ describe("ai-mem hook", () => {
       db.run("ROLLBACK");
       db.close();
     }
-    expect(readFileSync(join(dir, "logs", "ai-mem.log"), "utf8")).toContain("SQLITE_BUSY");
+    expect(readFileSync(join(dir, "logs", "shibaox-mem.log"), "utf8")).toContain("SQLITE_BUSY");
   });
 
   test("an enormous, hostile prompt is handled quickly", async () => {
@@ -135,7 +139,7 @@ describe("ai-mem hook", () => {
   test("gives up on a stdin that is never closed, silently", async () => {
     const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
     const proc = Bun.spawn([process.execPath, main, "hook", "claude-code", "prompt"], {
-      env: { ...process.env, AI_MEM_DATA_DIR: dir, AI_MEM_DISTILL: "off" },
+      env: { ...process.env, SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off" },
       stdin: "pipe",
       stdout: "pipe",
       stderr: "pipe",
@@ -155,7 +159,7 @@ describe("ai-mem hook", () => {
     const result = await runCliWith(
       {
         input: payload("user-prompt-submit"),
-        env: { AI_MEM_DATA_DIR: file, AI_MEM_DISTILL: "off" },
+        env: { SHIBAOX_MEM_DATA_DIR: file, SHIBAOX_MEM_DISTILL: "off" },
       },
       "hook",
       "claude-code",

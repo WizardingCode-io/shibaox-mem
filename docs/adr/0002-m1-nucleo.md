@@ -17,7 +17,7 @@ Binário compilado, macOS 26 arm64, Bun 1.4.2.
 | Hook de arranque de sessão com 5 000 memórias | p95 ≈ 20 ms (orçamento: 150 ms) |
 | Hook de fim de turno | p95 ≈ 16 ms (orçamento: 60 ms) |
 | Prompt hostil de 320 KB (hex) | abaixo de 1,5 s de ponta a ponta; antes da correção, mais de 20 s |
-| Sessões reais no Claude Code 2.1.289 | hooks ≤ 17 ms, 0 erros, 0 processos residentes, 0 chamadas de modelo feitas pelo ai-mem |
+| Sessões reais no Claude Code 2.1.289 | hooks ≤ 17 ms, 0 erros, 0 processos residentes, 0 chamadas de modelo feitas pelo shibaox-mem |
 | Recuperação, conjunto dourado | recall 19/24, precisão 19/21, injeções falsas 0/23 |
 | Filtro do juiz heurístico, conjunto dourado | precisão 16/16, recall 16/16 |
 

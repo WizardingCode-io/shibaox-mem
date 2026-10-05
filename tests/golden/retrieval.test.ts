@@ -22,7 +22,7 @@ let projectId: number;
 const ids = new Map<string, number>();
 
 beforeAll(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-golden-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-golden-")));
   const project = join(base, "project");
   mkdirSync(project);
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });

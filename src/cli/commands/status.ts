@@ -3,7 +3,7 @@ import { formatStatus, statusReport } from "../../status/report.ts";
 import { type Db, openExisting } from "../../store/db.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 
-/** `ai-mem status [--json]`: what is stored for this project, and how ai-mem is behaving. */
+/** `shibaox-mem status [--json]`: what is stored for this project, and how shibaox-mem is behaving. */
 export function run(argv: string[]): number {
   const dataDir = defaultDataDir();
   let db: Db | null = null;
@@ -16,7 +16,9 @@ export function run(argv: string[]): number {
     );
     return 0;
   } catch (error) {
-    process.stderr.write(`ai-mem: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 1;
   } finally {
     db?.close();

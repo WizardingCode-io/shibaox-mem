@@ -34,12 +34,12 @@ async function readStdin(): Promise<string | null> {
 }
 
 function spawnDistill(): void {
-  // AI_MEM_DISTILL=off leaves queued turns for a later run, e.g. `ai-mem distill` by hand.
-  if (process.env.AI_MEM_DISTILL !== "off") spawnDetached("distill");
+  // SHIBAOX_MEM_DISTILL=off leaves queued turns for a later run, e.g. `shibaox-mem distill` by hand.
+  if (process.env.SHIBAOX_MEM_DISTILL !== "off") spawnDetached("distill");
 }
 
 /**
- * `ai-mem hook <agent> <event>`: reads the host's payload on stdin, may print context.
+ * `shibaox-mem hook <agent> <event>`: reads the host's payload on stdin, may print context.
  *
  * Fails open, always. The host must see a successful hook whatever happens here:
  * exit code 2 would block the user's action, and stray output would be read as context.

@@ -87,7 +87,7 @@ describe("__spike", () => {
   }, 30_000);
 
   test("log-payload: stores a hook payload verbatim and stays silent", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "ai-mem-test-"));
+    const dir = mkdtempSync(join(tmpdir(), "shibaox-mem-test-"));
     try {
       const payload = '{"hook_event_name":"Stop","last_assistant_message":"feito — olá"}';
       const r = await runCliWithInput(payload, "__spike", "log-payload", dir, "Stop");

@@ -1,6 +1,6 @@
-# Plano: ai-mem — memória persistente para agentes de código
+# Plano: shibaox-mem — memória persistente para agentes de código
 
-> `ai-mem` é um nome provisório (o do diretório). Mudar de nome antes do lançamento é barato.
+> `shibaox-mem` é um nome provisório (o do diretório). Mudar de nome antes do lançamento é barato.
 
 ## Contexto
 
@@ -19,7 +19,7 @@ Medições feitas nesta máquina durante a análise:
 
 ## Regra de implementação limpa (inegociável)
 
-**O ai-mem é escrito de raiz. Não é um fork.** O claude-mem serve apenas de referência de funcionalidades e de catálogo de erros a evitar.
+**O shibaox-mem é escrito de raiz. Não é um fork.** O claude-mem serve apenas de referência de funcionalidades e de catálogo de erros a evitar.
 
 - Proibido copiar código, esquema de base de dados, prompts, textos ou nomes do claude-mem.
 - Esquema, taxonomia de memórias, formato de injeção e nomes de ferramentas são nossos.
@@ -46,14 +46,14 @@ Um binário, vários comandos, **nenhum processo residente**:
 
 | Comando | Vida do processo | Função |
 |---|---|---|
-| `ai-mem hook <agente> <evento>` | Milissegundos | Normaliza o payload do agente, grava, devolve contexto a injetar |
-| `ai-mem distill` | Curto, destacado | Drena a fila de turnos e transforma-os em memórias |
-| `ai-mem mcp` | Enquanto o agente o mantiver | Servidor MCP stdio: `memory_search`, `memory_get`, `memory_save` |
-| `ai-mem install` / `uninstall` | Pontual | Regista e remove hooks e MCP em cada agente, com recibo e backup |
-| `ai-mem doctor` / `status` | Pontual | Diagnóstico, últimas falhas, latência dos hooks, custo real dos juízos |
-| `ai-mem search` / `forget` / `export` | Pontual | Gestão manual das memórias |
-| `ai-mem ui` (M4) | Sob pedido, desliga-se quando inativo | Viewer local |
-| `ai-mem import claude-mem` (M4) | Pontual | Migra as memórias existentes do utilizador |
+| `shibaox-mem hook <agente> <evento>` | Milissegundos | Normaliza o payload do agente, grava, devolve contexto a injetar |
+| `shibaox-mem distill` | Curto, destacado | Drena a fila de turnos e transforma-os em memórias |
+| `shibaox-mem mcp` | Enquanto o agente o mantiver | Servidor MCP stdio: `memory_search`, `memory_get`, `memory_save` |
+| `shibaox-mem install` / `uninstall` | Pontual | Regista e remove hooks e MCP em cada agente, com recibo e backup |
+| `shibaox-mem doctor` / `status` | Pontual | Diagnóstico, últimas falhas, latência dos hooks, custo real dos juízos |
+| `shibaox-mem search` / `forget` / `export` | Pontual | Gestão manual das memórias |
+| `shibaox-mem ui` (M4) | Sob pedido, desliga-se quando inativo | Viewer local |
+| `shibaox-mem import claude-mem` (M4) | Pontual | Migra as memórias existentes do utilizador |
 
 ### Fluxo por turno
 
@@ -154,7 +154,7 @@ Cada marco tem o seu ciclo próprio de especificação → plano → implementa�
 
 ## M0 — Fundações
 
-Objetivo: eliminar os riscos de plataforma antes de escrever código de produto. Os spikes são comandos ocultos (`ai-mem __spike …`) que correm a partir do binário compilado.
+Objetivo: eliminar os riscos de plataforma antes de escrever código de produto. Os spikes são comandos ocultos (`shibaox-mem __spike …`) que correm a partir do binário compilado.
 
 | # | Passo | Critério de saída |
 |---|---|---|
@@ -205,13 +205,13 @@ Cada passo é feito em TDD: o teste da coluna da direita é escrito primeiro.
 - Conjunto dourado: turnos rotulados em PT e EN e pares prompt→memórias relevantes. Métricas: precisão e recall do filtro, recall@5, e taxa de injeção em prompts sem memória relevante (alvo perto de zero).
 
 **Manual, no fim de M1 (num projeto de teste, com o claude-mem desativado para não haver duas memórias a injetar):**
-1. `ai-mem install claude-code` e `ai-mem doctor` sem falhas.
+1. `shibaox-mem install claude-code` e `shibaox-mem doctor` sem falhas.
 2. Uma sessão real com três ou quatro turnos, um deles interrompido.
-3. `ai-mem status` mostra os turnos destilados e as memórias criadas.
+3. `shibaox-mem status` mostra os turnos destilados e as memórias criadas.
 4. Nova sessão: o resumo aparece no arranque; um prompt relacionado recebe memórias relevantes; um prompt não relacionado não recebe nada.
-5. Com a sessão parada, `pgrep -fl ai-mem` não devolve processos residentes.
-6. Nenhuma chamada de modelo foi feita pelo ai-mem.
-7. `ai-mem uninstall claude-code` repõe `~/.claude/settings.json` byte a byte.
+5. Com a sessão parada, `pgrep -fl shibaox-mem` não devolve processos residentes.
+6. Nenhuma chamada de modelo foi feita pelo shibaox-mem.
+7. `shibaox-mem uninstall claude-code` repõe `~/.claude/settings.json` byte a byte.
 
 ## Riscos, por gravidade
 
@@ -229,7 +229,7 @@ Cada passo é feito em TDD: o teste da coluna da direita é escrito primeiro.
 
 ## Depois da aprovação
 
-1. `git init` em `/Users/andreagroferreira/AIProjects/ai-mem` e primeiro commit com licença, `CLEAN-ROOM.md` e o documento de desenho (`docs/design/2026-10-05-ai-mem-design.md`, derivado deste plano).
+1. `git init` em `/Users/andreagroferreira/AIProjects/shibaox-mem` e primeiro commit com licença, `CLEAN-ROOM.md` e o documento de desenho (`docs/design/2026-10-05-shibaox-mem-design.md`, derivado deste plano).
 2. M0 pela ordem da tabela. Os números dos spikes podem obrigar a rever decisões; se algum falhar o critério, paro e trago-te a alternativa antes de avançar.
 3. M1 em TDD, com commits pequenos por passo.
 

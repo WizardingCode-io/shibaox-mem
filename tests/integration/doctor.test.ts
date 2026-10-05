@@ -15,9 +15,9 @@ let dataDir: string;
 let settingsPath: string;
 
 beforeEach(() => {
-  home = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-doctor-")));
+  home = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-doctor-")));
   project = join(home, "demo");
-  dataDir = join(home, ".ai-mem");
+  dataDir = join(home, ".shibaox-mem");
   mkdirSync(project);
   mkdirSync(join(home, ".claude"));
   settingsPath = join(home, ".claude", "settings.json");
@@ -29,7 +29,7 @@ afterEach(() => {
 const env = () => ({
   HOME: home,
   CLAUDE_CONFIG_DIR: join(home, ".claude"),
-  AI_MEM_DATA_DIR: dataDir,
+  SHIBAOX_MEM_DATA_DIR: dataDir,
   PATH: "/nonexistent",
 });
 const cli = (...args: string[]) => {
@@ -96,9 +96,9 @@ function installHooks(binary: string): void {
 const line = (output: string, name: string) =>
   output.split("\n").find((candidate) => candidate.includes(name)) ?? "";
 
-describe("ai-mem doctor", () => {
+describe("shibaox-mem doctor", () => {
   test("a healthy installation passes every check", async () => {
-    const binary = join(home, "ai-mem");
+    const binary = join(home, "shibaox-mem");
     writeFileSync(binary, "");
     installHooks(binary);
     seed(() => {});
@@ -115,7 +115,7 @@ describe("ai-mem doctor", () => {
     const result = await cli("doctor");
     expect(result.exitCode).toBe(0);
     expect(line(result.stdout, "Claude Code")).toStartWith("warn");
-    expect(line(result.stdout, "Claude Code")).toContain("ai-mem install claude-code");
+    expect(line(result.stdout, "Claude Code")).toContain("shibaox-mem install claude-code");
     expect(result.stdout).toContain("1 warning");
   });
 
@@ -124,16 +124,16 @@ describe("ai-mem doctor", () => {
     const result = await cli("doctor");
     expect(result.exitCode).toBe(1);
     expect(line(result.stdout, "database")).toStartWith("FAIL");
-    expect(line(result.stdout, "database")).toContain("upgrade ai-mem");
+    expect(line(result.stdout, "database")).toContain("upgrade shibaox-mem");
   });
 
   test("hooks that point at a binary that is gone fail", async () => {
-    installHooks(join(home, "removed", "ai-mem"));
+    installHooks(join(home, "removed", "shibaox-mem"));
     seed(() => {});
     const result = await cli("doctor");
     expect(result.exitCode).toBe(1);
     expect(line(result.stdout, "Claude Code")).toStartWith("FAIL");
-    expect(line(result.stdout, "Claude Code")).toContain(join(home, "removed", "ai-mem"));
+    expect(line(result.stdout, "Claude Code")).toContain(join(home, "removed", "shibaox-mem"));
   });
 
   test("turns that could not be distilled are a warning with a count", async () => {
@@ -156,14 +156,14 @@ describe("ai-mem doctor", () => {
   });
 
   test("a data directory inside a synced folder is a warning", async () => {
-    const synced = join(home, "Dropbox", "ai-mem");
-    const result = await runCliWith({ env: { ...env(), AI_MEM_DATA_DIR: synced } }, "doctor");
+    const synced = join(home, "Dropbox", "shibaox-mem");
+    const result = await runCliWith({ env: { ...env(), SHIBAOX_MEM_DATA_DIR: synced } }, "doctor");
     expect(line(result.stdout, "data directory")).toStartWith("warn");
     expect(line(result.stdout, "data directory")).toContain("synced");
   });
 });
 
-describe("ai-mem status", () => {
+describe("shibaox-mem status", () => {
   test("before anything is stored, says so", async () => {
     const result = await cli("status");
     expect(result.exitCode).toBe(0);
@@ -207,12 +207,12 @@ describe("ai-mem status", () => {
     expect(result.stderr).toBe("");
     expect(result.stdout).toBe(
       [
-        `ai-mem ${pkg.version}`,
+        `shibaox-mem ${pkg.version}`,
         `project   demo (path:${project})`,
         "memories  3 active (1 stale) · 1 superseded",
         "turns     3 distilled · 1 skipped · 1 failed · 1 queued",
         "hooks     prompt p50 10 ms, p95 19 ms · turn-end p50 4 ms, p95 4 ms · 21 runs, 1 error",
-        "judge     heuristic, local · model calls made by ai-mem: 0",
+        "judge     heuristic, local · model calls made by shibaox-mem: 0",
         `data      ${dataDir}`,
         "",
       ].join("\n"),
@@ -235,6 +235,6 @@ describe("ai-mem status", () => {
     seed((db) => db.run("PRAGMA user_version = 99"));
     const result = await cli("status");
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain("newer than this ai-mem supports");
+    expect(result.stderr).toContain("newer than this shibaox-mem supports");
   });
 });

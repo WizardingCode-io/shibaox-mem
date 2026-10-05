@@ -42,7 +42,7 @@ function generator(seed: number) {
 
 beforeAll(() => {
   binary = hostBinary();
-  base = realpathSync(mkdtempSync(join(tmpdir(), "ai-mem-perf-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-perf-")));
   dataDir = join(base, "data");
   project = join(base, "project");
   mkdirSync(project);
@@ -95,7 +95,7 @@ async function measure(
   for (let run = -1; run < RUNS; run++) {
     const result = await runBinary(binary, ["hook", "claude-code", event], {
       input: JSON.stringify({ session_id: `perf-${event}`, cwd: project, ...payload(run) }),
-      env: { AI_MEM_DATA_DIR: dataDir, AI_MEM_DISTILL: "off" },
+      env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "off" },
     });
     expect([result.exitCode, result.stderr]).toEqual([0, ""]);
     if (run >= 0) {

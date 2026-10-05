@@ -11,7 +11,7 @@ const LABEL: Record<Check["status"], string> = {
 };
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** `ai-mem doctor`: checks the installation and says what to do about anything wrong. */
+/** `shibaox-mem doctor`: checks the installation and says what to do about anything wrong. */
 export function run(): number {
   const checks = runChecks({
     dataDir: defaultDataDir(),

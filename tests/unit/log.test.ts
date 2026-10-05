@@ -6,13 +6,13 @@ import { LOG_MAX_BYTES, logError } from "../../src/util/log.ts";
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "ai-mem-log-"));
+  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-log-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const logFile = () => join(dir, "logs", "ai-mem.log");
+const logFile = () => join(dir, "logs", "shibaox-mem.log");
 
 describe("logError", () => {
   test("appends one line with a timestamp, the scope and the error", () => {

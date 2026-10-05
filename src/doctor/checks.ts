@@ -30,7 +30,7 @@ function dataDirectory(context: DoctorContext): Check {
     return {
       name,
       status: "warn",
-      detail: `${context.dataDir} is inside a synced or shared folder; SQLite files can be corrupted there. Set AI_MEM_DATA_DIR to a local path.`,
+      detail: `${context.dataDir} is inside a synced or shared folder; SQLite files can be corrupted there. Set SHIBAOX_MEM_DATA_DIR to a local path.`,
     };
   }
   if (!existsSync(context.dataDir)) {
@@ -108,7 +108,7 @@ function queue(db: Db | null, now: number): Check {
   const overdue = count("state = 'pending' AND started_at < ?", now - HOUR_MS);
   const problems: string[] = [];
   if (failed > 0) problems.push(`${failed} failed (see ${"`"}last_error${"`"} in the turns table)`);
-  if (overdue > 0) problems.push(`${overdue} waiting for over an hour; run: ai-mem distill`);
+  if (overdue > 0) problems.push(`${overdue} waiting for over an hour; run: shibaox-mem distill`);
   return problems.length > 0
     ? { name, status: "warn", detail: problems.join("; ") }
     : { name, status: "ok", detail: waiting === 0 ? "nothing queued" : `${waiting} waiting` };
@@ -127,7 +127,7 @@ function hookSpeed(db: Db | null): Check {
 
 function claudeCode(context: DoctorContext): Check {
   const name = "Claude Code";
-  const install = "run: ai-mem install claude-code";
+  const install = "run: shibaox-mem install claude-code";
   if (!existsSync(context.settingsPath)) {
     return { name, status: "warn", detail: `not installed; ${install}` };
   }

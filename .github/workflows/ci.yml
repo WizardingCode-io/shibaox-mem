@@ -52,11 +52,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-latest, file: ai-mem-darwin-arm64 }
-          - { os: macos-15-intel, file: ai-mem-darwin-x64 }
-          - { os: ubuntu-latest, file: ai-mem-linux-x64 }
-          - { os: ubuntu-24.04-arm, file: ai-mem-linux-arm64 }
-          - { os: windows-latest, file: ai-mem-windows-x64.exe }
+          - { os: macos-latest, file: shibaox-mem-darwin-arm64 }
+          - { os: macos-15-intel, file: shibaox-mem-darwin-x64 }
+          - { os: ubuntu-latest, file: shibaox-mem-linux-x64 }
+          - { os: ubuntu-24.04-arm, file: shibaox-mem-linux-arm64 }
+          - { os: windows-latest, file: shibaox-mem-windows-x64.exe }
     runs-on: ${{ matrix.os }}
     defaults:
       run:

@@ -4,7 +4,7 @@ Data: 2026-10-05 · Estado: aceite.
 
 ## Contexto
 
-Quem troca o claude-mem pelo ai-mem tem lá meses de memórias e dois sistemas a injetar contexto na mesma sessão. O `install` passa a tratar da troca: importa primeiro, retira o claude-mem depois.
+Quem troca o claude-mem pelo shibaox-mem tem lá meses de memórias e dois sistemas a injetar contexto na mesma sessão. O `install` passa a tratar da troca: importa primeiro, retira o claude-mem depois.
 
 ## O que foi decidido
 
@@ -13,7 +13,7 @@ Quem troca o claude-mem pelo ai-mem tem lá meses de memórias e dois sistemas a
 - **Tudo é importado**, menos os tipos `sensitive` e `task-boundary` e os repetidos exatos. Uma observação só com título é uma afirmação e fica. Os 13 350 resumos de sessão não são importados: o "onde ficámos" vem dos nossos turnos.
 - **Mapeamento de tipos:** bugfix→fix; feature/change/refactor→change; decision→decision (importância 3); discovery→discovery; gotcha e security_*→gotcha (3 e 4); pattern→convention; o resto→discovery. Importância 2 por omissão. A data original é mantida, por isso o decaimento por idade aplica-se.
 - **Retirar o claude-mem** = `claude plugin disable` mais parar o worker, o Chroma e os servidores MCP, identificados pelos caminhos da instalação (cache do plugin, pasta de dados), nunca por palavras. Pede confirmação num terminal; `--yes` aceita, `--keep-claude-mem` recusa, `--no-import` salta a importação. Sem terminal e sem `--yes`, só importa e avisa. Fim de input sem resposta conta como não.
-- **Idempotente:** uma marca em `meta` guarda o último id importado; correr outra vez importa só o que é novo. `ai-mem import claude-mem [--db]` existe à parte.
+- **Idempotente:** uma marca em `meta` guarda o último id importado; correr outra vez importa só o que é novo. `shibaox-mem import claude-mem [--db]` existe à parte.
 
 ## Medições (base de dados real deste utilizador, 89 530 observações)
 
