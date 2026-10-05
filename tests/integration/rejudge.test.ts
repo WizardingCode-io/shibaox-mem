@@ -223,6 +223,15 @@ describe("rejudge", () => {
     });
   });
 
+  test("an imported memory already superseded is neither judged nor counted", async () => {
+    db.run("UPDATE memories SET status = 'superseded', superseded_by = 3 WHERE id = 1");
+    const seen: string[] = [];
+    const report = await rejudge(db, { judge: scripted(TABLE, seen), now: NOW });
+    expect(seen).not.toContain("The cart total is rounded once, at the end.");
+    expect(report).toMatchObject({ judged: 3, remaining: 0 });
+    expect(rows()[0]).toMatchObject({ status: "superseded", judge: "claude-mem" });
+  });
+
   test("memories that were not imported are left alone", async () => {
     db.run("UPDATE memories SET judge = 'heuristic' WHERE id = 1");
     const seen: string[] = [];

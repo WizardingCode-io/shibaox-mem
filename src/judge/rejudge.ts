@@ -9,7 +9,8 @@ import type { DistillVerdict, Judge } from "./types.ts";
 // memory gets its own kind and importance, and what is not worth keeping is archived
 // (never deleted). A memory stays `judge = 'claude-mem'` until a TypeSafe verdict is
 // written for it, so a run picks up exactly where the last one stopped, and a memory
-// the service failed on is tried again next time.
+// the service failed on is tried again next time. Only active memories are judged: a
+// superseded one is already out of the way, and is not worth a request.
 
 export interface RejudgeOptions {
   judge: Judge;
@@ -47,7 +48,8 @@ function pending(db: Db, afterId: number, limit: number): Row[] {
   return db
     .query<Row, [string, number, number]>(
       `SELECT id, kind, title, body FROM memories
-       WHERE origin = 'imported' AND judge = ? AND id > ? ORDER BY id LIMIT ?`,
+       WHERE origin = 'imported' AND judge = ? AND status = 'active' AND id > ?
+       ORDER BY id LIMIT ?`,
     )
     .all(SOURCE_JUDGE, afterId, limit);
 }
@@ -56,7 +58,7 @@ function remaining(db: Db): number {
   return (
     db
       .query<{ n: number }, [string]>(
-        "SELECT count(*) AS n FROM memories WHERE origin = 'imported' AND judge = ?",
+        "SELECT count(*) AS n FROM memories WHERE origin = 'imported' AND judge = ? AND status = 'active'",
       )
       .get(SOURCE_JUDGE)?.n ?? 0
   );
