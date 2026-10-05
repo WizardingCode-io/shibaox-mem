@@ -234,7 +234,8 @@ describe("import claude-mem", () => {
     expect(report.imported).toBe(1200);
     expect(report.projects).toEqual({ alpha: 400, beta: 800 });
     expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM memories").get()?.n).toBe(1200);
-  });
+    // 1 200 inserts with their index entries: seconds on a shared CI runner, not a hang.
+  }, 60_000);
 
   test("imported memories can be found", () => {
     run([
