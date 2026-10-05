@@ -23,6 +23,7 @@ Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; v
 - `shibaox-mem install [claude-code|codex|cursor|gemini|opencode]` instala para um agente; sem agente, para todos os que encontrar. No Claude Code importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
 - Adaptadores em `src/adapters/<agente>/`; instaladores em `src/install/`. O desenho por agente e o que foi ou não confirmado em sessões reais está no ADR 0006.
 - `shibaox-mem rejudge [--limit n] [--concurrency n]` pede ao TypeSafe tipo e importância das memórias importadas; o que não vale guardar fica `archived` (nunca apagado). Retomável; precisa de chave.
+- `shibaox-mem ui [--port n] [--no-open]` abre o viewer (loopback, token na URL, desliga-se inativo). `shibaox-mem compact [--dry-run]` poda registos antigos; nunca apaga memórias.
 
 O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 
@@ -33,3 +34,4 @@ O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 - Nada de SDKs pesados no caminho dos hooks; usar `await import()` por comando.
 - Juízos semânticos passam pela interface `Judge` (TypeSafe opt-in, heurísticas como recurso). Regras exatas e cálculos ficam em código.
 - Imports com extensão `.ts` explícita.
+- Assets do viewer em `src/ui/assets/` viajam no binário (`with { type: "file" | "text" }`); nada sai para a rede a partir do viewer.
