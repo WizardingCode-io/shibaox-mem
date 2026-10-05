@@ -2,6 +2,7 @@ import { uninstallClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, uninstallCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { geminiContext, uninstallGemini } from "../../install/gemini.ts";
+import { opencodePluginPath, uninstallOpenCode } from "../../install/opencode.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
 import { AGENT_NAMES, SUPPORTED_AGENTS } from "./install.ts";
@@ -23,6 +24,23 @@ export function run(argv: string[]): number {
     return EXIT_USAGE;
   }
   try {
+    if (agent === "opencode") {
+      const result = uninstallOpenCode({ pluginPath: opencodePluginPath() });
+      const outcome = {
+        removed: "removed",
+        kept: "left alone (not written by shibaox-mem)",
+        absent: "was not there",
+      }[result.plugin];
+      process.stdout.write(
+        [
+          "Removed shibaox-mem from OpenCode.",
+          `  ${result.pluginPath}: ${outcome}`,
+          `Your memories are still in ${defaultDataDir()}. Delete that folder to remove them.`,
+          "",
+        ].join("\n"),
+      );
+      return 0;
+    }
     const result =
       agent === "codex"
         ? uninstallCodex(codexContext(""))

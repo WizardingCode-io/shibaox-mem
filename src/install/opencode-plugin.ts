@@ -1,0 +1,142 @@
+// The OpenCode plugin, as text: `install opencode` writes it into OpenCode's plugins
+// directory with the binary's path baked in. It runs inside OpenCode's own process, so
+// it carries no dependency of ours and does its work by running the binary.
+
+export const PLUGIN_MARKER = "@shibaox-mem-plugin";
+
+export function pluginSource(
+  binaryPath: string,
+  options: { exportFactory?: boolean } = {},
+): string {
+  const factoryExport = options.exportFactory ? "export " : "";
+  return `// shibaox-mem for OpenCode — written by \`shibaox-mem install opencode\`. ${PLUGIN_MARKER}
+// Do not edit: \`shibaox-mem uninstall opencode\` removes it, installing again rewrites it.
+
+const BINARY = ${JSON.stringify(binaryPath)};
+const TIMEOUT_MS = 5000;
+
+/** Runs the binary with JSON on stdin and returns its stdout; on any failure, nothing. */
+async function spawn(args, stdin) {
+  try {
+    const proc = Bun.spawn(args, { stdin: new TextEncoder().encode(stdin), stdout: "pipe", stderr: "ignore" });
+    const timer = setTimeout(() => proc.kill(), TIMEOUT_MS);
+    try {
+      const [out] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
+      return proc.exitCode === 0 ? out : "";
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return "";
+  }
+}
+
+const textOf = (parts) =>
+  (Array.isArray(parts) ? parts : [])
+    .filter((p) => p && p.type === "text" && typeof p.text === "string")
+    .map((p) => p.text)
+    .join("\\n");
+
+${factoryExport}function createPlugin(deps) {
+  const run = deps.run ?? spawn;
+  return async ({ directory, client }) => {
+    // Per session: the brief from session start and the notes for the current turn.
+    const sessions = new Map();
+    const state = (id) => {
+      let s = sessions.get(id);
+      if (!s) sessions.set(id, (s = { cwd: directory, brief: null, notes: null }));
+      return s;
+    };
+    const hook = (event, payload) => run([BINARY, "hook", "opencode", event], JSON.stringify(payload));
+
+    const lastTurn = async (sessionID) => {
+      const res = await client.session.messages({ path: { id: sessionID } });
+      const messages = Array.isArray(res?.data) ? res.data : res;
+      if (!Array.isArray(messages)) return null;
+      let user = null;
+      let assistant = null;
+      for (const m of messages) {
+        if (m?.info?.role === "user") { user = m; assistant = null; }
+        else if (m?.info?.role === "assistant" && user !== null) assistant = m;
+      }
+      if (user === null) return null;
+      const text = assistant === null ? "" : textOf(assistant.parts);
+      return { turnId: user.info.id ?? null, text: text === "" ? null : text };
+    };
+
+    const toolApi = deps.tool ?? (await import("@opencode-ai/plugin").then((m) => m.tool).catch(() => null));
+    const call = (name, args, ctx) =>
+      run([BINARY, "tool", name, "--project", state(ctx?.sessionID).cwd], JSON.stringify(args ?? {}));
+    const tools = toolApi === null ? undefined : {
+      memory_search: toolApi({
+        description: "Search notes saved from earlier sessions in this project; returns one heading per note.",
+        args: {
+          query: toolApi.schema.string(),
+          kind: toolApi.schema.string().optional(),
+          limit: toolApi.schema.number().int().optional(),
+        },
+        execute: (args, ctx) => call("memory_search", args, ctx),
+      }),
+      memory_get: toolApi({
+        description: "Read saved notes in full, by the ids that memory_search returned.",
+        args: { ids: toolApi.schema.array(toolApi.schema.number().int()) },
+        execute: (args, ctx) => call("memory_get", args, ctx),
+      }),
+      memory_save: toolApi({
+        description: "Save something worth knowing in later sessions: a decision and its reason, a rule the user stated, a pitfall, a fix.",
+        args: {
+          text: toolApi.schema.string(),
+          kind: toolApi.schema.enum(["decision", "fix", "gotcha", "convention", "change", "discovery"]),
+          files: toolApi.schema.array(toolApi.schema.string()).optional(),
+          importance: toolApi.schema.number().int().optional(),
+        },
+        execute: (args, ctx) => call("memory_save", args, ctx),
+      }),
+    };
+
+    return {
+      ...(tools ? { tool: tools } : {}),
+      event: async ({ event }) => {
+        try {
+          const id = event?.properties?.sessionID;
+          if (!id) return;
+          if (event.type === "session.created") {
+            const s = state(id);
+            if (typeof event.properties.info?.directory === "string") s.cwd = event.properties.info.directory;
+            const brief = await hook("session-start", { session_id: id, cwd: s.cwd, source: "startup" });
+            s.brief = brief === "" ? null : brief;
+          } else if (event.type === "session.idle") {
+            const turn = await lastTurn(id);
+            if (turn === null) return;
+            await hook("turn-end", { session_id: id, cwd: state(id).cwd, turn_id: turn.turnId, last_assistant_message: turn.text });
+          }
+        } catch {
+          // Memory must never get in the way of the session.
+        }
+      },
+      "chat.message": async (input, output) => {
+        try {
+          const id = input?.sessionID;
+          if (!id || output?.message?.role !== "user") return;
+          const prompt = textOf(output.parts);
+          if (prompt === "") return;
+          const s = state(id);
+          const notes = await hook("prompt", { session_id: id, cwd: s.cwd, turn_id: output.message.id ?? null, prompt });
+          s.notes = notes === "" ? null : notes;
+        } catch {
+          // As above.
+        }
+      },
+      "experimental.chat.system.transform": async (input, output) => {
+        const s = input?.sessionID ? sessions.get(input.sessionID) : undefined;
+        if (!s || !Array.isArray(output?.system)) return;
+        if (s.brief !== null) output.system.push(s.brief);
+        if (s.notes !== null) output.system.push(s.notes);
+      },
+    };
+  };
+}
+
+export const ShibaoxMem = createPlugin({});
+`;
+}

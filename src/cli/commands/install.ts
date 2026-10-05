@@ -7,6 +7,7 @@ import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { geminiContext, installGemini } from "../../install/gemini.ts";
 import type { InstallResult } from "../../install/hooks-file.ts";
+import { installOpenCode, opencodePluginPath } from "../../install/opencode.ts";
 import {
   describeImport,
   describeStop,
@@ -19,16 +20,17 @@ import { defaultDataDir } from "../../util/paths.ts";
 import { isCompiled } from "../../util/self.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-export const SUPPORTED_AGENTS = ["claude-code", "codex", "gemini"];
+export const SUPPORTED_AGENTS = ["claude-code", "codex", "gemini", "opencode"];
 export const AGENT_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
   codex: "Codex",
   gemini: "Gemini CLI",
+  opencode: "OpenCode",
 };
 
 const USAGE = `Usage: shibaox-mem install <agent> [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  <agent>             claude-code | codex | gemini
+  <agent>             claude-code | codex | gemini | opencode
   --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
@@ -108,6 +110,20 @@ export function run(argv: string[]): number {
     if (agent === "codex") {
       process.stdout.write(
         describeInstall(agent, installCodex(codexContext(binaryPath)), binaryPath, lines),
+      );
+      return 0;
+    }
+    if (agent === "opencode") {
+      const result = installOpenCode({ pluginPath: opencodePluginPath(), binaryPath });
+      process.stdout.write(
+        [
+          "Installed shibaox-mem for OpenCode.",
+          `  plugin: ${result.pluginPath}${result.changed ? "" : " (already up to date)"}`,
+          `  binary: ${binaryPath}`,
+          "  tools:  memory_search, memory_get, memory_save (native, no MCP server needed)",
+          "Start a new OpenCode session for it to take effect.",
+          "",
+        ].join("\n"),
       );
       return 0;
     }
