@@ -18,16 +18,25 @@ const OTHER_PROJECTS = 6;
 const OTHER_MEMORIES_EACH = 10_000;
 const RUNS = 30;
 const WINDOWS = process.platform === "win32";
+// The budgets are for a developer's machine. Shared CI runners are two to five times
+// slower and noisier, so there they only catch large regressions.
+const SLACK = process.env.CI ? 2.5 : 1;
 const BUDGET_MS = {
-  prompt: WINDOWS ? 200 : 80,
-  "session-start": WINDOWS ? 300 : 150,
-  "turn-end": WINDOWS ? 150 : 60,
+  prompt: (WINDOWS ? 200 : 80) * SLACK,
+  "session-start": (WINDOWS ? 300 : 150) * SLACK,
+  "turn-end": (WINDOWS ? 150 : 60) * SLACK,
 };
 
-const WORDS =
+const BASE_WORDS =
   "cache queue lease retry timeout migration index schema token session worker pool socket buffer parser render router handler adapter payload transcript hook judge memory branch commit merge rebase deploy build bundle binary signal process thread lock mutex pragma journal checkpoint vacuum trigger column table query cursor batch stream chunk header footer config setting flag option default override fallback breaker backoff jitter deadline budget latency throughput percentile sample metric counter gauge log trace span error warning failure crash restart shutdown startup install upgrade rollback snapshot backup restore export import".split(
     " ",
   );
+// Real text has a long tail of words. A hundred would make every word common, and
+// every search far more expensive than it is on real memories.
+const WORDS = [
+  ...BASE_WORDS,
+  ...BASE_WORDS.flatMap((a) => BASE_WORDS.slice(0, 12).map((b) => `${a}${b}`)),
+];
 
 let binary: string;
 let base: string;
