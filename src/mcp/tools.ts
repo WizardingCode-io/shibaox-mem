@@ -10,7 +10,7 @@ import { renderHeading, renderNote } from "../retrieve/render.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { insertMemory, supersede } from "../store/memories.ts";
 import { clip } from "../util/text.ts";
-import { anyOf, identifierParts } from "../util/words.ts";
+import { anyOf, searchTerms, stem } from "../util/words.ts";
 
 // What the three MCP tools do, as plain functions over a database. The server in
 // server.ts only adapts them to the protocol.
@@ -54,12 +54,14 @@ export function searchMemories(
       .sort((a, b) => prior(b, context) - prior(a, context) || b.id - a.id);
   } else {
     const terms = searchTokens(args.query).filter((token) => token.length >= 2);
-    const match = buildQuery(args.query)?.match ?? (terms.length > 0 ? anyOf(terms) : null);
+    const match =
+      buildQuery(args.query)?.match ??
+      (terms.length > 0 ? anyOf(new Set(terms.flatMap((term) => [term, stem(term)]))) : null);
     if (match === null) return "No memories match.";
     const found = db
       .query<MemoryRow & { bm25: number }, [string, number, string | null, string | null, number]>(
         `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0) AS bm25
-           FROM memories_fts JOIN memories m ON m.id = memories_fts.rowid
+           FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
           WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
             AND (? IS NULL OR m.kind = ?)
           ORDER BY bm25 LIMIT ?`,
@@ -148,14 +150,17 @@ export async function saveMemory(
     return `Already known as #${action.targetId}; counted as further evidence.`;
   }
 
-  const paths = draft.files.map((file) => file.path).join(" ");
   const id = withWrite(db, () => {
     const created = insertMemory(db, {
       projectId,
       kind: draft.kind,
       title: draft.title,
       body: draft.body,
-      terms: `${paths} ${identifierParts(`${draft.title} ${draft.body} ${paths}`)}`.trim(),
+      terms: searchTerms(
+        draft.title,
+        draft.body,
+        draft.files.map((file) => file.path),
+      ),
       importance: draft.importance,
       branch: context.branch,
       commit: null,

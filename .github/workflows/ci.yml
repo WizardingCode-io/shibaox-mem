@@ -13,8 +13,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Type check, lint and the whole test suite, including the end-to-end and latency
+  # tests, which build and drive this platform's release binary.
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2

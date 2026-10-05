@@ -50,6 +50,14 @@ describe("buildQuery", () => {
     expect(query?.match).toMatch(/^"[^"]+"( OR "[^"]+")*$/);
   });
 
+  test("also searches for the stem of an inflected word, so that other forms of it are found", () => {
+    const query = buildQuery("the queries about cached memories are slow");
+    expect(query?.match).toContain('"queries"');
+    expect(query?.match).toContain('"query"');
+    expect(query?.match).toContain('"memory"');
+    expect(query?.match).toContain('"cach"');
+  });
+
   test("bounds the number of terms", () => {
     const query = buildQuery(Array.from({ length: 200 }, (_, i) => `word${i}x`).join(" "));
     expect((query?.words.length ?? 0) + (query?.identifiers.length ?? 0)).toBeLessThanOrEqual(32);

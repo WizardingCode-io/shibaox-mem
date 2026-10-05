@@ -6,7 +6,7 @@ import type { DistillCandidate, DistillVerdict, Judge } from "../judge/types.ts"
 import { type Db, withWrite } from "../store/db.ts";
 import { insertMemory, reinforce, supersede } from "../store/memories.ts";
 import { clip } from "../util/text.ts";
-import { identifierParts } from "../util/words.ts";
+import { searchTerms } from "../util/words.ts";
 import { consolidate, type Draft } from "./consolidate.ts";
 import { DURABLE_THRESHOLD, MAX_FACTS, SAVE_THRESHOLD, TITLE_MAX_CHARS } from "./policy.ts";
 import { candidates } from "./segment.ts";
@@ -167,13 +167,16 @@ export async function distillTurn(
     if (action.type === "duplicate") {
       reinforce(db, action.targetId, turn.id, now);
     } else {
-      const paths = draft.files.map((file) => file.path).join(" ");
       const id = insertMemory(db, {
         projectId: turn.projectId,
         kind: draft.kind,
         title: draft.title,
         body: draft.body,
-        terms: `${paths} ${identifierParts(`${draft.title} ${draft.body} ${paths}`)}`.trim(),
+        terms: searchTerms(
+          draft.title,
+          draft.body,
+          draft.files.map((file) => file.path),
+        ),
         importance: draft.importance,
         branch: turn.branch,
         commit: turn.commit,

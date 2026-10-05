@@ -1,5 +1,5 @@
 import type { Db } from "../store/db.ts";
-import { anyOf } from "../util/words.ts";
+import { anyOf, stem } from "../util/words.ts";
 import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "./notes.ts";
 import { buildQuery, type Query, searchTokens } from "./query.ts";
 import { type Note, renderNote, renderNotes } from "./render.ts";
@@ -53,7 +53,7 @@ function sessionFiles(db: Db, sessionId: number): string[] {
 function hasEvidence(candidate: Candidate, query: Query, isRare: (word: string) => boolean) {
   const { row } = candidate;
   const tokens = searchTokens(`${row.title} ${row.body} ${row.terms}`);
-  const set = new Set(tokens);
+  const stems = new Set(tokens.map(stem));
   const joined = ` ${tokens.join(" ")} `;
 
   const identifiers = query.identifiers.filter((identifier) =>
@@ -61,7 +61,8 @@ function hasEvidence(candidate: Candidate, query: Query, isRare: (word: string) 
   ).length;
   if (identifiers > 0) return true;
 
-  const matched = query.words.filter((word) => set.has(searchTokens(word)[0] ?? ""));
+  // Compared by stem, so that "query" in the prompt meets "queries" in the memory.
+  const matched = query.words.filter((word) => stems.has(stem(searchTokens(word)[0] ?? "")));
   if (matched.length >= 3) return true;
   if (matched.filter(isRare).length >= 2) return true;
   return candidate.overlap > 0 && matched.length >= 1;
@@ -89,7 +90,7 @@ export function retrieveForPrompt(
   const matched = db
     .query<MemoryRow & { bm25: number }, [string, number, number, number, number]>(
       `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0) AS bm25
-         FROM memories_fts JOIN memories m ON m.id = memories_fts.rowid
+         FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
         WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active' AND ${NOT_YET_SHOWN}
         ORDER BY bm25 LIMIT ?`,
     )
@@ -115,7 +116,9 @@ export function retrieveForPrompt(
   }
   if (candidates.size === 0) return [];
 
-  // A word is rare when few of the project's memories contain it.
+  // A word is rare when few of the project's memories contain it. CROSS JOIN, here and
+  // in every full-text query, pins the join order: left to itself the planner may walk
+  // the memories and probe the index once per row, which is a hundred times slower.
   const total =
     db
       .query<{ n: number }, [number]>(
@@ -124,14 +127,15 @@ export function retrieveForPrompt(
       .get(input.projectId)?.n ?? 0;
   const rareLimit = Math.max(2, Math.ceil(total * 0.05));
   const frequency = db.query<{ n: number }, [string, number]>(
-    `SELECT count(*) AS n FROM memories_fts JOIN memories m ON m.id = memories_fts.rowid
+    `SELECT count(*) AS n FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
       WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'`,
   );
   const known = new Map<string, boolean>();
   const isRare = (word: string) => {
     let rare = known.get(word);
     if (rare === undefined) {
-      rare = (frequency.get(anyOf([word]), input.projectId)?.n ?? 0) <= rareLimit;
+      const forms = new Set([word, stem(searchTokens(word)[0] ?? word)]);
+      rare = (frequency.get(anyOf(forms), input.projectId)?.n ?? 0) <= rareLimit;
       known.set(word, rare);
     }
     return rare;

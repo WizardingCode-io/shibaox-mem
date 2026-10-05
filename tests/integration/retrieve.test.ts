@@ -12,6 +12,7 @@ import { refreshStaleness } from "../../src/retrieve/staleness.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
 import { insertMemory } from "../../src/store/memories.ts";
 import { advanceEpoch, touchSession } from "../../src/store/sessions.ts";
+import { searchTerms } from "../../src/util/words.ts";
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 9, 5, 12);
@@ -87,6 +88,26 @@ describe("retrieveForPrompt", () => {
   test("an accented word finds its unaccented form and the reverse", () => {
     const id = memory("A migração corre dentro de uma transação imediata.", "", { importance: 3 });
     expect(ids("como funciona a migracao e a transacao aqui?")).toEqual([id]);
+  });
+
+  test("a word finds its other forms: plural and singular, past and present", () => {
+    const stored = insertMemory(db, {
+      projectId,
+      kind: "gotcha",
+      title: "Cached queries are restored from the snapshot.",
+      body: "" as Redacted,
+      terms: searchTerms("Cached queries are restored from the snapshot.", "", []),
+      importance: 2,
+      branch: null,
+      commit: null,
+      origin: "manual",
+      judge: "heuristic",
+      judgeVersion: "1",
+      sourceTurnId: null,
+      files: [],
+      now: NOW,
+    });
+    expect(ids("how do I restore a query from the cache?")).toEqual([stored]);
   });
 
   test("two uncommon words are evidence; one common word is not", () => {

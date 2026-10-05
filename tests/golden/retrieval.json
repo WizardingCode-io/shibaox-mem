@@ -1,0 +1,251 @@
+{
+  "memories": [
+    {
+      "key": "busy-timeout",
+      "kind": "gotcha",
+      "title": "The pragma busy_timeout must be the first statement on a connection.",
+      "body": "Otherwise the first query fails at once with SQLITE_BUSY.",
+      "files": ["src/store/db.ts"]
+    },
+    {
+      "key": "wal-retry",
+      "kind": "fix",
+      "title": "Fixed: `PRAGMA journal_mode = WAL` does not honour busy_timeout.",
+      "body": "Processes creating the database together retry by hand in `enableWal`.",
+      "files": ["src/store/db.ts"]
+    },
+    {
+      "key": "no-mocks",
+      "kind": "convention",
+      "title": "Never mock the database in these tests.",
+      "body": "Always use a real SQLite file in a temporary directory.",
+      "files": []
+    },
+    {
+      "key": "open-at-prompt",
+      "kind": "decision",
+      "title": "Turns open at the prompt event, not at turn end.",
+      "body": "Interrupted turns never get a Stop event, so opening late loses them.",
+      "files": ["src/hooks/handle.ts"]
+    },
+    {
+      "key": "exit-code",
+      "kind": "gotcha",
+      "title": "A hook must never exit with code 2.",
+      "body": "Claude Code treats exit code 2 as a request to block the user's action.",
+      "files": ["src/cli/commands/hook.ts"]
+    },
+    {
+      "key": "baseline",
+      "kind": "decision",
+      "title": "Linux and Windows x64 builds use the baseline Bun runtime.",
+      "body": "The default runtime needs AVX2 and dies with Illegal instruction on older CPUs.",
+      "files": ["scripts/build.ts"]
+    },
+    {
+      "key": "dotenv",
+      "kind": "gotcha",
+      "title": "A compiled Bun binary loads .env from the working directory by default.",
+      "body": "The build passes --no-compile-autoload-dotenv so a hook never reads the user's secrets.",
+      "files": ["scripts/build.ts"]
+    },
+    {
+      "key": "diacritics",
+      "kind": "fix",
+      "title": "Fixed: full-text search now folds diacritics.",
+      "body": "The FTS5 table uses the unicode61 tokenizer with remove_diacritics 2.",
+      "files": ["src/store/migrations/0001_init.sql"]
+    },
+    {
+      "key": "cross-join",
+      "kind": "gotcha",
+      "title": "Full-text queries use CROSS JOIN to pin the join order.",
+      "body": "Otherwise the planner probes the FTS index once per memory row, a hundred times slower.",
+      "files": ["src/retrieve/prompt.ts"]
+    },
+    {
+      "key": "commit-style",
+      "kind": "convention",
+      "title": "Commit messages are written in English and follow conventional commits.",
+      "body": "",
+      "files": []
+    },
+    {
+      "key": "no-embeddings",
+      "kind": "decision",
+      "title": "Retrieval uses FTS5 with BM25 and no embeddings in the first version.",
+      "body": "Vectors would need a model download and an extra process; recall measurements decide later.",
+      "files": []
+    },
+    {
+      "key": "mcp-sdk",
+      "kind": "decision",
+      "title": "The MCP server uses @modelcontextprotocol/server 2.x, loaded only by the mcp command.",
+      "body": "Hooks must never pay the import cost of the SDK.",
+      "files": ["src/mcp/server.ts"]
+    },
+    {
+      "key": "redact-first",
+      "kind": "convention",
+      "title": "Text is redacted before it is cut to size.",
+      "body": "Cutting first could leave half a secret unrecognised.",
+      "files": ["src/hooks/handle.ts"]
+    },
+    {
+      "key": "drain-lease",
+      "kind": "decision",
+      "title": "Only one process drains the distill queue at a time, under a lease in the meta table.",
+      "body": "",
+      "files": ["src/store/meta.ts", "src/distill/queue.ts"]
+    },
+    {
+      "key": "pt-lingua",
+      "kind": "convention",
+      "title": "As respostas ao utilizador são sempre em português.",
+      "body": "Termos técnicos e identificadores ficam na forma original.",
+      "files": []
+    },
+    {
+      "key": "pt-importador",
+      "kind": "decision",
+      "title": "O importador do claude-mem só lê a base de dados do próprio utilizador.",
+      "body": "É interoperabilidade de dados, não reutilização de código.",
+      "files": []
+    },
+    {
+      "key": "pt-cursor",
+      "kind": "gotcha",
+      "title": "O Cursor não permite injetar contexto na submissão do prompt.",
+      "body": "Só o evento sessionStart aceita additional_context; o resto fica por MCP.",
+      "files": []
+    },
+    {
+      "key": "status-json",
+      "kind": "change",
+      "title": "The status command gained a --json flag.",
+      "body": "It prints the same fields as the table view as one JSON object.",
+      "files": ["src/cli/commands/status.ts"]
+    },
+    {
+      "key": "prompt-id",
+      "kind": "discovery",
+      "title": "Claude Code identifies a turn by prompt_id in the UserPromptSubmit and Stop payloads.",
+      "body": "The same id is written on the user lines of the transcript.",
+      "files": []
+    },
+    {
+      "key": "pending-timer",
+      "kind": "fix",
+      "title": "Fixed: a pending timer kept the process alive for ten seconds.",
+      "body": "Promise.race with Bun.sleep leaves the sleep running; the `within` helper clears the timer.",
+      "files": ["src/spike/support.ts"]
+    },
+    {
+      "key": "ts-extension",
+      "kind": "convention",
+      "title": "Imports carry an explicit .ts extension.",
+      "body": "",
+      "files": []
+    },
+    {
+      "key": "settings-backup",
+      "kind": "decision",
+      "title": "The settings file is backed up before install changes it.",
+      "body": "Uninstall restores the original bytes when nothing else changed since.",
+      "files": ["src/install/claude-code.ts"]
+    },
+    {
+      "key": "pt-strict",
+      "kind": "gotcha",
+      "title": "No macOS o Bun usa o SQLite do sistema, cuja versão varia.",
+      "body": "Por isso as tabelas não usam STRICT.",
+      "files": []
+    },
+    {
+      "key": "hook-runs",
+      "kind": "change",
+      "title": "Hook latency is recorded in the hook_runs table, without payloads.",
+      "body": "The table is pruned to the last 2000 rows after each drain.",
+      "files": []
+    }
+  ],
+  "relevant": [
+    {
+      "prompt": "why do the db tests get SQLITE_BUSY on the very first query?",
+      "expect": ["busy-timeout"]
+    },
+    { "prompt": "can I use a mock for the database in this new test?", "expect": ["no-mocks"] },
+    {
+      "prompt": "where should the turn row be created, at Stop or at UserPromptSubmit?",
+      "expect": ["open-at-prompt"]
+    },
+    {
+      "prompt": "the hook should fail with exit code 2 when the database is locked",
+      "expect": ["exit-code"]
+    },
+    {
+      "prompt": "the linux binary crashes with Illegal instruction on the CI runner",
+      "expect": ["baseline"]
+    },
+    {
+      "prompt": "why is my project's .env being read by the compiled binary?",
+      "expect": ["dotenv"]
+    },
+    {
+      "prompt": "searching for 'migracao' does not find 'migração', do we fold diacritics?",
+      "expect": ["diacritics"]
+    },
+    { "prompt": "the frequency query is very slow with many memories", "expect": ["cross-join"] },
+    { "prompt": "write the commit message for this change", "expect": ["commit-style"] },
+    {
+      "prompt": "should we add a vector index with embeddings for retrieval?",
+      "expect": ["no-embeddings"]
+    },
+    {
+      "prompt": "the hook got slower after I imported the MCP SDK at the top of main.ts",
+      "expect": ["mcp-sdk"]
+    },
+    {
+      "prompt": "I truncate the prompt to 8k and then call redact, is that right?",
+      "expect": ["redact-first"]
+    },
+    {
+      "prompt": "two distill processes ran at the same time and duplicated a memory",
+      "expect": ["drain-lease"]
+    },
+    { "prompt": "em que língua devo responder ao utilizador?", "expect": ["pt-lingua"] },
+    {
+      "prompt": "posso copiar o esquema da base de dados do claude-mem para o importador?",
+      "expect": ["pt-importador"]
+    },
+    { "prompt": "o Cursor consegue receber memórias em cada prompt?", "expect": ["pt-cursor"] },
+    {
+      "prompt": "add a --json option to the doctor command like status has",
+      "expect": ["status-json"]
+    },
+    { "prompt": "how do I match a Stop payload to its prompt?", "expect": ["prompt-id"] },
+    {
+      "prompt": "the test process hangs for ten seconds after it passes",
+      "expect": ["pending-timer"]
+    },
+    { "prompt": "should imports end in .js or .ts?", "expect": ["ts-extension"] },
+    { "prompt": "does uninstall restore my settings.json?", "expect": ["settings-backup"] },
+    { "prompt": "porque é que as tabelas não são STRICT?", "expect": ["pt-strict"] },
+    { "prompt": "where are hook timings stored?", "expect": ["hook-runs"] },
+    { "prompt": "the build should not autoload dotenv", "expect": ["dotenv"] }
+  ],
+  "unrelated": [
+    "write a haiku about autumn leaves",
+    "what's the weather like in Lisbon today?",
+    "explain how TCP slow start works",
+    "rename the variable foo to bar in utils",
+    "traduz este parágrafo para francês",
+    "add a dark mode toggle to the settings page",
+    "how do I center a div with flexbox?",
+    "bump the React version to 19",
+    "qual é a capital da Austrália?",
+    "generate a logo for the landing page",
+    "sort this list of numbers in descending order",
+    "what does the status code 418 mean?"
+  ]
+}

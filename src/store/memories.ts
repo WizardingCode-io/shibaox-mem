@@ -120,7 +120,7 @@ export function findNeighbours(
   const rows = db
     .query<{ id: number; title: string; body: string }, [string, number, number]>(
       `SELECT m.id, m.title, m.body
-         FROM memories_fts JOIN memories m ON m.id = memories_fts.rowid
+         FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
         WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
         ORDER BY bm25(memories_fts, 4.0, 1.0, 2.0)
         LIMIT ?`,

@@ -1,4 +1,6 @@
-import { anyOf, identifierParts, STOPWORDS } from "../util/words.ts";
+import { anyOf, identifierParts, STOPWORDS, searchTokens, stem } from "../util/words.ts";
+
+export { searchTokens } from "../util/words.ts";
 
 export interface Query {
   /** Meaningful plain words, lower case, in order of appearance. */
@@ -23,20 +25,6 @@ const IDENTIFIER = new RegExp(
   ].join("|"),
   "g",
 );
-
-/**
- * Splits text the way the full-text index does (`unicode61 remove_diacritics`):
- * lower case, accents folded, every run of letters and digits a token.
- */
-export function searchTokens(text: string): string[] {
-  return (
-    text
-      .normalize("NFD")
-      .replace(/\p{M}+/gu, "")
-      .toLowerCase()
-      .match(/[\p{L}\p{N}]+/gu) ?? []
-  );
-}
 
 /**
  * What to search for, given a prompt. The prompt is never used as it stands: common
@@ -67,5 +55,11 @@ export function buildQuery(prompt: string): Query | null {
   if (identifiers.length === 0 && words.length < 2) return null;
   const kept = identifiers.slice(0, MAX_TERMS);
   const keptWords = words.slice(0, MAX_TERMS - kept.length);
-  return { words: keptWords, identifiers: kept, match: anyOf([...kept, ...keptWords]) };
+  // Stems go into the search only: they find the other forms of a word.
+  const stems = keptWords.map((word) => stem(searchTokens(word)[0] ?? word));
+  return {
+    words: keptWords,
+    identifiers: kept,
+    match: anyOf(new Set([...kept, ...keptWords, ...stems])),
+  };
 }

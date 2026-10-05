@@ -34,3 +34,62 @@ export function identifierParts(text: string): string {
 export function anyOf(terms: Iterable<string>): string {
   return [...terms].map((term) => `"${term.replaceAll('"', '""')}"`).join(" OR ");
 }
+
+/**
+ * Splits text the way the full-text index does (`unicode61 remove_diacritics`):
+ * lower case, accents folded, every run of letters and digits a token.
+ */
+export function searchTokens(text: string): string[] {
+  return (
+    text
+      .normalize("NFD")
+      .replace(/\p{M}+/gu, "")
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]+/gu) ?? []
+  );
+}
+
+/**
+ * Reduces an index token to a form shared by its plural and its -ed and -ing forms,
+ * in English and (plurals only) Portuguese. Deliberately light: it conflates forms of
+ * one word and leaves the rest alone. The result is a search key, not a word.
+ */
+export function stem(token: string): string {
+  if (token.length < 5 || /\d/.test(token)) return token;
+  let s = token;
+  if (s.endsWith("ies")) s = `${s.slice(0, -3)}y`;
+  else if (s.endsWith("oes")) s = `${s.slice(0, -3)}ao`;
+  else if (/(?:ss|x|z|ch|sh)es$/.test(s)) s = s.slice(0, -2);
+  else if (s.endsWith("s") && !/(?:ss|us|is)$/.test(s)) s = s.slice(0, -1);
+
+  let cut = false;
+  if (s.length >= 7 && s.endsWith("ing")) {
+    s = s.slice(0, -3);
+    cut = true;
+  } else if (s.length >= 6 && s.endsWith("ed")) {
+    s = s.slice(0, -2);
+    cut = true;
+  }
+  // committ(ed) -> commit; "ll" and "ss" are usually part of the word itself.
+  if (cut && /([^aeiouls])\1$/.test(s)) s = s.slice(0, -1);
+  if (s.length >= 5 && s.endsWith("e")) s = s.slice(0, -1);
+  return s;
+}
+
+/**
+ * The search-only words stored beside a memory: its file paths, the parts of its
+ * camelCase identifiers, and the stems of its inflected words. A query adds the stems
+ * of its own words, so the two meet whichever form each side used.
+ */
+export function searchTerms(title: string, body: string, paths: string[]): string {
+  const text = `${title} ${body}`;
+  const terms = new Set<string>(paths);
+  for (const part of identifierParts(`${text} ${paths.join(" ")}`).split(" ")) {
+    if (part !== "") terms.add(part);
+  }
+  for (const token of searchTokens(text)) {
+    const reduced = stem(token);
+    if (reduced !== token) terms.add(reduced);
+  }
+  return [...terms].join(" ");
+}
