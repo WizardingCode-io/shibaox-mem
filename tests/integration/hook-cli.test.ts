@@ -120,6 +120,35 @@ describe("ai-mem hook", () => {
     expect(readFileSync(join(dir, "logs", "ai-mem.log"), "utf8")).toContain("SQLITE_BUSY");
   });
 
+  test("an enormous, hostile prompt is handled quickly", async () => {
+    const blob = "0123456789abcdef".repeat(20_000);
+    const input = JSON.stringify({ ...JSON.parse(payload("user-prompt-submit")), prompt: blob });
+    const started = performance.now();
+    expect(await hook(input, "claude-code", "prompt")).toEqual(SILENT_SUCCESS);
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect(rows<{ n: number }>("SELECT length(prompt) AS n FROM turns")[0]?.n).toBeLessThanOrEqual(
+      8192,
+    );
+  });
+
+  // A host that never closes the pipe must not leave the hook waiting on it.
+  test("gives up on a stdin that is never closed, silently", async () => {
+    const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
+    const proc = Bun.spawn([process.execPath, main, "hook", "claude-code", "prompt"], {
+      env: { ...process.env, AI_MEM_DATA_DIR: dir, AI_MEM_DISTILL: "off" },
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const started = performance.now();
+    const exit = await Promise.race([proc.exited, Bun.sleep(4000).then(() => "still running")]);
+    const elapsed = performance.now() - started;
+    if (exit === "still running") proc.kill();
+    expect(exit).toBe(0);
+    expect(elapsed).toBeLessThan(3000);
+    expect(await new Response(proc.stdout).text()).toBe("");
+  }, 15_000);
+
   test("an unusable data directory is still a silent success", async () => {
     const file = join(dir, "not-a-directory");
     writeFileSync(file, "");

@@ -64,6 +64,33 @@ describe("buildQuery", () => {
   });
 });
 
+describe("buildQuery on hostile input", () => {
+  // A prompt can be a pasted key, a dump or a minified file. The hook that reads it
+  // sits between the user and the model, so no input may make it slow.
+  const hex = (n: number) => "0123456789abcdef".repeat(Math.ceil(n / 16)).slice(0, n);
+  test.each([
+    ["one long run of hex", hex(200_000)],
+    ["hex in dashed groups", hex(200_000).replace(/(.{8})/g, "$1-")],
+    ["base32", "abcdefghijklmnopqrstuvwxyz234567".repeat(6250)],
+    ["base64url", "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789-_".repeat(5264)],
+    ["dotted", "a.b.c.d.e.f.g.h.".repeat(12_500)],
+    ["slashes", "ab/cd/ef/gh/".repeat(16_667)],
+    ["backticks", "`a ".repeat(60_000)],
+    ["underscores", "a_".repeat(100_000)],
+  ])("stays fast on %s", (_label, text) => {
+    const started = performance.now();
+    buildQuery(text);
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
+  test("still recognises identifiers in ordinary text", () => {
+    expect(
+      buildQuery("see src/store/db.ts and hook.ts, then call openDb with busy_timeout")
+        ?.identifiers,
+    ).toEqual(["src/store/db.ts", "hook.ts", "openDb", "busy_timeout"]);
+  });
+});
+
 describe("searchTokens", () => {
   test("splits the way the full-text index does: lower case, no diacritics, no punctuation", () => {
     expect(searchTokens("Migração do busy_timeout em src/Store/db.ts")).toEqual([

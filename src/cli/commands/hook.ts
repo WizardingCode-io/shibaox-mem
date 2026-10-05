@@ -18,6 +18,21 @@ function isHookEvent(value: string | undefined): value is HookEvent {
   return value !== undefined && value in BUSY_TIMEOUT_MS;
 }
 
+const STDIN_TIMEOUT_MS = 1500;
+
+/** The payload, or null when the host does not finish sending it in time. */
+async function readStdin(): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), STDIN_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([Bun.stdin.text(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function spawnDistill(): void {
   // AI_MEM_DISTILL=off leaves queued turns for a later run, e.g. `ai-mem distill` by hand.
   if (process.env.AI_MEM_DISTILL !== "off") spawnDetached("distill");
@@ -37,7 +52,14 @@ export async function run(argv: string[]): Promise<number> {
   try {
     const adapter = agent === undefined ? undefined : ADAPTERS[agent];
     if (adapter === undefined || !isHookEvent(event) || process.stdin.isTTY) return 0;
-    const input = adapter.parse(event, await Bun.stdin.text());
+    const payload = await readStdin();
+    if (payload === null) {
+      // The host never closed the pipe. Leaving at once matters more than this event;
+      // the pending read would otherwise keep the process alive.
+      logError(`hook ${agent} ${event}`, new Error("stdin was not closed by the host"));
+      process.exit(0);
+    }
+    const input = adapter.parse(event, payload);
     if (input === null || input.subagent) return 0;
 
     db = openDb({ busyTimeoutMs: BUSY_TIMEOUT_MS[event] });

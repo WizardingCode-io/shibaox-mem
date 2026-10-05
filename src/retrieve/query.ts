@@ -1,3 +1,4 @@
+import { clip } from "../util/text.ts";
 import { anyOf, identifierParts, STOPWORDS, searchTokens, stem } from "../util/words.ts";
 
 export { searchTokens } from "../util/words.ts";
@@ -14,14 +15,19 @@ export interface Query {
 const MAX_TERMS = 32;
 const MAX_IDENTIFIER_CHARS = 80;
 
+const MAX_PROMPT_CHARS = 4000;
+
 // One pass, leftmost match first, so a path is taken whole before its file name is seen.
+// Every repetition is bounded and every alternative can only start at the beginning of
+// a run: an unanchored `[\w.-]+` is quadratic on a long run of hex or base64, and a
+// prompt may be exactly that.
 const IDENTIFIER = new RegExp(
   [
-    "`([^`\\n]+)`", // a code span
-    "[\\w.-]+(?:/[\\w.-]+)+", // a path
-    "\\b[\\w-]+\\.(?:tsx?|jsx?|json|md|sql|py|go|rs|toml|ya?ml|sh|css|html|php|rb|java|kt|swift|cpp|c|h)\\b", // a file name
-    "\\b[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+\\b", // snake_case
-    "\\b[A-Za-z][a-z0-9]+[A-Z][A-Za-z0-9]*\\b", // camelCase
+    "`([^`\\n]{1,200})`", // a code span
+    "(?<![\\w./-])[\\w.-]{1,80}(?:/[\\w.-]{1,80}){1,20}", // a path
+    "(?<![\\w-])[\\w-]{1,80}\\.(?:tsx?|jsx?|json|md|sql|py|go|rs|toml|ya?ml|sh|css|html|php|rb|java|kt|swift|cpp|c|h)\\b", // a file name
+    "\\b[A-Za-z][A-Za-z0-9]{0,80}(?:_[A-Za-z0-9]{1,80}){1,20}\\b", // snake_case
+    "\\b[A-Za-z][a-z0-9]{1,80}[A-Z][A-Za-z0-9]{0,80}\\b", // camelCase
   ].join("|"),
   "g",
 );
@@ -33,13 +39,17 @@ const IDENTIFIER = new RegExp(
  */
 export function buildQuery(prompt: string): Query | null {
   const identifiers: string[] = [];
-  const prose = prompt.replace(IDENTIFIER, (match: string, span?: string) => {
-    const identifier = (span ?? match).trim().replace(/\.+$/, "");
-    if (/[\p{L}\p{N}]/u.test(identifier) && identifier.length <= MAX_IDENTIFIER_CHARS) {
-      if (!identifiers.includes(identifier)) identifiers.push(identifier);
-    }
-    return " ";
-  });
+  // What a prompt is about is said at its start; the rest of a long one is material.
+  const prose = clip(prompt, MAX_PROMPT_CHARS).replace(
+    IDENTIFIER,
+    (match: string, span?: string) => {
+      const identifier = (span ?? match).trim().replace(/\.+$/, "");
+      if (/[\p{L}\p{N}]/u.test(identifier) && identifier.length <= MAX_IDENTIFIER_CHARS) {
+        if (!identifiers.includes(identifier)) identifiers.push(identifier);
+      }
+      return " ";
+    },
+  );
 
   const words: string[] = [];
   const candidates = [
