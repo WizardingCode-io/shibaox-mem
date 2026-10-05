@@ -1,6 +1,6 @@
 # ADR 0001 — Resultados dos spikes de plataforma (M0)
 
-Data: 2026-10-05 · Estado: aceite para macOS arm64; **pendente de CI** nas outras quatro plataformas.
+Data: 2026-10-05 · Estado: aceite nas cinco plataformas (CI de 2026-10-05, ver fim).
 
 ## Contexto
 
@@ -55,3 +55,21 @@ Consequências para o desenho:
 
 - **Correr o CI** (`.github/workflows/ci.yml`) para repetir todos os spikes em darwin-x64, linux-x64, linux-arm64 e windows-x64. Precisa de um repositório remoto. Os critérios de Windows (arranque p95 ≤ 150 ms, processo destacado dentro de um hook real) continuam por medir.
 - **Spike 0.9** com uma chave TypeSafe. Até lá, o reranking remoto por prompt fica desligado por omissão.
+
+## Resultado do CI nas cinco plataformas (2026-10-05)
+
+Primeira execução em `WizardingCode-io/shibaox-mem`. Todas as sondas passaram; números dos runners do GitHub (máquinas partilhadas, mais lentas do que a de desenvolvimento).
+
+| Plataforma | SQLite | Arranque p95 (noop / abrir BD), ms | WAL p99 por transação, ms | Destacado | MCP | `.env` carregado |
+|---|---|---|---|---|---|---|
+| darwin-arm64 | 3.51.0 | 19,1 / 27,6 | 9,5 | sim | sim | não |
+| darwin-x64 | 3.43.2 | 22,0 / 26,6 | 25,8 | sim | sim | não |
+| linux-arm64 | 3.53.2 | 5,6 / 6,9 | 5,3 | sim | sim | não |
+| linux-x64 | 3.53.2 | 7,6 / 8,6 | 8,4 | sim | sim | não |
+| windows-x64 | 3.53.2 | 16,8 / 21,6 | 7,8 | sim | sim | não |
+
+- O orçamento de arranque (60 ms; 150 no Windows) é cumprido com folga em todas.
+- O **processo destacado sobrevive no Windows** no runner, fora de um hook real do Claude Code; esse caso continua por medir.
+- O macOS x64 do CI tem o SQLite mais antigo (3.43.2): confirma a decisão de SQL conservador.
+- O único defeito encontrado foi na limpeza do diretório temporário das sondas no Windows (EBUSY logo após fechar a BD), corrigido com repetição tolerante.
+
