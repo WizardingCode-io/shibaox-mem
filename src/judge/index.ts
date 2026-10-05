@@ -28,12 +28,16 @@ function count(db: Db, key: string, by: number): void {
  * judge whenever it cannot. Nothing leaves the machine without a key.
  */
 export function makeJudge(options: JudgeOptions): Judge {
-  const key = readTypeSafeKey(options.env ?? process.env, options.dataDir);
+  const env = options.env ?? process.env;
+  const key = readTypeSafeKey(env, options.dataDir);
   if (key === null) return heuristicJudge;
   const { db } = options;
+  // Tests and, one day, a managed service stand in for the public endpoint.
+  const endpoint = env.SHIBAOX_MEM_TYPESAFE_URL;
   const typesafe = new TypeSafeJudge({
     apiKey: key,
     ...(options.fetch ? { fetch: options.fetch } : {}),
+    ...(endpoint ? { endpoint } : {}),
     onUsage: (inputTokens) => {
       count(db, USAGE_KEYS.requests, 1);
       count(db, USAGE_KEYS.inputTokens, inputTokens);

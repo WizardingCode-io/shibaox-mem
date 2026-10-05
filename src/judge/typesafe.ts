@@ -18,6 +18,7 @@ import type {
 export interface TypeSafeJudgeOptions {
   apiKey: string;
   fetch?: typeof fetch;
+  endpoint?: string;
   /** Per attempt. */
   timeoutMs?: number;
   /** Waits between attempts; their number is the number of retries. */
@@ -70,6 +71,7 @@ export class TypeSafeJudge implements Judge {
           apiKey: this.options.apiKey,
           timeoutMs: this.timeoutMs,
           ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+          ...(this.options.endpoint ? { endpoint: this.options.endpoint } : {}),
         });
         this.options.onUsage?.(response.usage.input_tokens);
         return response.answers;

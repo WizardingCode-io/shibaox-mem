@@ -72,6 +72,22 @@ describe("makeJudge", () => {
     expect(getMeta(db, "typesafe.input_tokens")).toBe("1000");
   });
 
+  test("SHIBAOX_MEM_TYPESAFE_URL sends the requests somewhere else", async () => {
+    writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
+    const urls: string[] = [];
+    const judge = makeJudge({
+      db,
+      dataDir: dir,
+      env: { SHIBAOX_MEM_TYPESAFE_URL: "http://127.0.0.1:1/systemone" },
+      fetch: (async (url: string | URL | Request) => {
+        urls.push(String(url));
+        return new Response(JSON.stringify(okResponse));
+      }) as unknown as typeof fetch,
+    });
+    await judge.distill(input);
+    expect(urls).toEqual(["http://127.0.0.1:1/systemone"]);
+  });
+
   test("with a key the service rejects, the heuristic judge answers and the key is not tried again", async () => {
     writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
     let fetched = 0;

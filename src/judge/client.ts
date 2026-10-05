@@ -56,6 +56,8 @@ export interface ClientOptions {
   apiKey: string;
   timeoutMs: number;
   fetch?: typeof fetch;
+  /** Where to send the request; the public endpoint unless told otherwise. */
+  endpoint?: string;
 }
 
 function kindOf(status: number): ErrorKind {
@@ -76,7 +78,7 @@ export async function systemOne(
   try {
     let response: Response;
     try {
-      response = await (options.fetch ?? fetch)(ENDPOINT, {
+      response = await (options.fetch ?? fetch)(options.endpoint ?? ENDPOINT, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${options.apiKey}`,
