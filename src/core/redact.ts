@@ -28,7 +28,8 @@ interface PatternRule {
 const PATTERNS: PatternRule[] = [
   {
     rule: "private-key",
-    pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/dg,
+    // To the END line, or to the end of the text when the block was cut short.
+    pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/dg,
   },
   { rule: "anthropic-key", pattern: /\bsk-ant-[A-Za-z0-9_-]{20,}/dg },
   { rule: "openai-key", pattern: /\bsk-(?:proj-)?[A-Za-z0-9_-]{24,}/dg },
@@ -49,7 +50,9 @@ const PATTERNS: PatternRule[] = [
   { rule: "jwt", pattern: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/dg },
   {
     rule: "url-credentials",
-    pattern: /\b[a-z][a-z0-9+.-]*:\/\/([^/\s:@]*:[^/\s@]+)@/dgi,
+    // Bounded scheme: an unbounded one is quadratic on long runs of hex or base64.
+    // Greedy up to the last "@" of the authority: a password may itself contain "@".
+    pattern: /\b[a-z][a-z0-9+.-]{0,30}:\/\/([^/\s:@]*:[^/\s]+)@/dgi,
     group: 1,
   },
   {
@@ -57,7 +60,28 @@ const PATTERNS: PatternRule[] = [
     pattern: /\b(?:Bearer|Basic)[ \t]+([A-Za-z0-9._~+/=-]{16,})/dgi,
     group: 1,
   },
+  {
+    rule: "auth-header",
+    pattern: /\bAuthorization:[ \t]*[A-Za-z-]+[ \t]+([^\s"']{8,})/dgi,
+    group: 1,
+  },
+  { rule: "cookie", pattern: /\b(?:Set-)?Cookie:[ \t]*([^\n"']{8,})/dgi, group: 1 },
+  // Command lines. `-p` is lower case on purpose: `-P` is the port.
+  {
+    rule: "cli-secret",
+    pattern: /\b(?:mysql|mysqldump|mysqladmin|mariadb)\b[^\n|;&]{0,200}?\s-p([^\s"']{3,})/dg,
+    group: 1,
+  },
+  {
+    rule: "cli-secret",
+    pattern: /\bcurl\b[^\n|;&]{0,300}?\s(?:-u|--user)[ \t]+(?!\S*\/\/)([^\s"':]+:[^\s"']+)/dg,
+    group: 1,
+  },
 ];
+
+// `--password value`: the value follows a space. (`--password=value` is an assignment.)
+const CLI_FLAG =
+  /(?:^|\s)--?(?:password|passwd|pass|pwd|token|secret|api-key|apikey)[ \t]+(?!-)([^\s"']{6,})/dgi;
 
 const PRIVATE_BLOCK = /<private>[\s\S]*?(?:<\/private>|$)/dgi;
 
@@ -66,6 +90,8 @@ const ASSIGNMENT =
   /(["']?)\b([A-Za-z][A-Za-z0-9_.-]{1,60})\1[ \t]*[:=][ \t]*(["'`]?)([^\s"'`,;]{6,})\3/dg;
 
 const PASSWORD_WORDS = ["password", "passwd", "pwd", "passphrase"];
+// Matched whole, not as endings: "bypass" and "compass" are not passwords.
+const SHORT_PASSWORD_WORDS = new Set(["pass", "pw"]);
 const SECRET_WORDS = [...PASSWORD_WORDS, "secret", "token", "apikey", "credential", "credentials"];
 const KEY_QUALIFIERS = new Set([
   "api",
@@ -75,6 +101,15 @@ const KEY_QUALIFIERS = new Set([
   "auth",
   "signing",
   "encryption",
+  "app",
+  "master",
+  "session",
+  "ssh",
+  "deploy",
+  "license",
+  "hmac",
+  "jwt",
+  "webhook",
 ]);
 // Words that may follow the sensitive part of a name without changing what it holds.
 const TRAILING = new Set([
@@ -110,6 +145,7 @@ function sensitivity(name: string): Sensitivity {
   while (parts.length > 1 && TRAILING.has(parts[parts.length - 1] as string)) parts.pop();
   const last = parts[parts.length - 1];
   if (last === undefined) return null;
+  if (SHORT_PASSWORD_WORDS.has(last)) return "password";
   if (PASSWORD_WORDS.some((word) => last.endsWith(word))) return "password";
   if (last === "authorization" || SECRET_WORDS.some((word) => last.endsWith(word))) return "secret";
   const previous = parts[parts.length - 2];
@@ -159,6 +195,13 @@ function candidates(text: string, env: Record<string, string | undefined>): Secr
     if (kind === null || span === undefined) continue;
     if (looksLikeSecretValue(match[4] ?? "", kind)) {
       found.push({ rule: "assignment", start: span[0], end: span[1] });
+    }
+  }
+
+  for (const match of text.matchAll(CLI_FLAG)) {
+    const span = match.indices?.[1];
+    if (span !== undefined && looksLikeSecretValue(match[1] ?? "", "secret")) {
+      found.push({ rule: "cli-secret", start: span[0], end: span[1] });
     }
   }
 

@@ -188,6 +188,57 @@ describe("distill: from a queued turn to a memory", () => {
     ).toEqual({ files_changed: '["src/store/db.ts"]', commands: '["bun test"]' });
   });
 
+  test("a secret in a long command is removed whole, wherever the size limit falls", async () => {
+    const key = ["sk-ant-", "api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"].join("");
+    const transcript = join(base, "long.jsonl");
+    const bash = (id: string, command: string) =>
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [{ type: "tool_use", id, name: "Bash", input: { command } }],
+        },
+      });
+    writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ type: "user", promptId: "k1", message: { role: "user", content: "x" } }),
+        // The key starts before the 500th character and ends after it.
+        bash("t1", `echo ${"x".repeat(459)} && ./deploy.sh ${key}`),
+        JSON.stringify({
+          type: "user",
+          promptId: "k1",
+          message: {
+            role: "user",
+            content: [
+              {
+                type: "tool_result",
+                tool_use_id: "t1",
+                is_error: true,
+                content: `${"y".repeat(460)} DATABASE_URL=postgres://app:${"Sup3rS3cretPassw0rd"}@db/app refused`,
+              },
+            ],
+          },
+        }),
+      ].join("\n"),
+    );
+    hook("prompt", { turnId: "k1", prompt: "run the deploy script", transcriptPath: transcript });
+    hook("turn-end", { turnId: "k1", finalText: "It failed.", transcriptPath: transcript });
+    await drain();
+    const stored = db
+      .query<{ commands: string; errors: string }, []>("SELECT commands, errors FROM turns")
+      .get();
+    const text = `${stored?.commands} ${stored?.errors}`;
+    expect(text).not.toContain("sk-ant-");
+    expect(text).not.toContain("Sup3r");
+    for (const item of [
+      ...JSON.parse(stored?.commands ?? "[]"),
+      ...JSON.parse(stored?.errors ?? "[]"),
+    ]) {
+      expect(item.length).toBeLessThanOrEqual(500);
+    }
+  });
+
   test("distilling the same turn again stores nothing new", async () => {
     turn("the tests fail with a timeout", FIX);
     await drain();

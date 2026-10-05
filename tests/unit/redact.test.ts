@@ -132,6 +132,42 @@ const SECRETS: [string, string, string][] = [
   ["CLI flag", j("deploy --token=", "abcdef0123456789abcdef"), "abcdef0123456789abcdef"],
   ["HTTP header", j('curl -H "X-Api-Key: ', "abcd1234efgh5678ijkl", '"'), "abcd1234efgh5678ijkl"],
   ["Rails secret", j("SECRET_KEY_BASE=", hex(40)), hex(40)],
+  ["short password name", j("DB_PASS=", "s3cretPw-xyz"), "s3cretPw-xyz"],
+  ["pw name", j("ADMIN_PW=", "hunter2horse"), "hunter2horse"],
+  [
+    "Laravel app key",
+    j("APP_KEY=base64:", "dGhpc2lzYXNlY3JldGtleTEyMzQ1Njc4OTA="),
+    "dGhpc2lzYXNlY3JldGtleTEy",
+  ],
+  ["Rails master key", j("RAILS_MASTER_KEY=", hex(32)), hex(32)],
+  ["session key", j("SESSION_KEY=", "k9s8d7f6g5h4j3k2l1"), "k9s8d7f6g5h4"],
+  [
+    "password flag with a space",
+    j("mysqldump --user root --password ", "S3cretPw1x", " app"),
+    "S3cretPw1x",
+  ],
+  ["mysql -p", j("mysql -u root -p", "S3cretPw1x", " app_db"), "S3cretPw1x"],
+  ["curl -u", j("curl -u admin:", "S3cretPw1x", " https://api.example.com/v1"), "S3cretPw1x"],
+  [
+    "Authorization with another scheme",
+    j("Authorization: Token ", "abcdef0123456789abcdef"),
+    "abcdef0123456789",
+  ],
+  [
+    "Cookie header",
+    j("Cookie: sessionid=", "a1b2c3d4e5f6g7h8i9j0", "; theme=dark"),
+    "a1b2c3d4e5f6g7h8",
+  ],
+  [
+    "private key cut off before its end",
+    j("-----BEGIN RSA PRIVATE", " KEY-----\nMIIEpAIBAAKCAQEAxyz0123456789abcdef\nQwErTyUiOp"),
+    "MIIEpAIBAAKCAQEA",
+  ],
+  [
+    "URL password containing @",
+    j("postgres://app:", "p@ss:w0rdX9", "@db.internal:5432/app"),
+    "ss:w0rdX9",
+  ],
   ["private block", "before <private>my bank pin is 4242</private> after", "bank pin is 4242"],
   ["multi-line private block", "a\n<private>\nline one\nline two\n</private>\nb", "line one"],
   [
@@ -178,6 +214,15 @@ const HARMLESS: string[] = [
   "Set `secrets.GITHUB_TOKEN` in the workflow",
   // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell and CI syntax under test
   "token: ${{ secrets.NPM_TOKEN }}",
+  "ls -p /tmp/build",
+  "mysql -u root -p app_db",
+  "the bypass=enabled-for-admins flag",
+  "cache_key=user-profile-page",
+  "SESSION_KEY_PREFIX=sess-prod",
+  "APP_KEYBOARD=us-international",
+  "the --password flag is required",
+  "accept the cookie banner first",
+  "curl -L https://example.com/install.sh",
   "",
 ];
 

@@ -7,7 +7,9 @@ import type { TurnDetail } from "../types.ts";
 
 const DEFAULT_MAX_BYTES = 8 * 1024 * 1024;
 const MAX_ITEMS = 100;
-const MAX_ITEM_CHARS = 500;
+// Items are returned whole: the caller redacts them and only then cuts them to size.
+// This bound is only against the enormous.
+const MAX_ITEM_CHARS = 16 * 1024;
 
 const READ_TOOLS = new Set(["Read"]);
 const WRITE_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
@@ -72,7 +74,7 @@ function resultText(content: unknown): string {
 }
 
 function add(set: Set<string>, value: string | null): void {
-  if (value !== null && set.size < MAX_ITEMS) set.add(clip(value, MAX_ITEM_CHARS, "…"));
+  if (value !== null && set.size < MAX_ITEMS) set.add(clip(value, MAX_ITEM_CHARS));
 }
 
 export function readTurnDetail(

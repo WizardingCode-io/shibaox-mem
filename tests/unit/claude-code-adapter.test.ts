@@ -265,14 +265,17 @@ describe("claude-code transcript", () => {
     expect(detail.filesRead).toEqual([]);
   });
 
-  test("keeps long commands and errors within bounds", () => {
+  // Cutting is the caller's job, after redacting: a secret cut in half is no longer recognised.
+  test("returns long commands and errors whole, and bounds only the enormous", () => {
     const path = write(
       user("p1", "go"),
       toolUse("t1", "Bash", { command: `echo ${"a".repeat(5000)}` }),
       toolResult("p1", "t1", "e".repeat(5000), true),
+      toolUse("t2", "Bash", { command: "b".repeat(200_000) }),
     );
     const detail = claudeCode.readTurnDetail(path, "p1");
-    expect(detail.commands[0]?.length).toBeLessThanOrEqual(500);
-    expect(detail.errors[0]?.length).toBeLessThanOrEqual(500);
+    expect(detail.commands[0]?.length).toBe(5005);
+    expect(detail.errors[0]?.length).toBe(5000);
+    expect(detail.commands[1]?.length).toBeLessThanOrEqual(16 * 1024);
   });
 });

@@ -38,6 +38,7 @@ export interface QueuedTurn {
 const MAX_CHANGED_FILES = 10;
 const MAX_READ_FILES = 5;
 const CONTEXT_MAX_CHARS = 160;
+const DETAIL_MAX_CHARS = 500;
 const EMPTY: TurnDetail = {
   filesRead: [],
   filesChanged: [],
@@ -76,8 +77,9 @@ function readDetail(deps: DistillDeps, turn: QueuedTurn): TurnDetail {
   return {
     filesRead: relativeTo(roots, raw.filesRead),
     filesChanged: relativeTo(roots, raw.filesChanged),
-    commands: raw.commands.map((command) => redact(command)),
-    errors: raw.errors.map((error) => redact(error)),
+    // Redacted first, cut second: a secret cut in half would no longer be recognised.
+    commands: raw.commands.map((command) => clip(redact(command), DETAIL_MAX_CHARS, "…")),
+    errors: raw.errors.map((error) => clip(redact(error), DETAIL_MAX_CHARS, "…")),
     savedMemory: raw.savedMemory,
   };
 }
