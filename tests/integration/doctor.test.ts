@@ -32,11 +32,12 @@ const env = () => ({
   SHIBAOX_MEM_DATA_DIR: dataDir,
   PATH: "/nonexistent",
 });
-const cli = (...args: string[]) => {
+const cli = (...args: string[]) => cliWith({}, ...args);
+const cliWith = (extra: Record<string, string>, ...args: string[]) => {
   const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
   const proc = Bun.spawn([process.execPath, main, ...args], {
     cwd: project,
-    env: { ...process.env, ...env() },
+    env: { ...process.env, ...env(), ...extra },
     stdin: "ignore",
     stdout: "pipe",
     stderr: "pipe",
@@ -117,6 +118,48 @@ describe("shibaox-mem doctor", () => {
     expect(line(result.stdout, "Claude Code")).toStartWith("warn");
     expect(line(result.stdout, "Claude Code")).toContain("shibaox-mem install claude-code");
     expect(result.stdout).toContain("1 warning");
+  });
+
+  test("agents that are not on this machine are skipped, not warned about", async () => {
+    const result = await cli("doctor");
+    for (const name of ["Codex", "Gemini CLI", "OpenCode"]) {
+      expect(line(result.stdout, name)).toStartWith("skip");
+      expect(line(result.stdout, name)).toContain("not found on this machine");
+    }
+  });
+
+  test("an agent that is on the machine but has no shibaox-mem is a warning that says how to install", async () => {
+    const bin = join(home, "bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "codex"), "#!/bin/sh\n", { mode: 0o755 });
+    const result = await cliWith({ PATH: bin }, "doctor");
+    expect(line(result.stdout, "Codex")).toStartWith("warn");
+    expect(line(result.stdout, "Codex")).toContain("shibaox-mem install codex");
+    expect(line(result.stdout, "Gemini CLI")).toStartWith("skip");
+  });
+
+  test("agents with shibaox-mem installed are reported, whether or not their command is on PATH", async () => {
+    const binary = join(home, "shibaox-mem");
+    writeFileSync(binary, "");
+    const codexEnv = {
+      CODEX_HOME: join(home, ".codex"),
+      GEMINI_CLI_HOME: join(home, ".gemini"),
+      XDG_CONFIG_HOME: join(home, ".config"),
+    };
+    for (const agent of ["codex", "gemini", "opencode"]) {
+      const installed = await cliWith(codexEnv, "install", agent, "--binary", binary);
+      expect(installed.exitCode).toBe(0);
+    }
+    const result = await cliWith(codexEnv, "doctor");
+    for (const name of ["Codex", "Gemini CLI", "OpenCode"]) {
+      expect(line(result.stdout, name)).toStartWith("ok");
+      expect(line(result.stdout, name)).toContain(binary);
+    }
+    rmSync(binary);
+    const broken = await cliWith(codexEnv, "doctor");
+    for (const name of ["Codex", "Gemini CLI", "OpenCode"]) {
+      expect(line(broken.stdout, name)).toStartWith("FAIL");
+    }
   });
 
   test("a database from a newer version fails, and says what to do", async () => {

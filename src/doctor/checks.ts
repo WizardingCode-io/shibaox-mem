@@ -1,7 +1,11 @@
 import { Database } from "bun:sqlite";
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { HOOKED_EVENTS, inspectSettings } from "../install/claude-code.ts";
+import { CLAUDE_CODE } from "../install/claude-code.ts";
+import { CODEX } from "../install/codex.ts";
+import { GEMINI } from "../install/gemini.ts";
+import { type HostSpec, inspectHooksFile } from "../install/hooks-file.ts";
+import { PLUGIN_MARKER } from "../install/opencode-plugin.ts";
 import { Breaker } from "../judge/breaker.ts";
 import { keyFingerprint, readTypeSafeKey } from "../judge/key.ts";
 import { hookLatency } from "../status/report.ts";
@@ -17,6 +21,12 @@ export interface DoctorContext {
   dataDir: string;
   /** Claude Code's user settings.json. */
   settingsPath: string;
+  /** Where each other host keeps what `install` wrote. */
+  codexHooksPath: string;
+  geminiSettingsPath: string;
+  opencodePluginPath: string;
+  /** Whether a host's command is on this machine; null when it is not. */
+  which: (command: string) => string | null;
   now: number;
 }
 
@@ -127,27 +137,31 @@ function hookSpeed(db: Db | null): Check {
     : { name, status: "ok", detail };
 }
 
-function claudeCode(context: DoctorContext): Check {
-  const name = "Claude Code";
-  const install = "run: shibaox-mem install claude-code";
-  if (!existsSync(context.settingsPath)) {
-    return { name, status: "warn", detail: `not installed; ${install}` };
-  }
-  let found: ReturnType<typeof inspectSettings>;
+/** A host that keeps hooks in a JSON file: installed and whole, partly, pointing nowhere, or absent. */
+function hooksHost(
+  name: string,
+  spec: HostSpec,
+  path: string,
+  command: string | null,
+  context: DoctorContext,
+): Check {
+  const install = `run: shibaox-mem install ${spec.agent}`;
+  const absent = (): Check =>
+    command !== null && context.which(command) === null
+      ? { name, status: "skip", detail: `not found on this machine` }
+      : { name, status: "warn", detail: `not installed; ${install}` };
+  if (!existsSync(path)) return absent();
+  let found: ReturnType<typeof inspectHooksFile>;
   try {
-    found = inspectSettings(readFileSync(context.settingsPath, "utf8"));
+    found = inspectHooksFile(spec, readFileSync(path, "utf8"));
   } catch (error) {
     return {
       name,
       status: "warn",
-      detail:
-        error instanceof Error
-          ? error.message.replace("settings.json", context.settingsPath)
-          : String(error),
+      detail: error instanceof Error ? error.message.replace("settings.json", path) : String(error),
     };
   }
-  if (found.events.length === 0)
-    return { name, status: "warn", detail: `not installed; ${install}` };
+  if (found.events.length === 0) return absent();
   const gone = found.binaries.filter((binary) => !existsSync(binary));
   if (gone.length > 0) {
     return {
@@ -156,7 +170,9 @@ function claudeCode(context: DoctorContext): Check {
       detail: `its hooks run ${gone.join(", ")}, which does not exist; ${install}`,
     };
   }
-  const missing = HOOKED_EVENTS.filter((event) => !found.events.includes(event));
+  const missing = spec.events
+    .map(([hostEvent]) => hostEvent)
+    .filter((event) => !found.events.includes(event));
   if (missing.length > 0) {
     return {
       name,
@@ -167,7 +183,33 @@ function claudeCode(context: DoctorContext): Check {
   return { name, status: "ok", detail: `installed, running ${found.binaries.join(", ")}` };
 }
 
-/** Does not call the service: it only reads what the breaker remembers. */
+function openCode(context: DoctorContext): Check {
+  const name = "OpenCode";
+  const install = "run: shibaox-mem install opencode";
+  const path = context.opencodePluginPath;
+  let source: string | null = null;
+  try {
+    source = existsSync(path) ? readFileSync(path, "utf8") : null;
+  } catch {
+    source = null;
+  }
+  if (source === null || !source.includes(PLUGIN_MARKER)) {
+    return context.which("opencode") === null
+      ? { name, status: "skip", detail: "not found on this machine" }
+      : { name, status: "warn", detail: `not installed; ${install}` };
+  }
+  const binary = /^const BINARY = (".*");$/m.exec(source)?.[1];
+  const binaryPath = binary === undefined ? null : (JSON.parse(binary) as string);
+  if (binaryPath === null || !existsSync(binaryPath)) {
+    return {
+      name,
+      status: "fail",
+      detail: `its plugin runs ${binaryPath ?? "an unknown binary"}, which does not exist; ${install}`,
+    };
+  }
+  return { name, status: "ok", detail: `installed, running ${binaryPath}` };
+}
+
 function typeSafe(context: DoctorContext, db: Db | null): Check {
   const name = "TypeSafe";
   const key = readTypeSafeKey(process.env, context.dataDir);
@@ -213,7 +255,11 @@ export function runChecks(context: DoctorContext): Check[] {
         : queue(db, context.now),
       hookSpeed(db),
       typeSafe(context, db),
-      claudeCode(context),
+      // Claude Code is the host this started on: its absence is a warning, not a skip.
+      hooksHost("Claude Code", CLAUDE_CODE, context.settingsPath, null, context),
+      hooksHost("Codex", CODEX, context.codexHooksPath, "codex", context),
+      hooksHost("Gemini CLI", GEMINI, context.geminiSettingsPath, "gemini", context),
+      openCode(context),
     ];
   } finally {
     db?.close();

@@ -1,6 +1,9 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { type Check, runChecks } from "../../doctor/checks.ts";
+import { codexContext } from "../../install/codex.ts";
+import { geminiContext } from "../../install/gemini.ts";
+import { opencodePluginPath } from "../../install/opencode.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 
 const LABEL: Record<Check["status"], string> = {
@@ -19,6 +22,10 @@ export function run(): number {
       process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
       "settings.json",
     ),
+    codexHooksPath: codexContext("").settingsPath,
+    geminiSettingsPath: geminiContext("").settingsPath,
+    opencodePluginPath: opencodePluginPath(),
+    which: (command) => Bun.which(command),
     now: Date.now(),
   });
   const failures = checks.filter((check) => check.status === "fail").length;
