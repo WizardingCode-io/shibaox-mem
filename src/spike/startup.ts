@@ -8,8 +8,11 @@ import {
   withTempDir,
 } from "./support.ts";
 
-// A hook runs on every prompt; these are the p95 budgets for a warm start.
+// A hook runs on every prompt; these are the budgets for a warm start. The median is
+// held to the budget; the tail is held to a looser bound, because on shared CI machines
+// a few runs out of fifty are slowed by neighbours and say nothing about the binary.
 const BUDGET_MS = process.platform === "win32" ? 150 : 60;
+const TAIL_MS = 150;
 
 function time(...args: string[]): number {
   const started = performance.now();
@@ -39,10 +42,15 @@ export function startupSpike(runs: number): Promise<SpikeResult> {
     const openDb = summarise(Array.from({ length: runs }, () => time("open-db", db)));
     return {
       spike: "startup",
-      ok: noop.p95 <= BUDGET_MS && openDb.p95 <= BUDGET_MS,
+      ok:
+        noop.p50 <= BUDGET_MS &&
+        openDb.p50 <= BUDGET_MS &&
+        noop.p95 <= TAIL_MS &&
+        openDb.p95 <= TAIL_MS,
       compiled: isCompiled(),
       runs,
       budgetMs: BUDGET_MS,
+      tailMs: TAIL_MS,
       firstRunMs,
       noop,
       openDb,

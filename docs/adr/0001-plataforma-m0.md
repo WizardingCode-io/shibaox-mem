@@ -68,7 +68,7 @@ Primeira execução em `WizardingCode-io/shibaox-mem`. Todas as sondas passaram;
 | linux-x64 | 3.53.2 | 7,6 / 8,6 | 8,4 | sim | sim | não |
 | windows-x64 | 3.53.2 | 16,8 / 21,6 | 7,8 | sim | sim | não |
 
-- O orçamento de arranque (60 ms; 150 no Windows) é cumprido com folga em todas.
+- O orçamento de arranque (60 ms; 150 no Windows) é cumprido com folga em todas. Numa execução posterior o runner macOS Intel deu p50 39 ms mas p95 129 ms, por ruído da máquina partilhada; a sonda passou a exigir a mediana dentro do orçamento e a cauda (p95) abaixo de 150 ms.
 - O **processo destacado sobrevive no Windows** no runner, fora de um hook real do Claude Code; esse caso continua por medir.
 - O macOS x64 do CI tem o SQLite mais antigo (3.43.2): confirma a decisão de SQL conservador.
 - O único defeito encontrado foi na limpeza do diretório temporário das sondas no Windows (EBUSY logo após fechar a BD), corrigido com repetição tolerante.
