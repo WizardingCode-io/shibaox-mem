@@ -29,3 +29,10 @@ Quem troca o claude-mem pelo shibaox-mem tem lá meses de memórias e dois siste
 - Correr a importação com o worker do claude-mem a escrever é seguro para a fonte, mas pode ler um estado a meio; correr outra vez apanha o resto.
 - A qualidade das memórias importadas é a do claude-mem: 70% são `change`/`discovery`, muitas vezes ruidosas. A recuperação por evidência e o decaimento por idade são o que as mantém fora do caminho.
 - Parar os servidores MCP do claude-mem afeta sessões do Claude Code que estejam abertas: perdem as ferramentas `mcp-search` dele até reiniciar. As sessões continuam a funcionar.
+
+## Depois da importação real (2026-10-05)
+
+Com as 89k memórias de 72 projetos na mesma base de dados, o hook de prompt no Claude Code real demorava **300–1 000 ms** (o `doctor` apanhou-o: p95 927 ms). Causa: o índice de texto integral abrangia todos os projetos; uma consulta num projeto de 273 memórias percorria primeiro 55–67 mil linhas dos outros. O teste de desempenho não o via porque semeava um só projeto.
+
+Correção: a migração `0002` acrescenta o `project_id` como coluna do índice, e todas as consultas o levam dentro do `MATCH` (`inProject` em `src/util/words.ts`). Na base real: recuperação de 115–127 ms para 12–25 ms; hook de ponta a ponta 50–55 ms. O teste de desempenho passou a semear seis outros projetos (60k memórias) e a usar um prompt de parágrafo. A migração da base real (209 MB) demorou 3,7 s, com backup.
+
