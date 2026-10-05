@@ -59,7 +59,7 @@ As cinco falhas de recall são paráfrases sem palavras em comum com a memória.
 1. ~~Backup anterior à migração fora de lock~~ — corrigido em 2026-10-05: uma segunda ligação toma o lock de escrita antes do backup e mantém-no até ao fim das migrações; só um processo faz a atualização.
 2. **Obsolescência e branches:** uma nota ancorada num ficheiro que só existe noutro branch fica marcada como desatualizada até se voltar a esse branch.
 3. **Hosts antigos:** sem argumentos, o binário imprime a ajuda mesmo com um payload no stdin. Num Claude Code que ignore `args`, isso seria injetado como contexto. A forma exec foi verificada na versão 2.1.289; não se sabe a partir de que versão existe.
-4. **Eco por MCP:** o que o agente lê com `memory_get` e repete não é filtrado, porque o servidor MCP não conhece a sessão.
+4. ~~**Eco por MCP:** o que o agente lê com `memory_get` e repete não é filtrado, porque o servidor MCP não conhece a sessão.~~ Resolvido no M3: o servidor conhece o projeto e o momento; uma chamada acontece dentro de um turno, por isso a leitura é registada (`injections.event = 'mcp'`) nas sessões do projeto com um turno aberto nesse instante, e o eco é filtrado como o das notas injetadas.
 5. **Teste do `distill` morto a meio:** simula o estado por SQL em vez de matar um processo.
 6. **Windows:** suposições POSIX conhecidas — permissões 0600/0700 sem efeito; `rename` sobre um `.exe` ou um `settings.json` em uso; `claude.cmd` não resolvido sem shell; fins de linha CRLF convertidos; comparação de caminhos sensível a maiúsculas; `pgrep` e caminhos de URL nos testes.
 7. **Remoção de segredos:** é por regras e é falível. Uma revisão adversarial encontrou 22 formas em 29 que passavam; as mais comuns foram fechadas, outras existirão.

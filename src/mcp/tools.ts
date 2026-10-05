@@ -79,10 +79,35 @@ export function searchMemories(
   }
 
   if (rows.length === 0) return "No memories match.";
-  return rows
-    .slice(0, limit)
-    .map((row) => renderHeading(toNote(db, row)))
-    .join("\n");
+  const shown = rows.slice(0, limit);
+  recordReads(
+    db,
+    projectId,
+    shown.map((row) => row.id),
+    context.now,
+  );
+  return shown.map((row) => renderHeading(toNote(db, row))).join("\n");
+}
+
+/**
+ * Remembers that these memories were read, so that the agent repeating them is not
+ * learned back. The server does not know which session asked; it knows the project and
+ * the moment, and a tool call happens inside a turn, so the sessions of this project with
+ * a turn open right now are the ones that saw them.
+ */
+function recordReads(db: Db, projectId: number, ids: number[], now: number): void {
+  if (ids.length === 0) return;
+  withWrite(db, () => {
+    for (const id of ids) {
+      db.run(
+        `INSERT INTO injections (session_id, context_epoch, memory_id, event, tokens, at)
+         SELECT s.id, s.context_epoch, ?, 'mcp', 0, ? FROM sessions s
+          WHERE s.project_id = ?
+            AND EXISTS (SELECT 1 FROM turns t WHERE t.session_id = s.id AND t.state = 'open')`,
+        [id, now, projectId],
+      );
+    }
+  });
 }
 
 /** Returns memories in full. Being asked for by id is the one reliable sign a memory was useful. */
@@ -112,6 +137,12 @@ export function getMemories(context: ToolContext, args: { ids: number[] }): stri
   if (missing.length > 0) {
     parts.push(`Not found in this project: ${missing.map((id) => `#${id}`).join(", ")}`);
   }
+  recordReads(
+    db,
+    projectId,
+    ids.filter((id) => !missing.includes(id)),
+    now,
+  );
   return parts.join("\n");
 }
 

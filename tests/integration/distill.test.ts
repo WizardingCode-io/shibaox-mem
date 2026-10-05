@@ -10,6 +10,7 @@ import { type DistillDeps, drainQueue } from "../../src/distill/queue.ts";
 import { handleHook } from "../../src/hooks/handle.ts";
 import { heuristicJudge } from "../../src/judge/heuristic.ts";
 import type { Judge } from "../../src/judge/types.ts";
+import { getMemories, searchMemories } from "../../src/mcp/tools.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
 
 let base: string;
@@ -417,6 +418,54 @@ describe("distill: what must not become a memory", () => {
     expect(added?.title).toContain("retryWithBackoff");
     expect(added?.body).not.toContain("busy timeout");
     expect(added?.body).not.toContain("shibaox-mem-notes");
+  });
+
+  /** The MCP server does not know the session: it knows the project and the moment. */
+  function mcpContext() {
+    const projectId = db.query<{ id: number }, []>("SELECT id FROM projects").get()?.id ?? 0;
+    return { db, judge: heuristicJudge, projectId, root: project, branch: null, now: clock };
+  }
+
+  test("what the agent read itself through memory_get, mid-turn, is not learned back when it repeats it", async () => {
+    turn("the tests fail with a timeout", FIX);
+    await drain();
+    db.run("DELETE FROM turns");
+    // A second session asks something the notes do not answer, then fetches the note itself.
+    hook("prompt", {
+      sessionId: "s2",
+      turnId: "q1",
+      prompt: "give me the full note on the pragma",
+    });
+    const id = memories()[0]?.id ?? 0;
+    const read = getMemories(mcpContext(), { ids: [id] });
+    expect(read).toContain("busy timeout");
+    answer(`From memory: ${read}\nNothing to change.`);
+    await drain();
+    expect(memories()).toHaveLength(1);
+    expect(memories()[0]?.evidence_count).toBe(1);
+    expect(turnStates()).toEqual(["skipped"]);
+  });
+
+  test("a memory_search result repeated back is not learned either", async () => {
+    turn("the tests fail with a timeout", FIX);
+    await drain();
+    db.run("DELETE FROM turns");
+    hook("prompt", { sessionId: "s2", turnId: "q1", prompt: "anything about pragmas?" });
+    const found = searchMemories(mcpContext(), { query: "pragma" });
+    expect(found).toContain("busy timeout");
+    answer(`I found this: ${found}`);
+    await drain();
+    expect(memories()).toHaveLength(1);
+    expect(turnStates()).toEqual(["skipped"]);
+  });
+
+  test("a read with no turn open anywhere in the project is recorded against no session", () => {
+    turn("the tests fail with a timeout", FIX);
+    const id = memories()[0]?.id ?? 0;
+    getMemories(mcpContext(), { ids: [id] });
+    expect(db.query("SELECT count(*) AS n FROM injections WHERE event = 'mcp'").get()).toEqual({
+      n: 0,
+    });
   });
 
   function savingTurn(outcome: { content: string; is_error?: boolean }): void {
