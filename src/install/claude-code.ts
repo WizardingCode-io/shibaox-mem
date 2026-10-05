@@ -1,305 +1,66 @@
+import { basename } from "node:path";
 import {
-  chmodSync,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { basename, dirname, join } from "node:path";
+  HOOK_TIMEOUT_SECONDS,
+  type HostSpec,
+  type InstallContext,
+  type InstallResult,
+  inspectHooksFile,
+  installHooksFile,
+  MCP_NAME,
+  type UninstallResult,
+  uninstallHooksFile,
+} from "./hooks-file.ts";
 
-// Installs shibaox-mem into Claude Code's user settings and removes it again.
-//
-// The settings file belongs to the user. It is backed up before it is touched, only
-// entries that are recognisably ours are ever changed, and a receipt records enough
-// to put the file back exactly as it was.
+export type { InstallContext, InstallResult, UninstallResult } from "./hooks-file.ts";
 
-export interface InstallContext {
-  /** Claude Code's user settings.json. */
-  settingsPath: string;
-  dataDir: string;
-  /** Absolute path the hooks will execute. */
-  binaryPath: string;
-  /** Runs a host command. Must not throw: a missing command is `ok: false`. */
-  run: (command: string[]) => { ok: boolean; output: string };
-  now: () => number;
-}
+// Claude Code: ~/.claude/settings.json, hooks in exec form (`command` + `args`, no shell).
 
-export interface InstallResult {
-  settingsPath: string;
-  changed: boolean;
-  mcp: "registered" | "manual";
-  /** The command that registers the MCP server, for when it has to be run by hand. */
-  mcpCommand: string[];
-}
-
-export interface UninstallResult {
-  settingsPath: string;
-  /** restored: original bytes put back. removed: file we created deleted. edited: our entries taken out. */
-  settings: "restored" | "removed" | "edited" | "untouched";
-}
-
-interface Receipt {
-  agent: "claude-code";
-  installedAt: number;
-  binaryPath: string;
-  settingsPath: string;
-  existedBefore: boolean;
-  backupPath: string | null;
-  /** Hash of the settings file as we left it; equal means nobody changed it since. */
-  installedSha256: string;
-}
-
-/** Claude Code's event names and ours. Exec form (`command` + `args`): no shell is involved. */
-const EVENTS = [
-  ["SessionStart", "session-start"],
-  ["UserPromptSubmit", "prompt"],
-  ["Stop", "turn-end"],
-  ["SessionEnd", "session-end"],
-] as const;
-const HOOK_TIMEOUT_SECONDS = 5;
-const MCP_NAME = "shibaox-mem";
-
-type Json = Record<string, unknown>;
-
-const isObject = (value: unknown): value is Json =>
+const isObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
-const sha256 = (text: string) => new Bun.CryptoHasher("sha256").update(text).digest("hex");
-// One receipt per settings file: several Claude Code profiles may share a data directory.
-const profileKey = (settingsPath: string) => sha256(settingsPath).slice(0, 12);
-const receiptPath = (dataDir: string, settingsPath: string) =>
-  join(dataDir, "install", `claude-code-${profileKey(settingsPath)}.json`);
 
-/** The file to read and write: the target, when the settings file is a symlink into dotfiles. */
-function resolved(path: string): string {
-  try {
-    return realpathSync(path);
-  } catch {
-    return path;
-  }
-}
-
-function isOurs(hook: unknown): boolean {
-  if (!isObject(hook) || typeof hook.command !== "string" || !Array.isArray(hook.args))
-    return false;
-  return (
-    basename(hook.command).startsWith("shibaox-mem") &&
-    hook.args[0] === "hook" &&
-    hook.args[1] === "claude-code"
-  );
-}
-
-function parseSettings(path: string, text: string | null): Json {
-  if (text === null || text.trim() === "") return {};
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error(`${path} is not valid JSON; fix it and run this again`);
-  }
-  if (!isObject(parsed)) throw new Error(`${path} does not hold a JSON object`);
-  if (parsed.hooks !== undefined && !isObject(parsed.hooks)) {
-    throw new Error(`"hooks" in ${path} is not an object; fix it and run this again`);
-  }
-  return parsed;
-}
-
-/** The settings without any hook of ours; hook groups and events left empty are dropped. */
-function withoutOurs(settings: Json): { settings: Json; removed: number } {
-  if (!isObject(settings.hooks)) return { settings, removed: 0 };
-  let removed = 0;
-  const hooks: Json = {};
-  for (const [event, groups] of Object.entries(settings.hooks)) {
-    if (!Array.isArray(groups)) {
-      hooks[event] = groups;
-      continue;
+export const CLAUDE_CODE: HostSpec = {
+  agent: "claude-code",
+  events: [
+    ["SessionStart", "session-start"],
+    ["UserPromptSubmit", "prompt"],
+    ["Stop", "turn-end"],
+    ["SessionEnd", "session-end"],
+  ],
+  entry: (binaryPath, event) => ({
+    type: "command",
+    command: binaryPath,
+    args: ["hook", "claude-code", event],
+    timeout: HOOK_TIMEOUT_SECONDS,
+  }),
+  isOurs(hook) {
+    if (!isObject(hook) || typeof hook.command !== "string" || !Array.isArray(hook.args)) {
+      return false;
     }
-    const kept: unknown[] = [];
-    for (const group of groups) {
-      if (!isObject(group) || !Array.isArray(group.hooks)) {
-        kept.push(group);
-        continue;
-      }
-      const others = group.hooks.filter((hook) => !isOurs(hook));
-      removed += group.hooks.length - others.length;
-      if (others.length === group.hooks.length) kept.push(group);
-      else if (others.length > 0) kept.push({ ...group, hooks: others });
-    }
-    if (kept.length > 0 || groups.length === 0) hooks[event] = kept;
-  }
-  const result: Json = { ...settings, hooks };
-  if (removed > 0 && Object.keys(hooks).length === 0) delete result.hooks;
-  return { settings: result, removed };
-}
+    return (
+      basename(hook.command).startsWith("shibaox-mem") &&
+      hook.args[0] === "hook" &&
+      hook.args[1] === "claude-code"
+    );
+  },
+  binaryOf: (hook) => hook.command as string,
+  mcpAdd: (binaryPath) => [
+    "claude",
+    "mcp",
+    "add",
+    "--scope",
+    "user",
+    MCP_NAME,
+    "--",
+    binaryPath,
+    "mcp",
+  ],
+  mcpRemove: ["claude", "mcp", "remove", "--scope", "user", MCP_NAME],
+  notes: [],
+};
 
-function withOurs(settings: Json, binaryPath: string): Json {
-  const hooks: Json = { ...(isObject(settings.hooks) ? settings.hooks : {}) };
-  for (const [hostEvent, event] of EVENTS) {
-    const groups = hooks[hostEvent];
-    hooks[hostEvent] = [
-      ...(Array.isArray(groups) ? groups : []),
-      {
-        hooks: [
-          {
-            type: "command",
-            command: binaryPath,
-            args: ["hook", "claude-code", event],
-            timeout: HOOK_TIMEOUT_SECONDS,
-          },
-        ],
-      },
-    ];
-  }
-  return { ...settings, hooks };
-}
-
-/** Serialises in the file's own style: its indentation, and its final newline or lack of one. */
-function serialise(settings: Json, previous: string | null): string {
-  const indent = previous === null ? "  " : (/\n([ \t]+)\S/.exec(previous)?.[1] ?? "  ");
-  const newline = previous === null || previous.endsWith("\n") ? "\n" : "";
-  return JSON.stringify(settings, null, indent) + newline;
-}
-
-function writeAtomically(path: string, text: string): void {
-  const mode = existsSync(path) ? statSync(path).mode & 0o777 : 0o600;
-  const temporary = `${path}.shibaox-mem-new`;
-  writeFileSync(temporary, text, { mode });
-  renameSync(temporary, path);
-}
-
-function readReceipt(dataDir: string, settingsPath: string): Receipt | null {
-  try {
-    const receipt = JSON.parse(readFileSync(receiptPath(dataDir, settingsPath), "utf8")) as Receipt;
-    return receipt.agent === "claude-code" && receipt.settingsPath === settingsPath
-      ? receipt
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-export function installClaudeCode(context: InstallContext): InstallResult {
-  const { settingsPath, dataDir, binaryPath } = context;
-  const file = resolved(settingsPath);
-  const previous = existsSync(file) ? readFileSync(file, "utf8") : null;
-  // Validated before anything is changed or run.
-  const settings = parseSettings(settingsPath, previous);
-  const next = serialise(withOurs(withoutOurs(settings).settings, binaryPath), previous);
-  const changed = next !== previous;
-
-  if (changed) {
-    const installDir = join(dataDir, "install");
-    mkdirSync(join(installDir, "backups"), { recursive: true, mode: 0o700 });
-
-    // An earlier receipt still describes this file only if nobody has changed the file
-    // since we wrote it. Otherwise its backup is of a file that no longer exists, and
-    // restoring it later would throw away whatever was done in between.
-    const earlier = readReceipt(dataDir, settingsPath);
-    const earlierHolds =
-      earlier !== null && previous !== null && sha256(previous) === earlier.installedSha256;
-    let existedBefore: boolean;
-    let backupPath: string | null;
-    if (earlier !== null && earlierHolds) {
-      ({ existedBefore, backupPath } = earlier);
-    } else {
-      if (earlier?.backupPath) rmSync(earlier.backupPath, { force: true });
-      existedBefore = previous !== null;
-      backupPath = null;
-      // Only the user's own file, from before any install of ours, is worth putting back.
-      if (earlier === null && previous !== null) {
-        backupPath = join(
-          installDir,
-          "backups",
-          `claude-code-settings-${profileKey(settingsPath)}-${context.now()}.json`,
-        );
-        copyFileSync(file, backupPath);
-        chmodSync(backupPath, 0o600);
-      }
-    }
-
-    mkdirSync(dirname(file), { recursive: true });
-    writeAtomically(file, next);
-    const receipt: Receipt = {
-      agent: "claude-code",
-      installedAt: context.now(),
-      binaryPath,
-      settingsPath,
-      existedBefore,
-      backupPath,
-      installedSha256: sha256(next),
-    };
-    writeFileSync(receiptPath(dataDir, settingsPath), `${JSON.stringify(receipt, null, 2)}\n`, {
-      mode: 0o600,
-    });
-  }
-
-  // The MCP server is registered through Claude Code's own command: its config file
-  // holds unrelated state and is rewritten by the application itself.
-  const mcpCommand = ["claude", "mcp", "add", "--scope", "user", MCP_NAME, "--", binaryPath, "mcp"];
-  context.run(["claude", "mcp", "remove", "--scope", "user", MCP_NAME]);
-  const mcp = context.run(mcpCommand).ok ? "registered" : "manual";
-  return { settingsPath, changed, mcp, mcpCommand };
-}
-
-export function uninstallClaudeCode(context: InstallContext): UninstallResult {
-  const { settingsPath, dataDir } = context;
-  const file = resolved(settingsPath);
-  const receipt = readReceipt(dataDir, settingsPath);
-  const current = existsSync(file) ? readFileSync(file, "utf8") : null;
-  let outcome: UninstallResult["settings"] = "untouched";
-
-  if (current !== null) {
-    const untouchedSinceInstall = receipt !== null && sha256(current) === receipt.installedSha256;
-    if (untouchedSinceInstall && !receipt.existedBefore) {
-      rmSync(settingsPath);
-      outcome = "removed";
-    } else if (
-      untouchedSinceInstall &&
-      receipt.backupPath !== null &&
-      existsSync(receipt.backupPath)
-    ) {
-      // Nobody changed the file since: the original bytes go back exactly.
-      writeAtomically(file, readFileSync(receipt.backupPath, "utf8"));
-      outcome = "restored";
-    } else {
-      // The file has moved on: take out what is ours and keep everything else.
-      const { settings, removed } = withoutOurs(parseSettings(settingsPath, current));
-      if (removed > 0) {
-        writeAtomically(file, serialise(settings, current));
-        outcome = "edited";
-      }
-    }
-  }
-
-  context.run(["claude", "mcp", "remove", "--scope", "user", MCP_NAME]);
-  if (receipt?.backupPath) rmSync(receipt.backupPath, { force: true });
-  rmSync(receiptPath(dataDir, settingsPath), { force: true });
-  return { settingsPath, settings: outcome };
-}
-
-/** What of ours a settings file holds: which events are hooked, and to which binaries. */
-export function inspectSettings(text: string): { events: string[]; binaries: string[] } {
-  const settings = parseSettings("settings.json", text);
-  const events: string[] = [];
-  const binaries = new Set<string>();
-  if (isObject(settings.hooks)) {
-    for (const [hostEvent] of EVENTS) {
-      const groups = settings.hooks[hostEvent];
-      for (const group of Array.isArray(groups) ? groups : []) {
-        for (const hook of isObject(group) && Array.isArray(group.hooks) ? group.hooks : []) {
-          if (isOurs(hook)) {
-            if (!events.includes(hostEvent)) events.push(hostEvent);
-            binaries.add((hook as { command: string }).command);
-          }
-        }
-      }
-    }
-  }
-  return { events, binaries: [...binaries] };
-}
-
-export const HOOKED_EVENTS: readonly string[] = EVENTS.map(([hostEvent]) => hostEvent);
+export const installClaudeCode = (context: InstallContext): InstallResult =>
+  installHooksFile(CLAUDE_CODE, context);
+export const uninstallClaudeCode = (context: InstallContext): UninstallResult =>
+  uninstallHooksFile(CLAUDE_CODE, context);
+export const inspectSettings = (text: string) => inspectHooksFile(CLAUDE_CODE, text);
+export const HOOKED_EVENTS: readonly string[] = CLAUDE_CODE.events.map(([hostEvent]) => hostEvent);

@@ -1,8 +1,9 @@
 import { uninstallClaudeCode } from "../../install/claude-code.ts";
+import { codexContext, uninstallCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
-import { SUPPORTED_AGENTS } from "./install.ts";
+import { AGENT_NAMES, SUPPORTED_AGENTS } from "./install.ts";
 
 const OUTCOME = {
   restored: "put back exactly as it was",
@@ -21,10 +22,13 @@ export function run(argv: string[]): number {
     return EXIT_USAGE;
   }
   try {
-    const result = uninstallClaudeCode(claudeCodeContext(""));
+    const result =
+      agent === "codex"
+        ? uninstallCodex(codexContext(""))
+        : uninstallClaudeCode(claudeCodeContext(""));
     process.stdout.write(
       [
-        "Removed shibaox-mem from Claude Code.",
+        `Removed shibaox-mem from ${AGENT_NAMES[agent]}.`,
         `  ${result.settingsPath}: ${OUTCOME[result.settings]}`,
         `Your memories are still in ${defaultDataDir()}. Delete that folder to remove them.`,
         "",

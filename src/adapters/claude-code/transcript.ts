@@ -1,5 +1,5 @@
-import { closeSync, fstatSync, openSync, readSync } from "node:fs";
 import { clip } from "../../util/text.ts";
+import { isObject, type Json, parseLines, readTail, text } from "../common/jsonl.ts";
 import type { TurnDetail } from "../types.ts";
 
 // The transcript is Claude Code's internal format, not a contract. Everything here is
@@ -13,46 +13,6 @@ const MAX_ITEM_CHARS = 16 * 1024;
 
 const READ_TOOLS = new Set(["Read"]);
 const WRITE_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
-
-type Json = Record<string, unknown>;
-
-function isObject(value: unknown): value is Json {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function text(value: unknown): string | null {
-  return typeof value === "string" && value !== "" ? value : null;
-}
-
-/** The current turn is at the end of the file, so only the tail is read. */
-function readTail(path: string, maxBytes: number): string {
-  const fd = openSync(path, "r");
-  try {
-    const size = fstatSync(fd).size;
-    const start = Math.max(0, size - maxBytes);
-    const buffer = Buffer.alloc(size - start);
-    readSync(fd, buffer, 0, buffer.length, start);
-    const tail = buffer.toString("utf8");
-    // A tail that starts mid-file starts mid-line: drop the fragment.
-    return start === 0 ? tail : tail.slice(tail.indexOf("\n") + 1);
-  } finally {
-    closeSync(fd);
-  }
-}
-
-function parseLines(raw: string): Json[] {
-  const lines: Json[] = [];
-  for (const line of raw.split("\n")) {
-    if (line === "") continue;
-    try {
-      const parsed: unknown = JSON.parse(line);
-      if (isObject(parsed)) lines.push(parsed);
-    } catch {
-      // A line still being written, or not JSON at all.
-    }
-  }
-  return lines;
-}
 
 /** A user line that opens a turn: it carries the prompt as plain text. */
 function isPrompt(line: Json): boolean {

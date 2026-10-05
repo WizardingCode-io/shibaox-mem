@@ -4,7 +4,7 @@ import { defaultDataDir } from "../util/paths.ts";
 import type { InstallContext } from "./claude-code.ts";
 
 /** Runs a host command, treating "not installed" like any other failure. */
-function run(command: string[]): { ok: boolean; output: string } {
+export function run(command: string[]): { ok: boolean; output: string } {
   try {
     const proc = Bun.spawnSync(command, { stdin: "ignore", stdout: "pipe", stderr: "pipe" });
     return { ok: proc.exitCode === 0, output: `${proc.stdout}${proc.stderr}`.trim() };

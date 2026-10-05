@@ -1,14 +1,13 @@
 import { clip } from "../../util/text.ts";
-import { renderHookJson } from "../common/hook-json.ts";
+import { parseHookJson, renderHookJson } from "../common/hook-json.ts";
 import type { AgentAdapter } from "../types.ts";
-import { parsePayload } from "./payloads.ts";
 import { readTurnDetail } from "./transcript.ts";
 
-// Claude Code moves hook output above this size into a file and shows the model a preview.
-const MAX_INJECTION_CHARS = 10_000;
+// Codex spills model-visible hook output above ~2 500 tokens into a file; stay under it.
+const MAX_INJECTION_CHARS = 8_000;
 
-export const claudeCode: AgentAdapter = {
-  id: "claude-code",
+export const codex: AgentAdapter = {
+  id: "codex",
   capabilities: {
     sessionInjection: true,
     promptInjection: true,
@@ -16,7 +15,7 @@ export const claudeCode: AgentAdapter = {
     transcript: true,
     maxInjectionChars: MAX_INJECTION_CHARS,
   },
-  parse: parsePayload,
+  parse: (event, stdin) => parseHookJson("codex", { turnIdField: "turn_id" }, event, stdin),
   readTurnDetail,
   render: (event, context) => renderHookJson(event, context, (s) => clip(s, MAX_INJECTION_CHARS)),
 };

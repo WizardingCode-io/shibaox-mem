@@ -3,7 +3,9 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { stageBinary } from "../../install/binary.ts";
 import { installClaudeCode } from "../../install/claude-code.ts";
+import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
+import type { InstallResult } from "../../install/hooks-file.ts";
 import {
   describeImport,
   describeStop,
@@ -16,15 +18,40 @@ import { defaultDataDir } from "../../util/paths.ts";
 import { isCompiled } from "../../util/self.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-export const SUPPORTED_AGENTS = ["claude-code"];
+export const SUPPORTED_AGENTS = ["claude-code", "codex"];
+export const AGENT_NAMES: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex" };
 
-const USAGE = `Usage: shibaox-mem install claude-code [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
+const USAGE = `Usage: shibaox-mem install <agent> [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
+  <agent>             claude-code | codex
   --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
   --no-import         Do not import claude-mem's memories
 `;
+
+/** The lines every install ends with: where the hooks went, which binary, how MCP stands. */
+function describeInstall(
+  agent: string,
+  result: InstallResult,
+  binaryPath: string,
+  lines: string[],
+): string {
+  const mcp =
+    result.mcp === "registered"
+      ? "registered"
+      : `not registered. Run: ${result.mcpCommand.join(" ")}`;
+  return [
+    `Installed shibaox-mem for ${AGENT_NAMES[agent]}.`,
+    `  hooks:  ${result.settingsPath}${result.changed ? "" : " (already up to date)"}`,
+    `  binary: ${binaryPath}`,
+    `  MCP:    ${mcp}`,
+    ...lines,
+    ...result.notes.map((note) => `  ${note}`),
+    `Start a new ${AGENT_NAMES[agent]} session for it to take effect.`,
+    "",
+  ].join("\n");
+}
 
 /** Asks on the terminal. Without one, the answer is no: nothing is retired unasked. */
 function confirm(question: string): boolean {
@@ -73,6 +100,12 @@ export function run(argv: string[]): number {
 
   const lines: string[] = [];
   try {
+    if (agent === "codex") {
+      process.stdout.write(
+        describeInstall(agent, installCodex(codexContext(binaryPath)), binaryPath, lines),
+      );
+      return 0;
+    }
     const hostContext = claudeCodeContext(binaryPath);
     const takeover = takeoverContext(hostContext.settingsPath, hostContext.configDir);
     const detection = detectClaudeMem(takeover);
@@ -105,22 +138,7 @@ export function run(argv: string[]): number {
       );
     }
 
-    const result = installClaudeCode(hostContext);
-    const mcp =
-      result.mcp === "registered"
-        ? "registered"
-        : `not registered. Run: ${result.mcpCommand.join(" ")}`;
-    process.stdout.write(
-      [
-        "Installed shibaox-mem for Claude Code.",
-        `  hooks:  ${result.settingsPath}${result.changed ? "" : " (already up to date)"}`,
-        `  binary: ${binaryPath}`,
-        `  MCP:    ${mcp}`,
-        ...lines,
-        "Start a new Claude Code session for it to take effect.",
-        "",
-      ].join("\n"),
-    );
+    process.stdout.write(describeInstall(agent, installClaudeCode(hostContext), binaryPath, lines));
     return 0;
   } catch (error) {
     process.stderr.write(

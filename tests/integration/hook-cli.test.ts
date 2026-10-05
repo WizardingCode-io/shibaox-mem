@@ -6,8 +6,9 @@ import { join } from "node:path";
 import { DB_FILE, openDb } from "../../src/store/db.ts";
 import { runCliWith } from "../helpers/cli.ts";
 
-const FIXTURES = new URL("../fixtures/claude-code/payloads/", import.meta.url).pathname;
-const payload = (name: string) => readFileSync(join(FIXTURES, `${name}.json`), "utf8");
+const FIXTURES = new URL("../fixtures/", import.meta.url).pathname;
+const payload = (name: string, agent = "claude-code") =>
+  readFileSync(join(FIXTURES, agent, "payloads", `${name}.json`), "utf8");
 
 let dir: string;
 beforeEach(() => {
@@ -52,6 +53,21 @@ describe("shibaox-mem hook", () => {
     expect(await hook(payload("stop"), "claude-code", "turn-end")).toEqual(SILENT_SUCCESS);
     expect(rows("SELECT state, completeness, final_text FROM turns")).toEqual([
       { state: "pending", completeness: "full", final_text: "done" },
+    ]);
+  });
+
+  test("a whole turn from Codex, through its own adapter, is stored the same way", async () => {
+    await hook(payload("session-start.startup", "codex"), "codex", "session-start");
+    await hook(payload("user-prompt-submit", "codex"), "codex", "prompt");
+    expect(await hook(payload("stop", "codex"), "codex", "turn-end")).toEqual(SILENT_SUCCESS);
+    expect(rows("SELECT agent FROM sessions")).toEqual([{ agent: "codex" }]);
+    expect(rows("SELECT agent_turn_id, state, completeness, final_text FROM turns")).toEqual([
+      {
+        agent_turn_id: "01a10d0a-2d34-7fa2-9d91-bedf67023d6d",
+        state: "pending",
+        completeness: "full",
+        final_text: "done",
+      },
     ]);
   });
 
