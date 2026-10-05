@@ -9,7 +9,7 @@ Memória persistente entre sessões para agentes de código. Um binário, sem da
 ## Onde está o quê
 
 - Desenho e decisões: `docs/design/2026-10-05-ai-mem-design.md`
-- Decisões medidas (spikes): `docs/adr/`
+- Decisões medidas e desvios ao desenho: `docs/adr/` (ler o mais recente antes de mexer no esquema ou na recuperação)
 
 ## Comandos
 
