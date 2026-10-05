@@ -19,6 +19,8 @@ import {
   installClaudeCode,
   uninstallClaudeCode,
 } from "../../src/install/claude-code.ts";
+import { openDb } from "../../src/store/db.ts";
+import { makeClaudeMemDb } from "../helpers/claude-mem-db.ts";
 import { runCliWith } from "../helpers/cli.ts";
 
 let home: string;
@@ -321,6 +323,161 @@ describe("stageBinary", () => {
     const staged = stageBinary(source, dataDir);
     expect(stageBinary(staged, dataDir)).toBe(staged);
     expect(readFileSync(staged, "utf8")).toBe("v1");
+  });
+});
+
+describe("ai-mem install, with claude-mem present", () => {
+  const env = () => ({
+    HOME: home,
+    CLAUDE_CONFIG_DIR: join(home, ".claude"),
+    AI_MEM_DATA_DIR: dataDir,
+    AI_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
+    PATH: "/nonexistent",
+  });
+  let binary: string;
+
+  beforeEach(() => {
+    binary = join(home, "ai-mem");
+    writeFileSync(binary, "");
+    mkdirSync(join(home, ".claude-mem"));
+    makeClaudeMemDb(join(home, ".claude-mem", "claude-mem.db"), [
+      { project: "shop", type: "decision", title: "We use pnpm in the shop." },
+      { project: "shop", type: "bugfix", title: "Fixed the cart rounding." },
+      { project: "warehouse", type: "gotcha", title: "Stock counts lag by a minute." },
+    ]);
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ model: "opus", enabledPlugins: { "claude-mem@thedotmack": true } }, null, 2),
+    );
+  });
+
+  const imported = () => {
+    const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    try {
+      return db.query<{ n: number }, []>("SELECT count(*) AS n FROM memories").get()?.n ?? 0;
+    } finally {
+      db.close();
+    }
+  };
+
+  test("imports, retires claude-mem and installs, when told to go ahead", async () => {
+    const result = await runCliWith(
+      { env: env() },
+      "install",
+      "claude-code",
+      "--binary",
+      binary,
+      "--yes",
+    );
+    expect(result.stderr).toBe("");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("3 memories from 2 projects");
+    expect(result.stdout).toContain("shop: 2");
+    // The host's command is not on PATH here, so disabling is left to the user, and said so.
+    expect(result.stdout).toContain("claude plugin disable claude-mem@thedotmack");
+    expect(result.stdout).toContain("~/.claude-mem");
+    expect(imported()).toBe(3);
+    expect(settings().hooks.Stop[0].hooks[0]).toMatchObject({
+      command: binary,
+      args: ["hook", "claude-code", "turn-end"],
+    });
+    // The settings are the host's to change: we asked it, it was not there, so they stand.
+    expect(settings().enabledPlugins).toEqual({ "claude-mem@thedotmack": true });
+  });
+
+  test("without a terminal and without --yes, only imports and says what it did not do", async () => {
+    const result = await runCliWith({ env: env() }, "install", "claude-code", "--binary", binary);
+    expect(result.exitCode).toBe(0);
+    expect(imported()).toBe(3);
+    expect(result.stdout).toContain("still enabled");
+    expect(result.stdout).toContain("--yes");
+  });
+
+  test("--keep-claude-mem imports and leaves claude-mem alone, without asking", async () => {
+    const result = await runCliWith(
+      { env: env() },
+      "install",
+      "claude-code",
+      "--binary",
+      binary,
+      "--keep-claude-mem",
+    );
+    expect(result.exitCode).toBe(0);
+    expect(imported()).toBe(3);
+    expect(result.stdout).toContain("still enabled");
+    expect(result.stdout).not.toContain("--yes");
+  });
+
+  test("--no-import installs without touching claude-mem's data", async () => {
+    const result = await runCliWith(
+      { env: env() },
+      "install",
+      "claude-code",
+      "--binary",
+      binary,
+      "--no-import",
+      "--keep-claude-mem",
+    );
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(join(dataDir, "ai-mem.db"))).toBe(false);
+  });
+
+  test("installing again does not import again", async () => {
+    await runCliWith(
+      { env: env() },
+      "install",
+      "claude-code",
+      "--binary",
+      binary,
+      "--keep-claude-mem",
+    );
+    const again = await runCliWith(
+      { env: env() },
+      "install",
+      "claude-code",
+      "--binary",
+      binary,
+      "--keep-claude-mem",
+    );
+    expect(again.stdout).toContain("nothing new to import");
+    expect(imported()).toBe(3);
+  });
+});
+
+describe("ai-mem import claude-mem", () => {
+  const env = () => ({
+    HOME: home,
+    AI_MEM_DATA_DIR: dataDir,
+    AI_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
+  });
+
+  test("imports from the default location and reports", async () => {
+    mkdirSync(join(home, ".claude-mem"));
+    makeClaudeMemDb(join(home, ".claude-mem", "claude-mem.db"), [
+      { project: "shop", type: "decision", title: "We use pnpm." },
+    ]);
+    const result = await runCliWith({ env: env() }, "import", "claude-mem");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("1 memories from 1 projects");
+  });
+
+  test("--db points at another file", async () => {
+    const other = join(home, "backup.db");
+    makeClaudeMemDb(other, [{ project: "p", type: "decision", title: "x" }]);
+    const result = await runCliWith({ env: env() }, "import", "claude-mem", "--db", other);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("1 memories");
+  });
+
+  test("with no database to import from, says where it looked", async () => {
+    const result = await runCliWith({ env: env() }, "import", "claude-mem");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain(join(home, ".claude-mem", "claude-mem.db"));
+  });
+
+  test("an unknown source is a usage error", async () => {
+    const result = await runCliWith({ env: env() }, "import", "other-tool");
+    expect(result.exitCode).toBe(64);
   });
 });
 

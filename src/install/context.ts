@@ -13,9 +13,10 @@ function run(command: string[]): { ok: boolean; output: string } {
   }
 }
 
-export function claudeCodeContext(binaryPath: string): InstallContext {
+export function claudeCodeContext(binaryPath: string): InstallContext & { configDir: string } {
   const configDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
   return {
+    configDir,
     settingsPath: join(configDir, "settings.json"),
     dataDir: defaultDataDir(),
     binaryPath,

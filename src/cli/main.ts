@@ -13,6 +13,7 @@ const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   mcp: () => import("./commands/mcp.ts"),
   install: () => import("./commands/install.ts"),
   uninstall: () => import("./commands/uninstall.ts"),
+  import: () => import("./commands/import.ts"),
   status: () => import("./commands/status.ts"),
   doctor: () => import("./commands/doctor.ts"),
   __spike: () => import("./commands/spike.ts"),
