@@ -26,6 +26,8 @@ const hook = (input: string, ...args: string[]) =>
 
 function rows<T>(sql: string): T[] {
   const db = new Database(join(dir, DB_FILE), { readonly: true });
+  // A reader meeting a writer mid-checkpoint must wait, not fail.
+  db.run("PRAGMA busy_timeout = 5000");
   try {
     return db.query<T, []>(sql).all();
   } finally {
