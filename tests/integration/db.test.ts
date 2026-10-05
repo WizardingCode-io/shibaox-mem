@@ -132,6 +132,43 @@ describe("store/db", () => {
     db.close();
   }, 30_000);
 
+  // An upgrade lands while several sessions are open: every hook that runs next opens
+  // the database and finds a migration to apply. All of them must come out fine.
+  test("several processes upgrading a database with data at once all succeed", async () => {
+    const first = open();
+    seed(first);
+    first.close();
+
+    const worker = new URL("../helpers/open-db-worker.ts", import.meta.url).pathname;
+    const exits = await Promise.all(
+      Array.from({ length: 6 }, async () => {
+        const proc = Bun.spawn([process.execPath, worker, dir, "--extra-migration"], {
+          stdin: "ignore",
+          stdout: "ignore",
+          stderr: "pipe",
+        });
+        const [stderr, exitCode] = await Promise.all([
+          new Response(proc.stderr).text(),
+          proc.exited,
+        ]);
+        return { stderr: stderr.trim().split("\n")[0] ?? "", exitCode };
+      }),
+    );
+    expect(exits.map((exit) => exit.exitCode)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(exits.map((exit) => exit.stderr)).toEqual(["", "", "", "", "", ""]);
+
+    const db = open([...MIGRATIONS, FAKE[0] as Migration]);
+    expect(version(db)).toBe(2);
+    expect(
+      db.query<{ integrity_check: string }, []>("PRAGMA integrity_check").get()?.integrity_check,
+    ).toBe("ok");
+    expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM memories").get()?.n).toBe(1);
+    db.close();
+    // One upgrade, one backup, however many processes took part.
+    const backups = readdirSync(join(dir, "backups")).filter((name) => name.endsWith(".db"));
+    expect(backups).toHaveLength(1);
+  }, 60_000);
+
   test("memories are found through full-text search, ignoring diacritics", () => {
     const db = open();
     const { memoryId } = seed(db);

@@ -56,7 +56,7 @@ As cinco falhas de recall são paráfrases sem palavras em comum com a memória.
 
 ## Por fazer antes de avançar
 
-1. **Antes de criar a migração `0002`:** o backup anterior à migração corre fora de qualquer lock e o nome do ficheiro só tem milissegundos. Vários processos a migrar ao mesmo tempo falham alguns hooks. Dar ao backup um nome único e serializá-lo.
+1. ~~Backup anterior à migração fora de lock~~ — corrigido em 2026-10-05: uma segunda ligação toma o lock de escrita antes do backup e mantém-no até ao fim das migrações; só um processo faz a atualização.
 2. **Obsolescência e branches:** uma nota ancorada num ficheiro que só existe noutro branch fica marcada como desatualizada até se voltar a esse branch.
 3. **Hosts antigos:** sem argumentos, o binário imprime a ajuda mesmo com um payload no stdin. Num Claude Code que ignore `args`, isso seria injetado como contexto. A forma exec foi verificada na versão 2.1.289; não se sabe a partir de que versão existe.
 4. **Eco por MCP:** o que o agente lê com `memory_get` e repete não é filtrado, porque o servidor MCP não conhece a sessão.

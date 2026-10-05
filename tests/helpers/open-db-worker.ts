@@ -1,6 +1,13 @@
 // Opens (and therefore migrates) the database in the given directory, then exits.
-import { openDb } from "../../src/store/db.ts";
+// With --extra-migration, pretends a later release added a migration.
+import { MIGRATIONS, openDb } from "../../src/store/db.ts";
 
 const dir = process.argv[2];
-if (dir === undefined) throw new Error("usage: open-db-worker <data-dir>");
-openDb({ dataDir: dir, busyTimeoutMs: 5000 }).close();
+if (dir === undefined) throw new Error("usage: open-db-worker <data-dir> [--extra-migration]");
+const migrations = process.argv.includes("--extra-migration")
+  ? [
+      ...MIGRATIONS,
+      { version: 2, name: "fake", sql: "CREATE TABLE fake_2 (id INTEGER PRIMARY KEY);" },
+    ]
+  : MIGRATIONS;
+openDb({ dataDir: dir, busyTimeoutMs: 100, migrations }).close();

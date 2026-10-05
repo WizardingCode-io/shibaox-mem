@@ -51,7 +51,7 @@ function backup(db: Db, dir: string, version: number): void {
   const backups = join(dir, BACKUPS_DIR);
   mkdirSync(backups, { recursive: true, mode: 0o700 });
   // Timestamp first, so that sorting by name is sorting by age.
-  const target = join(backups, `shibaox-mem-${Date.now()}-v${version}.db`);
+  const target = join(backups, `shibaox-mem-${Date.now()}-v${version}-${process.pid}.db`);
   db.run(`VACUUM INTO '${target.replaceAll("'", "''")}'`);
   restrict(target, 0o600);
   const old = readdirSync(backups)
@@ -82,8 +82,19 @@ function enableWal(db: Db, busyTimeoutMs: number): void {
   }
 }
 
+/** How long a process waits for another one's upgrade. Rare, and worth waiting for. */
+const UPGRADE_WAIT_MS = 10_000;
+
+/**
+ * Brings the database to the latest schema. An upgrade is a backup followed by the
+ * pending migrations, and several processes may arrive at once: a second connection
+ * takes the write lock first and holds it through both, so only one of them upgrades
+ * and the rest find the work done. (`VACUUM INTO` cannot run inside a transaction, so
+ * it runs on the main connection, as a reader, while the lock is held on the other.)
+ */
 function migrate(
   db: Db,
+  path: string,
   dir: string,
   migrations: readonly Migration[],
   busyTimeoutMs: number,
@@ -92,17 +103,36 @@ function migrate(
   const current = userVersion(db);
   if (current > latest) throw new SchemaTooNewError(current, latest);
   if (current === latest) return;
-
   if (current === 0) enableWal(db, busyTimeoutMs);
-  else backup(db, dir, current);
 
-  for (const migration of [...migrations].sort((a, b) => a.version - b.version)) {
-    db.transaction(() => {
-      // Read again under the write lock: another process may have got here first.
-      if (userVersion(db) >= migration.version) return;
-      db.run(migration.sql);
-      db.run(`PRAGMA user_version = ${migration.version}`);
-    }).immediate();
+  const lock = new Database(path);
+  try {
+    lock.run(`PRAGMA busy_timeout = ${UPGRADE_WAIT_MS}`);
+    lock.run("BEGIN IMMEDIATE");
+    try {
+      // Read again under the lock: another process may have upgraded while we waited.
+      const now = userVersion(lock);
+      if (now >= latest) {
+        lock.run("ROLLBACK");
+        return;
+      }
+      if (now > 0) backup(db, dir, now);
+      for (const migration of [...migrations].sort((a, b) => a.version - b.version)) {
+        if (migration.version <= now) continue;
+        lock.run(migration.sql);
+        lock.run(`PRAGMA user_version = ${migration.version}`);
+      }
+      lock.run("COMMIT");
+    } catch (error) {
+      try {
+        lock.run("ROLLBACK");
+      } catch {
+        // Nothing was open to roll back.
+      }
+      throw error;
+    }
+  } finally {
+    lock.close();
   }
 }
 
@@ -116,7 +146,7 @@ export function openDb(options: OpenOptions): Db {
     db.run(`PRAGMA busy_timeout = ${Math.max(0, Math.trunc(options.busyTimeoutMs))}`);
     db.run("PRAGMA foreign_keys = ON");
     db.run("PRAGMA synchronous = NORMAL");
-    migrate(db, dir, options.migrations ?? MIGRATIONS, options.busyTimeoutMs);
+    migrate(db, path, dir, options.migrations ?? MIGRATIONS, options.busyTimeoutMs);
   } catch (error) {
     db.close();
     throw error;
