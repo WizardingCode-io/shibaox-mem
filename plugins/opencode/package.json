@@ -1,6 +1,6 @@
 {
   "name": "shibaox-mem-opencode",
-  "version": "0.1.1",
+  "version": "0.2.0-rc.1",
   "description": "shibaox-mem for OpenCode. Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
   "type": "module",
   "main": "./index.js",

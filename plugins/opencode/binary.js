@@ -4,7 +4,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSy
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const VERSION = "0.1.1";
+const VERSION = "0.2.0-rc.1";
 const REPO = "WizardingCode-io/shibaox-mem";
 const MARKER = "@shibaox-mem-plugin";
 const windows = process.platform === "win32";
@@ -35,7 +35,7 @@ function installedVersion() {
   }
 }
 
-/** True when `have` is missing or older than `wanted`; a pre-release is older than its release. */
+/** True when `have` is missing or older than `wanted`. A pre-release is older than its release; of two, the one that sorts first. */
 export function older(have, wanted) {
   if (!have) return true;
   if (have === wanted) return false;
@@ -45,7 +45,8 @@ export function older(have, wanted) {
     if ((a[i] ?? 0) < (b[i] ?? 0)) return true;
     if ((a[i] ?? 0) > (b[i] ?? 0)) return false;
   }
-  return have.includes("-") && !wanted.includes("-");
+  if (have.includes("-") && !wanted.includes("-")) return true;
+  return have.includes("-") && wanted.includes("-") && have < wanted;
 }
 
 /** Fetches the binary of this package's version when there is none, or an older one. */

@@ -206,11 +206,24 @@ describe("plugin/shibaox-mem.sh", () => {
     expect(readFileSync(binary(), "utf8")).toContain("echo 99.0.0;");
   });
 
-  test("a pre-release of the same version gives way to the release", async () => {
-    place(`${pkg.version}-rc.1`);
+  // The plugin's own version may itself be a pre-release; both cases are covered from it.
+  const [base, pre] = pkg.version.split("-");
+
+  test("an earlier pre-release of the same version gives way to the plugin's version", async () => {
+    // "-aaa" sorts before any "-rc.N"; with a final plugin version, any pre-release is older.
+    place(pre === undefined ? `${base}-rc.1` : `${base}-aaa`);
     await hook("codex", "session-start", release());
     expect(downloads).toBe(1);
   });
+
+  test.skipIf(pre === undefined)(
+    "the final release is never replaced by its pre-release",
+    async () => {
+      place(base as string);
+      await hook("codex", "session-start", release());
+      expect(downloads).toBe(0);
+    },
+  );
 
   test("when the download fails, or its checksum is wrong, the session starts anyway, silently", async () => {
     expect(await hook("codex", "session-start")).toEqual({ stdout: "", stderr: "", exitCode: 0 });

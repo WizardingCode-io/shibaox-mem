@@ -1,6 +1,6 @@
 {
   "name": "shibaox-mem",
-  "version": "0.1.1",
+  "version": "0.2.0-rc.1",
   "description": "Persistent memory for coding agents: what one session learns, the next one is told. One local binary, no daemon, no LLM in the loop.",
   "bin": {
     "shibaox-mem": "bin/shibaox-mem.js"

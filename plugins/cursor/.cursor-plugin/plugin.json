@@ -1,6 +1,6 @@
 {
   "name": "shibaox-mem",
-  "version": "0.1.1",
+  "version": "0.2.0-rc.1",
   "description": "Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
   "author": {
     "name": "WizardingCode",

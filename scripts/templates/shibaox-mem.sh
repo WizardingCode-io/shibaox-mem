@@ -18,7 +18,8 @@ home="${SHIBAOX_HOME:-$HOME/.shibaox}"
 data="${SHIBAOX_MEM_DATA_DIR:-$home/mem}"
 bin="$data/bin/shibaox-mem"
 
-# True when version $1 is missing or older than $2. A pre-release is older than its release.
+# True when version $1 is missing or older than $2. A pre-release is older than its release,
+# and of two pre-releases of one version the one that sorts first is the older.
 older() {
   [ -z "$1" ] && return 0
   [ "$1" = "$2" ] && return 1
@@ -26,6 +27,7 @@ older() {
     split(a, x, "."); split(b, y, ".")
     for (i = 1; i <= 3; i++) { p = x[i] + 0; q = y[i] + 0; if (p < q) exit 0; if (p > q) exit 1 }
     if (a ~ /-/ && b !~ /-/) exit 0
+    if (a ~ /-/ && b ~ /-/ && (a "") < (b "")) exit 0
     exit 1
   }'
 }
