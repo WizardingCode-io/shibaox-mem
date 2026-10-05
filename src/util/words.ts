@@ -30,6 +30,15 @@ export function identifierParts(text: string): string {
   return [...parts].join(" ");
 }
 
+/**
+ * Confines a full-text query to one project, inside the index: the text columns are
+ * searched for `match`, and the row must carry the project's id. Far cheaper than
+ * matching every project's memories and filtering afterwards.
+ */
+export function inProject(match: string, projectId: number): string {
+  return `{title body terms} : (${match}) AND project_id : "${projectId}"`;
+}
+
 /** An FTS5 query matching any of the terms. Each term is quoted, so none is read as syntax. */
 export function anyOf(terms: Iterable<string>): string {
   return [...terms].map((term) => `"${term.replaceAll('"', '""')}"`).join(" OR ");

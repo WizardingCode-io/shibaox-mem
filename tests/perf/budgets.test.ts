@@ -10,9 +10,12 @@ import { insertMemory } from "../../src/store/memories.ts";
 import { hostBinary, runBinary } from "../helpers/binary.ts";
 
 // A hook sits between the user and the model on every prompt. These budgets are for
-// the compiled binary, measured from outside, against a project with 5,000 memories.
+// the compiled binary, measured from outside, against a project with 5,000 memories in
+// a store that also holds 60,000 memories of other projects: one user, many repositories.
 
 const MEMORIES = 5000;
+const OTHER_PROJECTS = 6;
+const OTHER_MEMORIES_EACH = 10_000;
 const RUNS = 30;
 const WINDOWS = process.platform === "win32";
 const BUDGET_MS = {
@@ -49,14 +52,20 @@ beforeAll(() => {
 
   const db = openDb({ dataDir, busyTimeoutMs: 5000 });
   const projectId = resolveProject(db, project).id;
+  const others = Array.from({ length: OTHER_PROJECTS }, (_, i) => {
+    const dir = join(base, `other-${i}`);
+    mkdirSync(dir);
+    return resolveProject(db, dir).id;
+  });
   const next = generator(42);
   const word = () => WORDS[next(WORDS.length)] as string;
   const now = Date.now();
   withWrite(db, () => {
-    for (let i = 0; i < MEMORIES; i++) {
+    const total = MEMORIES + OTHER_PROJECTS * OTHER_MEMORIES_EACH;
+    for (let i = 0; i < total; i++) {
       const file = `src/${word()}/${word()}${i % 97}.ts`;
       insertMemory(db, {
-        projectId,
+        projectId: i < MEMORIES ? projectId : (others[(i - MEMORIES) % OTHER_PROJECTS] as number),
         kind: MEMORY_KINDS[i % MEMORY_KINDS.length] as (typeof MEMORY_KINDS)[number],
         title: `The ${word()} ${word()} must ${word()} before the ${word()} ${word()}${i}.`,
         body: `Because the ${word()} ${word()} would otherwise ${word()} the ${word()}.\nContext: why does the ${word()} ${word()} fail` as Redacted,
@@ -110,9 +119,10 @@ describe(`hook latency with ${MEMORIES} memories`, () => {
   test(`a prompt is answered within ${BUDGET_MS.prompt} ms (p95)`, async () => {
     const next = generator(7);
     const word = () => WORDS[next(WORDS.length)] as string;
+    // A real prompt is a paragraph, not a question: twenty or so searchable words.
     const result = await measure("prompt", (run) => ({
       prompt_id: `p${run}`,
-      prompt: `why does the ${word()} ${word()} ${word()} when the ${word()} ${word()} is slow?`,
+      prompt: `why does the ${word()} ${word()} ${word()} when the ${word()} ${word()} is slow? I checked the ${word()} and the ${word()}, the ${word()} looks fine, but the ${word()} ${word()} keeps hitting the ${word()} ${word()} and then the ${word()} ${word()} fails on the ${word()} ${word()}. Could the ${word()} ${word()} be the problem?`,
     }));
     console.log(`prompt p95: ${result.p95.toFixed(1)} ms`);
     // The measurement only means something if retrieval actually ran and found things.

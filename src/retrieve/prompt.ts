@@ -1,5 +1,5 @@
 import type { Db } from "../store/db.ts";
-import { anyOf, isGeneric, stem } from "../util/words.ts";
+import { anyOf, inProject, isGeneric, stem } from "../util/words.ts";
 import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "./notes.ts";
 import { buildQuery, type Query, searchTokens } from "./query.ts";
 import { type Note, renderNote, renderNotes } from "./render.ts";
@@ -118,12 +118,12 @@ export function retrieveForPrompt(
   const candidates = new Map<number, Candidate>();
   const matched = db
     .query<MemoryRow & { bm25: number }, [string, number, number]>(
-      `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0) AS bm25
+      `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0, 0.0) AS bm25
          FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
         WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active' AND ${unseen}
         ORDER BY bm25 LIMIT ?`,
     )
-    .all(query.match, input.projectId, CANDIDATES_PER_CHANNEL);
+    .all(inProject(query.match, input.projectId), input.projectId, CANDIDATES_PER_CHANNEL);
   for (const { bm25, ...row } of matched) candidates.set(row.id, { row, bm25, overlap: 0 });
 
   const files = sessionFiles(db, input.sessionId);
@@ -165,7 +165,9 @@ export function retrieveForPrompt(
     let rare = known.get(word);
     if (rare === undefined) {
       const forms = new Set([word, stem(searchTokens(word)[0] ?? word)]);
-      rare = (frequency.get(anyOf(forms), input.projectId)?.n ?? 0) <= rareLimit;
+      rare =
+        (frequency.get(inProject(anyOf(forms), input.projectId), input.projectId)?.n ?? 0) <=
+        rareLimit;
       known.set(word, rare);
     }
     return rare;

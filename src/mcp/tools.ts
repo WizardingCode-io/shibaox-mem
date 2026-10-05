@@ -11,7 +11,7 @@ import { renderHeading, renderNote } from "../retrieve/render.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { insertMemory, supersede } from "../store/memories.ts";
 import { clip } from "../util/text.ts";
-import { anyOf, searchTerms, stem } from "../util/words.ts";
+import { anyOf, inProject, searchTerms, stem } from "../util/words.ts";
 
 // What the three MCP tools do, as plain functions over a database. The server in
 // server.ts only adapts them to the protocol.
@@ -64,13 +64,13 @@ export function searchMemories(
     if (match === null) return "No memories match.";
     const found = db
       .query<MemoryRow & { bm25: number }, [string, number, string | null, string | null, number]>(
-        `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0) AS bm25
+        `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0, 0.0) AS bm25
            FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
           WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
             AND (? IS NULL OR m.kind = ?)
           ORDER BY bm25 LIMIT ?`,
       )
-      .all(match, projectId, kind, kind, SEARCH_POOL);
+      .all(inProject(match, projectId), projectId, kind, kind, SEARCH_POOL);
     const byText = ranks(found, (row) => -row.bm25);
     const byPrior = ranks(found, (row) => prior(row, context));
     const fused = (row: MemoryRow & { bm25: number }) =>

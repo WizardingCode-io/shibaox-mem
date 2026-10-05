@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { defaultDataDir } from "../util/paths.ts";
 import init from "./migrations/0001_init.sql" with { type: "text" };
+import ftsProject from "./migrations/0002_fts_project.sql" with { type: "text" };
 
 export type Db = Database;
 
@@ -13,7 +14,10 @@ export interface Migration {
 }
 
 /** Forward-only. A migration is never edited once released; a change is a new migration. */
-export const MIGRATIONS: readonly Migration[] = [{ version: 1, name: "init", sql: init }];
+export const MIGRATIONS: readonly Migration[] = [
+  { version: 1, name: "init", sql: init },
+  { version: 2, name: "fts_project", sql: ftsProject },
+];
 export const LATEST_VERSION = MIGRATIONS.length;
 
 export const DB_FILE = "shibaox-mem.db";

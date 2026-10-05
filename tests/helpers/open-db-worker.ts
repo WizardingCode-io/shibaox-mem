@@ -7,7 +7,11 @@ if (dir === undefined) throw new Error("usage: open-db-worker <data-dir> [--extr
 const migrations = process.argv.includes("--extra-migration")
   ? [
       ...MIGRATIONS,
-      { version: 2, name: "fake", sql: "CREATE TABLE fake_2 (id INTEGER PRIMARY KEY);" },
+      {
+        version: MIGRATIONS.length + 1,
+        name: "fake",
+        sql: "CREATE TABLE fake_next (id INTEGER PRIMARY KEY);",
+      },
     ]
   : MIGRATIONS;
 openDb({ dataDir: dir, busyTimeoutMs: 100, migrations }).close();

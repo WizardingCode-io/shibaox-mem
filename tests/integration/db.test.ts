@@ -27,11 +27,13 @@ const open = (migrations?: readonly Migration[]) =>
 const version = (db: Database) =>
   db.query<{ user_version: number }, []>("PRAGMA user_version").get()?.user_version;
 
-const FAKE: Migration[] = [2, 3, 4].map((n) => ({
-  version: n,
-  name: `fake_${n}`,
-  sql: `CREATE TABLE fake_${n} (id INTEGER PRIMARY KEY);`,
-}));
+const FAKE: Migration[] = [1, 2, 3]
+  .map((i) => LATEST_VERSION + i)
+  .map((n) => ({
+    version: n,
+    name: `fake_${n}`,
+    sql: `CREATE TABLE fake_${n} (id INTEGER PRIMARY KEY);`,
+  }));
 
 function seed(db: Database): { projectId: number; memoryId: number } {
   const now = Date.now();
@@ -158,7 +160,7 @@ describe("store/db", () => {
     expect(exits.map((exit) => exit.stderr)).toEqual(["", "", "", "", "", ""]);
 
     const db = open([...MIGRATIONS, FAKE[0] as Migration]);
-    expect(version(db)).toBe(2);
+    expect(version(db)).toBe(LATEST_VERSION + 1);
     expect(
       db.query<{ integrity_check: string }, []>("PRAGMA integrity_check").get()?.integrity_check,
     ).toBe("ok");

@@ -1,6 +1,6 @@
 import type { Redacted } from "../core/redact.ts";
 import type { MemoryKind } from "../core/types.ts";
-import { anyOf, tokens } from "../util/words.ts";
+import { anyOf, inProject, tokens } from "../util/words.ts";
 import type { Db } from "./db.ts";
 
 export interface NewMemory {
@@ -144,10 +144,10 @@ export function findNeighbours(
          FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
         WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
           AND (m.source_turn_id IS NULL OR m.source_turn_id IS NOT ?)
-        ORDER BY bm25(memories_fts, 4.0, 1.0, 2.0)
+        ORDER BY bm25(memories_fts, 4.0, 1.0, 2.0, 0.0)
         LIMIT ?`,
     )
-    .all(anyOf(terms), projectId, exceptTurnId, limit);
+    .all(inProject(anyOf(terms), projectId), projectId, exceptTurnId, limit);
   const files = db.query<{ path: string }, [number]>(
     "SELECT path FROM memory_files WHERE memory_id = ? ORDER BY path",
   );
