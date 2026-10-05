@@ -31,8 +31,9 @@ beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), "shibaox-mem-npm-"));
   downloads = 0;
 });
-afterEach(() => {
-  server?.stop(true);
+afterEach(async () => {
+  // Awaited: a port still closing can be handed to the next test's server.
+  await server?.stop(true);
   server = undefined;
   rmSync(home, { recursive: true, force: true });
 });
@@ -41,6 +42,9 @@ function release(options: { version?: string; checksum?: string } = {}): string 
   const body = fake(options.version ?? npmPkg.version);
   const sha = options.checksum ?? new Bun.CryptoHasher("sha256").update(body).digest("hex");
   server = Bun.serve({
+    // Loopback by name: on every interface, the port handed out may already be
+    // another process's on 127.0.0.1, and the request would go to it.
+    hostname: "127.0.0.1",
     port: 0,
     fetch: (request) => {
       const path = new URL(request.url).pathname;

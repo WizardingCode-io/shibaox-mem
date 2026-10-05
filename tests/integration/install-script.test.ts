@@ -19,8 +19,9 @@ let server: ReturnType<typeof Bun.serve> | undefined;
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-sh-"));
 });
-afterEach(() => {
-  server?.stop(true);
+afterEach(async () => {
+  // Awaited: a port still closing can be handed to the next test's server.
+  await server?.stop(true);
   server = undefined;
   rmSync(home, { recursive: true, force: true });
 });
@@ -29,6 +30,9 @@ function release(options: { checksum?: string } = {}): string {
   const sha = new Bun.CryptoHasher("sha256").update(FAKE).digest("hex");
   const checksums = `${options.checksum ?? sha}  ${FILE}\n${"0".repeat(64)}  shibaox-mem-other\n`;
   server = Bun.serve({
+    // Loopback by name: on every interface, the port handed out may already be
+    // another process's on 127.0.0.1, and the request would go to it.
+    hostname: "127.0.0.1",
     port: 0,
     fetch: (request) => {
       const path = new URL(request.url).pathname;
@@ -84,8 +88,11 @@ describe("scripts/install.sh", () => {
 
   test("a release that does not list the binary is refused", async () => {
     const base = release();
-    server?.stop(true);
+    await server?.stop(true);
     server = Bun.serve({
+      // Loopback by name: on every interface, the port handed out may already be
+      // another process's on 127.0.0.1, and the request would go to it.
+      hostname: "127.0.0.1",
       port: 0,
       fetch: (request) =>
         new URL(request.url).pathname.endsWith("/checksums.txt")

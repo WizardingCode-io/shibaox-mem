@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "shibaox-mem": {
-      "command": "${CLAUDE_PLUGIN_DATA}/bin/shibaox-mem",
-      "args": ["mcp"]
-    }
-  }
-}

@@ -31,8 +31,9 @@ beforeEach(() => {
   importClaudeMem(db, { sourcePath: source, now: Date.now() });
   db.close();
 });
-afterEach(() => {
-  server?.stop(true);
+afterEach(async () => {
+  // Awaited: a port still closing can be handed to the next test's server.
+  await server?.stop(true);
   server = undefined;
   rmSync(base, { recursive: true, force: true });
 });
@@ -40,6 +41,9 @@ afterEach(() => {
 /** A stand-in TypeSafe that keeps what says "Never" or "rounded" and drops the rest. */
 function serve(): string {
   server = Bun.serve({
+    // Loopback by name: on every interface, the port handed out may already be
+    // another process's on 127.0.0.1, and the request would go to it.
+    hostname: "127.0.0.1",
     port: 0,
     fetch: async (request) => {
       const body = (await request.json()) as { state: { assistant_final_message: string } };

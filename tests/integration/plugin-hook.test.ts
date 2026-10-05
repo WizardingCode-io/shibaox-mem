@@ -31,8 +31,9 @@ beforeEach(() => {
   data = mkdtempSync(join(tmpdir(), "shibaox-mem-plugin-"));
   downloads = 0;
 });
-afterEach(() => {
-  server?.stop(true);
+afterEach(async () => {
+  // Awaited: a port still closing can be handed to the next test's server.
+  await server?.stop(true);
   server = undefined;
   rmSync(data, { recursive: true, force: true });
 });
@@ -41,6 +42,9 @@ function release(): string {
   const body = fake(manifest.version);
   const sha = new Bun.CryptoHasher("sha256").update(body).digest("hex");
   server = Bun.serve({
+    // Loopback by name: on every interface, the port handed out may already be
+    // another process's on 127.0.0.1, and the request would go to it.
+    hostname: "127.0.0.1",
     port: 0,
     fetch: (request) => {
       const path = new URL(request.url).pathname;
@@ -102,7 +106,10 @@ describe("the plugin's manifest", () => {
         }
       }
     }
-    const mcp = JSON.parse(readFileSync(join(ROOT, ".mcp.json"), "utf8")) as {
+    // Declared in the manifest, not in a root .mcp.json: that file would also make the
+    // server a project-scope one for anyone who opens this repository in Claude Code.
+    expect(existsSync(join(ROOT, ".mcp.json"))).toBe(false);
+    const mcp = manifest as unknown as {
       mcpServers: Record<string, { command: string; args: string[] }>;
     };
     expect(mcp.mcpServers["shibaox-mem"]).toEqual({
