@@ -132,9 +132,18 @@ export function importClaudeMem(db: Db, options: ImportOptions): ImportReport {
               files_read, files_modified, created_at_epoch
          FROM observations WHERE id > ? ORDER BY id LIMIT ?`,
     );
-    const seen = db.query<{ id: number }, [number, string, string]>(
-      "SELECT id FROM memories WHERE project_id = ? AND title = ? AND body = ? LIMIT 1",
-    );
+    // What is already there, as hashes: a lookup by title and body has no index and
+    // would scan the whole table once per observation (ten minutes for 90,000).
+    const seen = new Set<string>();
+    const fingerprint = (projectId: number, title: string, body: string) =>
+      `${projectId}:${Bun.hash(`${title}\u0001${body}`)}`;
+    for (const row of db
+      .query<{ project_id: number; title: string; body: string }, []>(
+        "SELECT project_id, title, body FROM memories WHERE origin = 'imported'",
+      )
+      .iterate()) {
+      seen.add(fingerprint(row.project_id, row.title, row.body));
+    }
     const projects = new Map<string, number>();
     let lastId = Number(getMeta(db, WATERMARK) ?? 0);
 
@@ -168,10 +177,12 @@ export function importClaudeMem(db: Db, options: ImportOptions): ImportReport {
           const body = clip(redact(bodyLines.join("\n")), BODY_MAX_CHARS, "…") as Redacted;
 
           const projectId = importedProject(db, row.project, options.now, projects);
-          if (seen.get(projectId, redactedTitle, body) !== null) {
+          const print = fingerprint(projectId, redactedTitle, body);
+          if (seen.has(print)) {
             report.skipped.duplicate++;
             continue;
           }
+          seen.add(print);
 
           const { kind, importance } = KINDS[row.type] ?? DEFAULT_KIND;
           const changed = paths(row.files_modified);
