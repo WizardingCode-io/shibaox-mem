@@ -174,6 +174,72 @@ describe("hook: turn end", () => {
   });
 });
 
+describe("hook: turns that were left behind", () => {
+  // A terminal that is killed sends no session end. Its last prompt is often a correction.
+  test("a turn left open by a session that died is queued when a later session starts", () => {
+    hook("prompt", { sessionId: "dead", turnId: "p1", prompt: "No, never use moment here." });
+    clock += 13 * 3_600_000;
+    hook("session-start", { sessionId: "new", source: "startup" });
+    expect(turns().map((turn) => [turn.state, turn.completeness])).toEqual([
+      ["pending", "interrupted"],
+    ]);
+    expect(spawned).toBe(1);
+  });
+
+  test("a turn that is merely taking long is left alone", () => {
+    hook("prompt", { sessionId: "busy", turnId: "p1", prompt: "refactor the whole module" });
+    clock += 3_600_000;
+    hook("session-start", { sessionId: "new", source: "startup" });
+    expect(turns().map((turn) => turn.state)).toEqual(["open"]);
+    expect(spawned).toBe(0);
+  });
+
+  test("a turn whose worker died is noticed by the next hook", () => {
+    hook("prompt", { turnId: "p1", prompt: "go" });
+    hook("turn-end", { turnId: "p1", finalText: "done" });
+    db.run("UPDATE turns SET state = 'processing', lease_owner = 'dead', lease_until = ?", [
+      clock - 1,
+    ]);
+    const before = spawned;
+    hook("session-start", { source: "startup" });
+    expect(spawned).toBe(before + 1);
+  });
+
+  // Another Stop hook may send the agent back to work: the turn then ends twice.
+  test("a later turn end for the same turn replaces the earlier message", () => {
+    hook("prompt", { turnId: "p1", prompt: "go" });
+    hook("turn-end", { turnId: "p1", finalText: "I'll start by reading the file." });
+    hook("turn-end", { turnId: "p1", finalText: "Done: the parser now rejects empty input." });
+    expect(turns()).toHaveLength(1);
+    expect(turns()[0]).toMatchObject({
+      state: "pending",
+      final_text: "Done: the parser now rejects empty input.",
+    });
+  });
+
+  test("a later turn end is taken even after the earlier one was distilled", () => {
+    hook("prompt", { turnId: "p1", prompt: "go" });
+    hook("turn-end", { turnId: "p1", finalText: "I'll start by reading the file." });
+    db.run("UPDATE turns SET state = 'skipped', attempts = 1");
+    hook("turn-end", { turnId: "p1", finalText: "Done: the parser now rejects empty input." });
+    expect(db.query("SELECT state, attempts, final_text FROM turns").all()).toEqual([
+      { state: "pending", attempts: 0, final_text: "Done: the parser now rejects empty input." },
+    ]);
+  });
+
+  test("a turn end that arrives after the next prompt still completes its turn", () => {
+    hook("prompt", { turnId: "p1", prompt: "first" });
+    hook("prompt", { turnId: "p2", prompt: "second" });
+    hook("turn-end", { turnId: "p1", finalText: "finished the first" });
+    expect(
+      turns().map((turn) => [turn.agent_turn_id, turn.state, turn.completeness, turn.final_text]),
+    ).toEqual([
+      ["p1", "pending", "full", "finished the first"],
+      ["p2", "open", "full", null],
+    ]);
+  });
+});
+
 describe("hook: session end", () => {
   test("queues what was left open and ends the session", () => {
     hook("prompt", { turnId: "p1", prompt: "count to a million" });
@@ -344,6 +410,38 @@ describe("hook: what the agent is told", () => {
     db.run("DROP TABLE injections");
     expect(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" })).toBe("");
     expect(turns().map((turn) => turn.state)).toEqual(["open"]);
+    expect(errors).toHaveLength(1);
+  });
+
+  test("failing to start background work does not cost the agent its notes", () => {
+    remember(RULE, "Otherwise the first query fails at once.");
+    hook("prompt", { turnId: "p0", prompt: "something earlier" });
+    hook("turn-end", { turnId: "p0", finalText: "done" });
+    clock += 1000;
+    const out = handleHook(
+      {
+        db,
+        now: () => clock,
+        spawnDistill: () => {
+          throw new Error("EAGAIN");
+        },
+        onError: (error: unknown) => void errors.push(error),
+      },
+      claudeCode,
+      {
+        agent: "claude-code",
+        event: "prompt",
+        sessionId: "s1",
+        cwd: project,
+        turnId: "p1",
+        transcriptPath: null,
+        prompt: "why is busy_timeout ignored here?",
+        finalText: null,
+        source: null,
+        subagent: false,
+      },
+    );
+    expect(told(out)?.additionalContext).toContain(RULE);
     expect(errors).toHaveLength(1);
   });
 

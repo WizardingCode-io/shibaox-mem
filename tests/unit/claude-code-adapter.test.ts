@@ -212,15 +212,27 @@ describe("claude-code transcript", () => {
     });
   });
 
-  test("notices when the agent saved a memory itself during the turn", () => {
+  test("notices when the agent saved a memory itself during the turn, if the save worked", () => {
+    const save = (id: string) =>
+      toolUse(id, "mcp__ai-mem__memory_save", { text: "We use pnpm.", kind: "convention" });
     const path = write(
       user("p1", "remember this"),
-      toolUse("t1", "mcp__ai-mem__memory_save", { text: "We use pnpm.", kind: "convention" }),
-      user("p2", "next"),
+      save("t1"),
+      toolResult("p1", "t1", "Saved as #3."),
+      user("p2", "search"),
       toolUse("t2", "mcp__ai-mem__memory_search", { query: "pnpm" }),
+      toolResult("p2", "t2", "#3 [convention] We use pnpm."),
+      user("p3", "remember that too"),
+      save("t3"),
+      toolResult("p3", "t3", "ai-mem: database is locked", true),
+      user("p4", "and this"),
+      save("t4"),
     );
     expect(claudeCode.readTurnDetail(path, "p1").savedMemory).toBe(true);
     expect(claudeCode.readTurnDetail(path, "p2").savedMemory).toBe(false);
+    // A save that failed, or whose outcome is not known, saved nothing.
+    expect(claudeCode.readTurnDetail(path, "p3").savedMemory).toBe(false);
+    expect(claudeCode.readTurnDetail(path, "p4").savedMemory).toBe(false);
   });
 
   test("without a turn id, reads the last turn", () => {

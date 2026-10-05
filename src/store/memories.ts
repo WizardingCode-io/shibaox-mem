@@ -21,9 +21,20 @@ export interface NewMemory {
   now: number;
 }
 
+function insertFiles(db: Db, memoryId: number, files: NewMemory["files"]): void {
+  for (const file of files) {
+    // A file both read and changed is recorded once, as changed.
+    db.run(
+      `INSERT INTO memory_files (memory_id, path, role) VALUES (?, ?, ?)
+       ON CONFLICT (memory_id, path) DO UPDATE SET role = 'changed' WHERE excluded.role = 'changed'`,
+      [memoryId, file.path, file.role],
+    );
+  }
+}
+
 /**
  * Stores a memory with its file anchors. Storing the memory of a turn that already
- * has one changes nothing and returns the existing id.
+ * has one updates that memory and returns its id: a turn yields one memory, its latest.
  */
 export function insertMemory(db: Db, memory: NewMemory): number {
   const inserted = db
@@ -57,17 +68,25 @@ export function insertMemory(db: Db, memory: NewMemory): number {
       )
       .get(memory.sourceTurnId);
     if (existing === null) throw new Error("memory insert returned no row");
+    // The turn was distilled before. What it yields now replaces what it yielded then.
+    db.run(
+      "UPDATE memories SET kind = ?, title = ?, body = ?, terms = ?, importance = ?, updated_at = ? WHERE id = ?",
+      [
+        memory.kind,
+        memory.title,
+        memory.body,
+        memory.terms,
+        memory.importance,
+        memory.now,
+        existing.id,
+      ],
+    );
+    db.run("DELETE FROM memory_files WHERE memory_id = ?", [existing.id]);
+    insertFiles(db, existing.id, memory.files);
     return existing.id;
   }
 
-  for (const file of memory.files) {
-    // A file both read and changed is recorded once, as changed.
-    db.run(
-      `INSERT INTO memory_files (memory_id, path, role) VALUES (?, ?, ?)
-       ON CONFLICT (memory_id, path) DO UPDATE SET role = 'changed' WHERE excluded.role = 'changed'`,
-      [inserted.id, file.path, file.role],
-    );
-  }
+  insertFiles(db, inserted.id, memory.files);
   if (memory.sourceTurnId !== null) {
     db.run("INSERT INTO memory_sources (memory_id, turn_id, relation) VALUES (?, ?, 'origin')", [
       inserted.id,
@@ -114,18 +133,21 @@ export function findNeighbours(
   projectId: number,
   text: string,
   limit: number,
+  /** A turn being distilled again must not be compared with its own earlier memory. */
+  exceptTurnId: number | null = null,
 ): Neighbour[] {
   const terms = [...tokens(text)].slice(0, NEIGHBOUR_QUERY_TERMS);
   if (terms.length === 0) return [];
   const rows = db
-    .query<{ id: number; title: string; body: string }, [string, number, number]>(
+    .query<{ id: number; title: string; body: string }, [string, number, number | null, number]>(
       `SELECT m.id, m.title, m.body
          FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
         WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
+          AND (m.source_turn_id IS NULL OR m.source_turn_id IS NOT ?)
         ORDER BY bm25(memories_fts, 4.0, 1.0, 2.0)
         LIMIT ?`,
     )
-    .all(anyOf(terms), projectId, limit);
+    .all(anyOf(terms), projectId, exceptTurnId, limit);
   const files = db.query<{ path: string }, [number]>(
     "SELECT path FROM memory_files WHERE memory_id = ? ORDER BY path",
   );

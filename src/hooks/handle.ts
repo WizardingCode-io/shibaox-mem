@@ -9,6 +9,7 @@ import { type Db, withWrite } from "../store/db.ts";
 import { drainActive } from "../store/meta.ts";
 import { advanceEpoch, endSession, touchSession } from "../store/sessions.ts";
 import {
+  abandonStaleTurns,
   completeTurn,
   hasQueuedTurns,
   interruptOpenTurns,
@@ -26,6 +27,8 @@ export interface HookDeps {
   onError?: (error: unknown) => void;
 }
 
+/** No turn runs this long: one still open after it belongs to a session that died. */
+const ABANDONED_AFTER_MS = 12 * 3_600_000;
 const PROMPT_MAX_CHARS = 8 * 1024;
 const FINAL_TEXT_MAX_CHARS = 16 * 1024;
 
@@ -77,6 +80,7 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
 
   switch (input.event) {
     case "session-start": {
+      withWrite(db, () => abandonStaleTurns(db, now, ABANDONED_AFTER_MS));
       // A resumed session still has its context; a cleared or compacted one has lost it.
       if (input.source === "resume" || !adapter.capabilities.sessionInjection) break;
       context = lookUp(() => {
@@ -140,6 +144,11 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
       break;
   }
 
-  if (hasQueuedTurns(db) && !drainActive(db, now)) deps.spawnDistill();
+  // Starting background work must never cost the agent its context, or the hook its exit.
+  try {
+    if (hasQueuedTurns(db, now) && !drainActive(db, now)) deps.spawnDistill();
+  } catch (error) {
+    deps.onError?.(error);
+  }
   return adapter.render(input.event, context);
 }

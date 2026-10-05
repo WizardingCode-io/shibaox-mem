@@ -192,7 +192,7 @@ export async function distillTurn(
     return "skipped";
   }
 
-  const action = await consolidate(deps, turn.projectId, draft);
+  const action = await consolidate(deps, turn.projectId, draft, turn.id);
   const now = deps.now();
   withWrite(db, () => {
     if (action.type === "duplicate") {

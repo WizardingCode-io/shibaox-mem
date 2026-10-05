@@ -27,12 +27,14 @@ export async function consolidate(
   deps: { db: Db; judge: Judge },
   projectId: number,
   draft: Draft,
+  sourceTurnId: number | null = null,
 ): Promise<Action> {
   const neighbours = findNeighbours(
     deps.db,
     projectId,
     `${draft.title} ${draft.body}`,
     MAX_NEIGHBOURS,
+    sourceTurnId,
   );
   if (neighbours.length === 0) return { type: "insert", supersedes: [] };
 

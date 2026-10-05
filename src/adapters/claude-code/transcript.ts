@@ -87,6 +87,7 @@ export function readTurnDetail(
   const commands = new Set<string>();
   const errors = new Set<string>();
   let savedMemory = false;
+  const saves = new Set<string>();
   const detail = (): TurnDetail => ({
     filesRead: [...filesRead],
     filesChanged: [...filesChanged],
@@ -126,9 +127,14 @@ export function readTurnDetail(
         else if (WRITE_TOOLS.has(name)) add(filesChanged, path);
         else if (name === "Bash") add(commands, text(block.input.command));
         // MCP tools are named mcp__<server>__<tool>; ours is registered as "ai-mem".
-        else if (name.includes("ai-mem") && name.endsWith("__memory_save")) savedMemory = true;
-      } else if (block.type === "tool_result" && block.is_error === true) {
-        add(errors, text(resultText(block.content)));
+        else if (name.includes("ai-mem") && name.endsWith("__memory_save")) {
+          const saveId = text(block.id);
+          if (saveId !== null) saves.add(saveId);
+        }
+      } else if (block.type === "tool_result") {
+        if (block.is_error === true) add(errors, text(resultText(block.content)));
+        // A save that failed, or whose outcome never arrived, saved nothing.
+        else if (saves.has(text(block.tool_use_id) ?? "")) savedMemory = true;
       }
     }
   }

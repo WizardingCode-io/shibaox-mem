@@ -405,7 +405,7 @@ describe("distill: what must not become a memory", () => {
     expect(added?.body).not.toContain("ai-mem-notes");
   });
 
-  test("a turn in which the agent saved a memory itself is not distilled again", async () => {
+  function savingTurn(outcome: { content: string; is_error?: boolean }): void {
     const transcript = join(base, "saved.jsonl");
     writeFileSync(
       transcript,
@@ -425,6 +425,14 @@ describe("distill: what must not become a memory", () => {
             ],
           },
         }),
+        JSON.stringify({
+          type: "user",
+          promptId: "m1",
+          message: {
+            role: "user",
+            content: [{ type: "tool_result", tool_use_id: "t", ...outcome }],
+          },
+        }),
       ].join("\n"),
     );
     hook("prompt", {
@@ -433,9 +441,40 @@ describe("distill: what must not become a memory", () => {
       transcriptPath: transcript,
     });
     hook("turn-end", { turnId: "m1", finalText: "Saved.", transcriptPath: transcript });
+  }
+
+  test("a turn in which the agent saved a memory itself is not distilled again", async () => {
+    savingTurn({ content: "Saved as #1." });
     await drain();
     expect(memories()).toEqual([]);
     expect(turnStates()).toEqual(["skipped"]);
+  });
+
+  test("if that save failed, the turn is distilled after all", async () => {
+    savingTurn({ content: "ai-mem: database is locked", is_error: true });
+    await drain();
+    expect(memories().map((memory) => memory.kind)).toEqual(["convention"]);
+    expect(turnStates()).toEqual(["done"]);
+  });
+
+  test("distilling a turn again after its ending changed updates its memory, not adds one", async () => {
+    hook("prompt", { turnId: "c1", prompt: "the parser accepts empty input" });
+    hook("turn-end", {
+      turnId: "c1",
+      finalText:
+        "Fixed: the root cause was a missing length check in `parseInput`, which now rejects empty input.",
+    });
+    await drain();
+    hook("turn-end", {
+      turnId: "c1",
+      finalText:
+        "Fixed: the root cause was a missing length check in `parseInput`. The regression test in tests/parser.test.ts now covers empty input because it was missed before.",
+    });
+    await drain();
+    expect(memories()).toHaveLength(1);
+    expect(memories()[0]?.body).toContain("tests/parser.test.ts");
+    expect(memories()[0]?.evidence_count).toBe(1);
+    expect(turnStates()).toEqual(["done"]);
   });
 });
 

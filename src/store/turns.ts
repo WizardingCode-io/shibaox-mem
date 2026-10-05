@@ -91,13 +91,13 @@ export function completeTurn(db: Db, turn: TurnContext, finalText: Redacted | nu
   const target =
     turn.agentTurnId === null
       ? db
-          .query<{ id: number; state: string }, [number]>(
-            "SELECT id, state FROM turns WHERE session_id = ? AND state = 'open' ORDER BY seq DESC LIMIT 1",
+          .query<{ id: number; state: string; finalText: string | null }, [number]>(
+            "SELECT id, state, final_text AS finalText FROM turns WHERE session_id = ? AND state = 'open' ORDER BY seq DESC LIMIT 1",
           )
           .get(turn.sessionId)
       : db
-          .query<{ id: number; state: string }, [number, string]>(
-            "SELECT id, state FROM turns WHERE session_id = ? AND agent_turn_id = ?",
+          .query<{ id: number; state: string; finalText: string | null }, [number, string]>(
+            "SELECT id, state, final_text AS finalText FROM turns WHERE session_id = ? AND agent_turn_id = ?",
           )
           .get(turn.sessionId, turn.agentTurnId);
 
@@ -108,17 +108,51 @@ export function completeTurn(db: Db, turn: TurnContext, finalText: Redacted | nu
       prompt: "" as Redacted,
       finalText,
     });
-  } else if (target.state === "open") {
+  } else if (target.state === "open" || target.state === "pending") {
+    // A turn can end more than once: another hook may send the agent back to work, and
+    // a turn-end can arrive after the next prompt. The latest ending is the one to keep.
+    db.run(
+      `UPDATE turns SET state = 'pending', completeness = 'full', final_text = COALESCE(?, final_text),
+                        ended_at = ?, transcript_path = COALESCE(?, transcript_path)
+        WHERE id = ?`,
+      [finalText, turn.now, turn.transcriptPath, target.id],
+    );
+  } else if (
+    (target.state === "done" || target.state === "skipped") &&
+    finalText !== null &&
+    finalText !== target.finalText
+  ) {
+    // Already distilled from an earlier ending: distil it again from this one.
     db.run(
       `UPDATE turns SET state = 'pending', completeness = 'full', final_text = ?, ended_at = ?,
+                        attempts = 0, last_error = NULL,
                         transcript_path = COALESCE(?, transcript_path)
         WHERE id = ?`,
       [finalText, turn.now, turn.transcriptPath, target.id],
     );
   }
-  // Any other state: this turn-end was already handled.
+  // Being distilled right now, or given up on: left as it is.
 }
 
-export function hasQueuedTurns(db: Db): boolean {
-  return db.query("SELECT 1 FROM turns WHERE state = 'pending' LIMIT 1").get() !== null;
+/**
+ * Queues turns that have been open for longer than any turn runs. Their session died
+ * without a session end (a killed terminal, a crash), so nothing else will close them.
+ */
+export function abandonStaleTurns(db: Db, now: number, olderThanMs: number): number {
+  return db.run(
+    `UPDATE turns SET state = 'pending', completeness = 'interrupted', ended_at = ?
+      WHERE state = 'open' AND started_at < ?`,
+    [now, now - olderThanMs],
+  ).changes;
+}
+
+/** True when there is work for a distiller: a waiting turn, or one whose worker went silent. */
+export function hasQueuedTurns(db: Db, now: number): boolean {
+  return (
+    db
+      .query(
+        "SELECT 1 FROM turns WHERE state = 'pending' OR (state = 'processing' AND lease_until < ?) LIMIT 1",
+      )
+      .get(now) !== null
+  );
 }
