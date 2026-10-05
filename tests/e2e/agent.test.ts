@@ -220,3 +220,42 @@ describe("the compiled binary, driven as an agent drives it", () => {
     60_000,
   );
 });
+
+describe("the compiled binary's viewer", () => {
+  test("serves the page and the brand fonts from inside the binary, then stops on request", async () => {
+    openDb({ dataDir, busyTimeoutMs: 2000 }).close();
+    const proc = Bun.spawn([binary, "ui", "--no-open"], {
+      env: { ...process.env, ...env() },
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    try {
+      const reader = proc.stdout.getReader();
+      let banner = "";
+      while (!banner.includes("\n")) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        banner += new TextDecoder().decode(value);
+      }
+      const url = /shibaox-mem ui: (\S+)/.exec(banner)?.[1];
+      if (url === undefined) throw new Error(`no URL in: ${banner}`);
+      const token = new URL(url).searchParams.get("token") ?? "";
+      const page = await fetch(url);
+      expect(page.status).toBe(200);
+      expect(await page.text()).toContain("<title>shibaox-mem</title>");
+      const font = await fetch(
+        `${new URL(url).origin}/assets/geist-sans-latin-400-normal.woff2?token=${token}`,
+      );
+      expect(font.status).toBe(200);
+      expect((await font.arrayBuffer()).byteLength).toBeGreaterThan(10_000);
+      const overview = await fetch(`${new URL(url).origin}/api/overview`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(((await overview.json()) as { dataDir: string }).dataDir).toBe(dataDir);
+    } finally {
+      proc.kill("SIGINT");
+      await proc.exited;
+    }
+  });
+});

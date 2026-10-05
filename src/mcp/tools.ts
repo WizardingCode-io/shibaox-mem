@@ -6,12 +6,12 @@ import { TITLE_MAX_CHARS } from "../distill/policy.ts";
 import { splitSentences } from "../distill/segment.ts";
 import type { Judge } from "../judge/types.ts";
 import { MEMORY_COLUMNS, type MemoryRow, prior, ranks, toNote } from "../retrieve/notes.ts";
-import { buildQuery, searchTokens } from "../retrieve/query.ts";
+import { explicitMatch } from "../retrieve/query.ts";
 import { renderHeading, renderNote } from "../retrieve/render.ts";
 import { type Db, withWrite } from "../store/db.ts";
 import { insertMemory, supersede } from "../store/memories.ts";
 import { clip } from "../util/text.ts";
-import { anyOf, inProject, searchTerms, stem } from "../util/words.ts";
+import { inProject, searchTerms } from "../util/words.ts";
 
 // What the three MCP tools do, as plain functions over a database. The server in
 // server.ts only adapts them to the protocol.
@@ -57,10 +57,7 @@ export function searchMemories(
       .all(projectId, kind, kind, SEARCH_POOL)
       .sort((a, b) => prior(b, context) - prior(a, context) || b.id - a.id);
   } else {
-    const terms = searchTokens(args.query).filter((token) => token.length >= 2);
-    const match =
-      buildQuery(args.query)?.match ??
-      (terms.length > 0 ? anyOf(new Set(terms.flatMap((term) => [term, stem(term)]))) : null);
+    const match = explicitMatch(args.query);
     if (match === null) return "No memories match.";
     const found = db
       .query<MemoryRow & { bm25: number }, [string, number, string | null, string | null, number]>(

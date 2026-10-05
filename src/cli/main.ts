@@ -12,6 +12,7 @@ const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   distill: () => import("./commands/distill.ts"),
   mcp: () => import("./commands/mcp.ts"),
   tool: () => import("./commands/tool.ts"),
+  ui: () => import("./commands/ui.ts"),
   install: () => import("./commands/install.ts"),
   uninstall: () => import("./commands/uninstall.ts"),
   import: () => import("./commands/import.ts"),

@@ -89,3 +89,16 @@ export function buildQuery(prompt: string): Query | null {
     match: anyOf(new Set([...kept, ...keptWords, ...stems])),
   };
 }
+
+/**
+ * The FTS match for a query typed on purpose (a tool call, the viewer's search box): the
+ * prompt query when it finds enough to go on, otherwise any of the words or their stems.
+ * Null when there is nothing searchable in it.
+ */
+export function explicitMatch(query: string): string | null {
+  const terms = searchTokens(query).filter((token) => token.length >= 2);
+  return (
+    buildQuery(query)?.match ??
+    (terms.length > 0 ? anyOf(new Set(terms.flatMap((term) => [term, stem(term)]))) : null)
+  );
+}
