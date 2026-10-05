@@ -16,12 +16,38 @@ import type {
 
 // --- What the user said -----------------------------------------------------------
 
-/** A standing instruction, as opposed to a request for this turn. */
-const CORRECTION = [
-  /(?:^|[.!?]\s+)no[,.!]?\s/i,
-  /\b(?:don't|do not|never|always|instead|rather than|from now on|prefer(?:s|red)?|must(?: not)?|should not|shouldn't|stop (?:using|doing))\b/i,
-  /\b(?:nunca|sempre|em vez de|prefiro|prefere|a partir de agora|tem que|tem de|têm de|obrigatóri[oa]|não (?:uses|faças|quero|queremos|usar|fazer|podes|pode)|deixa de|para de)\b/i,
-];
+// A standing rule is something the user wants followed from here on. The same words
+// ("don't", "must", "always", "instead") fill ordinary requests, questions and
+// complaints, so a cue counts only in a sentence that is none of those.
+
+/** Says the rule outlasts this turn. */
+const STANDING = /\b(?:never|always|from now on|nunca|sempre|a partir de agora|doravante)\b/i;
+/** "always" and "never" used to describe what happens, not to say what to do. */
+const OBSERVATION =
+  /\b(?:i|it|this|that|he|she|they|there)\s+(?:always|never)\b|\b(?:always|never|sempre|nunca)\s+(?:fails?|breaks?|crash(?:es)?|happens?|works?|worked|falha|funciona|acontece)\b|\b(?:fails?|breaks?|falha|falham|funciona|acontece)\s+(?:sempre|nunca)\b/i;
+/** A prohibition, at the start of a clause: "don't …", "no, don't …", "não uses …". */
+const PROHIBITION =
+  /(?:^|[.!,;:]\s+)(?:(?:no|não),?\s+)?(?:(?:please|por favor),?\s+)?(?:don't|do not|stop using|stop doing|avoid|não (?:uses|faças|usar|fazer|quero|queremos)|evita|deixa de|para de)\b/i;
+const MODAL =
+  /\b(?:must|should)(?: not)?\b|\bshouldn't\b|\b(?:temos|têm) (?:que|de)\b|\bdevem(?:os)?\b|\bobrigatóri[oa]s?\b/i;
+/** "must" and "should" about one situation: "this should not happen", "you must be joking". */
+const MODAL_ABOUT_A_SITUATION =
+  /\b(?:i|you|he|she|it|this|that|there|they|something|someone)\s+(?:must|should|shouldn't)\b/i;
+const PREFERENCE = /\b(?:i|we) prefer\b|\bprefiro\b|\bpreferimos\b/i;
+const QUESTION = /\?["')\]]*$/;
+const REQUEST =
+  /^(?:(?:can|could|would|will) you|please (?:can|could)|podes|pode|consegues|poderias|dá para)\b/i;
+/** Limits the sentence to here and now. */
+const ONE_OFF =
+  /\b(?:for now|this time|right now|just this once|in this (?:one )?(?:function|file|case|test)|por agora|para já|desta vez|neste caso|só desta vez)\b|(?<!a partir de )\bagora\b/i;
+
+export function isStandingRule(sentence: string): boolean {
+  const text = sentence.trim();
+  if (QUESTION.test(text) || REQUEST.test(text) || ONE_OFF.test(text)) return false;
+  if (STANDING.test(text) && !OBSERVATION.test(text)) return true;
+  if (PROHIBITION.test(text) || PREFERENCE.test(text)) return true;
+  return MODAL.test(text) && !MODAL_ABOUT_A_SITUATION.test(text);
+}
 
 // --- What the assistant said ------------------------------------------------------
 
@@ -71,7 +97,7 @@ const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, v
 
 function durability(candidate: DistillCandidate): number {
   const text: string = candidate.text;
-  if (candidate.source === "prompt") return any(text, CORRECTION) ? 0.75 : 0.1;
+  if (candidate.source === "prompt") return isStandingRule(text) ? 0.75 : 0.1;
   if (any(text, NOT_A_FACT)) return 0.05;
   let score = 0.3;
   if (IDENTIFIER.test(text)) score += 0.2;
@@ -85,7 +111,10 @@ function distill(input: DistillInput): DistillVerdict {
   const prompt: string = input.prompt;
   const final: string = input.finalText;
 
-  const correction = any(prompt, CORRECTION);
+  // Judged a sentence at a time: a cue in one sentence says nothing about the others.
+  const correction = input.candidates.some(
+    (candidate) => candidate.source === "prompt" && isStandingRule(candidate.text),
+  );
   const resolution = any(final, RESOLUTION);
   const decision = any(final, DECISION);
   const gotcha = any(final, GOTCHA);

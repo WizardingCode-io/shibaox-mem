@@ -107,6 +107,44 @@ describe("heuristic judge: is the turn worth saving", () => {
     expect(verdict.worthSaving).toBeLessThan(SAVE_THRESHOLD);
   });
 
+  // Words like "don't", "must", "always" and "instead" appear in ordinary requests,
+  // questions and complaints. Only a standing rule is worth every later session's attention.
+  test.each([
+    "I don't understand why this test fails, can you take a look?",
+    "Can you use a map instead of a for loop in this one function?",
+    "Use a map instead of a for loop in this function.",
+    "Should I use a class here instead of a plain object?",
+    "There must be a simpler way to write this query.",
+    "This should not happen, the build was green yesterday.",
+    "You must be joking, that deleted my changes!",
+    "Don't worry about the tests for now, just make it compile.",
+    "I always forget the syntax for this, how do I destructure an array?",
+    "It always fails on the second run of the suite.",
+    "Tem de haver uma forma mais simples de fazer este loop, não?",
+    "Não quero perder tempo com isto agora, vê só se compila.",
+    "Isto falha sempre na segunda execução dos testes.",
+    "Podes usar um map em vez de um ciclo for aqui?",
+  ])("a passing remark is not a standing rule: %s", async (prompt) => {
+    const verdict = await distill(prompt, "Sure, I'll take a look at that now.");
+    expect(verdict.worthSaving).toBeLessThan(SAVE_THRESHOLD);
+  });
+
+  test.each([
+    "Never commit directly to the main branch.",
+    "From now on, commit messages must be in English.",
+    "No, don't use mocks for the database here.",
+    "We always test against a real SQLite file.",
+    "Commit messages must follow conventional commits.",
+    "I prefer small commits with one change each.",
+    "Não uses mocks nestes testes de integração.",
+    "A partir de agora, os commits são sempre em inglês.",
+    "Não quero um fork, quero fazer isto de raiz.",
+  ])("a standing rule is kept: %s", async (prompt) => {
+    const verdict = await distill(prompt, "Understood.");
+    expect(verdict.worthSaving).toBeGreaterThanOrEqual(SAVE_THRESHOLD);
+    expect(verdict.kind).toBe("convention");
+  });
+
   test("a turn that is not kept has no kind, no title and the lowest importance", async () => {
     expect(await distill("thanks!", "You're welcome!")).toMatchObject({
       kind: "none",

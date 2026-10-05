@@ -25,11 +25,18 @@ const MAX_FILES_SHOWN = 3;
 export const day = (epochMs: number) => new Date(epochMs).toISOString().slice(0, 10);
 const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
+const OWN_TAG = /<(\s*\/?\s*ai-mem-notes\s*)>/gi;
+/**
+ * Stored text is shown inside our wrapper and must not be able to close or reopen it:
+ * our own tag, wherever it appears in that text, loses its angle brackets.
+ */
+const inert = (text: string) => text.replace(OWN_TAG, "‹$1›");
+
 /** One line that identifies a note: its id, kind, date, files and title. */
 export function renderHeading(note: Note): string {
   const about = [note.kind, day(note.createdAt)];
   if (note.files.length > 0) about.push(note.files.slice(0, MAX_FILES_SHOWN).join(", "));
-  return `#${note.id} [${about.join(" · ")}] ${note.title}`;
+  return inert(`#${note.id} [${about.join(" · ")}] ${note.title}`);
 }
 
 const heading = (note: Note) => `- ${renderHeading(note)}`;
@@ -37,7 +44,9 @@ const heading = (note: Note) => `- ${renderHeading(note)}`;
 /** One note in full: heading, then its facts, indented. */
 export function renderNote(note: Note): string {
   const lines = [heading(note)];
-  for (const line of note.body.split("\n")) if (line.trim() !== "") lines.push(`  ${line}`);
+  for (const line of note.body.split("\n")) {
+    if (line.trim() !== "") lines.push(`  ${inert(line)}`);
+  }
   if (note.stale) lines.push(`  ${STALE}`);
   return lines.join("\n");
 }
@@ -62,8 +71,10 @@ export function renderBrief(last: LastTurn | null, notes: Note[]): string {
   if (last !== null) {
     const where = last.branch === null ? "" : `, branch ${last.branch}`;
     lines.push("", `Where things stood (${day(last.endedAt)}${where}):`);
-    if (oneLine(last.prompt) !== "") lines.push(`- Asked: ${clip(oneLine(last.prompt), 200, "…")}`);
-    lines.push(`- Outcome: ${clip(oneLine(last.finalText), 400, "…")}`);
+    if (oneLine(last.prompt) !== "") {
+      lines.push(`- Asked: ${inert(clip(oneLine(last.prompt), 200, "…"))}`);
+    }
+    lines.push(`- Outcome: ${inert(clip(oneLine(last.finalText), 400, "…"))}`);
   }
   if (notes.length > 0) lines.push("", "Known about this project:", ...notes.map(heading));
   lines.push(CLOSE);
