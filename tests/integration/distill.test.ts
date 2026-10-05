@@ -119,6 +119,20 @@ describe("distill: from a queued turn to a memory", () => {
     ]);
   });
 
+  test("a memory records the version of the judge that produced it, not of the wrapper", async () => {
+    turn("the tests fail with a timeout", FIX);
+    const wrapper: Judge = {
+      ...heuristicJudge,
+      name: "fallback",
+      version: "9+1",
+      versions: { typesafe: "9", heuristic: "1" },
+    };
+    await drain(wrapper);
+    expect(db.query("SELECT judge, judge_version FROM memories").all()).toEqual([
+      { judge: "heuristic", judge_version: "1" },
+    ]);
+  });
+
   test("a turn not worth keeping is skipped", async () => {
     turn("thanks!", "You're welcome! Let me know if you need anything else.");
     expect(await drain()).toEqual({ claimed: 1, done: 0, skipped: 1, failed: 0 });

@@ -1,0 +1,1970 @@
+{
+  "model": "jev-latest",
+  "recordedAt": "2026-10-05T15:54:36.868Z",
+  "turns": {
+    "en-fix-stdin-tty": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 1,
+          "probabilities": {
+            "convention": 0,
+            "gotcha": 0,
+            "none": 0,
+            "decision": 0,
+            "discovery": 0,
+            "fix": 1,
+            "change": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.73,
+          "confidence": 0.77,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.24,
+            "3": 0.75,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.62
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.75
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.83
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.76
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.57,
+          "probabilities": {
+            "c2": 0.12,
+            "none": 0,
+            "c0": 0.21,
+            "c1": 0.66,
+            "c3": 0.01
+          }
+        }
+      },
+      "inputTokens": 1550
+    },
+    "pt-fix-wal-busy": {
+      "answers": {
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.67
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.97,
+          "probabilities": {
+            "none": 0,
+            "c3": 0,
+            "c1": 0.98,
+            "c2": 0.01,
+            "c0": 0.01
+          }
+        },
+        "worth": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 0.82,
+          "probabilities": {
+            "change": 0,
+            "none": 0,
+            "gotcha": 0.13,
+            "discovery": 0.01,
+            "convention": 0,
+            "decision": 0,
+            "fix": 0.86
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.69,
+          "confidence": 0.74,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.3,
+            "3": 0.7,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.34
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.77
+        }
+      },
+      "inputTokens": 1586
+    },
+    "en-convention-no-mocks": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.87
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "convention",
+          "confidence": 0.93,
+          "probabilities": {
+            "decision": 0.01,
+            "none": 0,
+            "change": 0.04,
+            "fix": 0,
+            "convention": 0.95,
+            "gotcha": 0,
+            "discovery": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.85,
+          "confidence": 0.85,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.12,
+            "3": 0.84,
+            "4": 0.02
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.54
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.91
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.35
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.61,
+          "probabilities": {
+            "none": 0.01,
+            "c0": 0.03,
+            "c1": 0.71,
+            "c2": 0.25
+          }
+        }
+      },
+      "inputTokens": 1316
+    },
+    "pt-convention-clean-room": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.87
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "convention",
+          "confidence": 0.92,
+          "probabilities": {
+            "none": 0,
+            "discovery": 0,
+            "decision": 0.06,
+            "change": 0.01,
+            "fix": 0,
+            "convention": 0.93,
+            "gotcha": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 3.11,
+          "confidence": 0.76,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.01,
+            "2": 0.06,
+            "3": 0.72,
+            "4": 0.2
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.61
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.34
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.68
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c2",
+          "confidence": 0.69,
+          "probabilities": {
+            "none": 0.01,
+            "c1": 0.01,
+            "c0": 0.21,
+            "c2": 0.77
+          }
+        }
+      },
+      "inputTokens": 1341
+    },
+    "en-decision-no-embeddings": {
+      "answers": {
+        "importance": {
+          "type": "score",
+          "score": 2.19,
+          "confidence": 0.75,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.04,
+            "2": 0.71,
+            "3": 0.24,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.59
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.83
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.4
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.84,
+          "probabilities": {
+            "c1": 0.88,
+            "c3": 0,
+            "none": 0,
+            "c0": 0.02,
+            "c2": 0.1
+          }
+        },
+        "worth": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "decision",
+          "confidence": 1,
+          "probabilities": {
+            "discovery": 0,
+            "change": 0,
+            "none": 0,
+            "convention": 0,
+            "gotcha": 0,
+            "fix": 0,
+            "decision": 1
+          }
+        }
+      },
+      "inputTokens": 1509
+    },
+    "pt-decision-typescript": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.93
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "decision",
+          "confidence": 1,
+          "probabilities": {
+            "fix": 0,
+            "convention": 0,
+            "change": 0,
+            "discovery": 0,
+            "gotcha": 0,
+            "decision": 1,
+            "none": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.4,
+          "confidence": 0.62,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.02,
+            "2": 0.56,
+            "3": 0.42,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.82
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.74
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.98,
+          "probabilities": {
+            "c1": 0.98,
+            "c2": 0,
+            "c0": 0.01,
+            "none": 0.01
+          }
+        }
+      },
+      "inputTokens": 1400
+    },
+    "en-gotcha-dotenv": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.92
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 0.45,
+          "probabilities": {
+            "none": 0,
+            "gotcha": 0.43,
+            "decision": 0,
+            "convention": 0,
+            "discovery": 0.01,
+            "change": 0.02,
+            "fix": 0.54
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 3.67,
+          "confidence": 0.73,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0,
+            "2": 0.03,
+            "3": 0.25,
+            "4": 0.72
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.76
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.66
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.79
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.6,
+          "probabilities": {
+            "none": 0,
+            "c0": 0.11,
+            "c3": 0.2,
+            "c1": 0.68,
+            "c2": 0.01
+          }
+        }
+      },
+      "inputTokens": 1538
+    },
+    "pt-gotcha-stop-hook": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.89
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "gotcha",
+          "confidence": 0.92,
+          "probabilities": {
+            "decision": 0,
+            "gotcha": 0.93,
+            "none": 0,
+            "convention": 0,
+            "discovery": 0.05,
+            "change": 0,
+            "fix": 0.01
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.89,
+          "confidence": 0.87,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.11,
+            "3": 0.86,
+            "4": 0.02
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.82
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.77
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.82,
+          "probabilities": {
+            "none": 0,
+            "c0": 0.08,
+            "c1": 0.86,
+            "c2": 0.06
+          }
+        }
+      },
+      "inputTokens": 1388
+    },
+    "en-change-json-flag": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.7
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "change",
+          "confidence": 1,
+          "probabilities": {
+            "fix": 0,
+            "convention": 0,
+            "change": 1,
+            "gotcha": 0,
+            "decision": 0,
+            "none": 0,
+            "discovery": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.68,
+          "confidence": 0.51,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.08,
+            "1": 0.28,
+            "2": 0.51,
+            "3": 0.13,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.78
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.88
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.77
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.5,
+          "probabilities": {
+            "c0": 0.39,
+            "c2": 0.01,
+            "c3": 0,
+            "none": 0,
+            "c1": 0.6
+          }
+        }
+      },
+      "inputTokens": 1541
+    },
+    "pt-change-migration": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.67
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "change",
+          "confidence": 0.99,
+          "probabilities": {
+            "convention": 0,
+            "none": 0,
+            "decision": 0,
+            "gotcha": 0,
+            "change": 1,
+            "discovery": 0,
+            "fix": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.34,
+          "confidence": 0.4,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.07,
+            "2": 0.34,
+            "3": 0.49,
+            "4": 0.03
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.71
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.79
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.51,
+          "probabilities": {
+            "c1": 0.64,
+            "c0": 0.36,
+            "none": 0,
+            "c2": 0
+          }
+        }
+      },
+      "inputTokens": 1427
+    },
+    "en-discovery-prompt-id": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.79
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "discovery",
+          "confidence": 0.95,
+          "probabilities": {
+            "gotcha": 0.04,
+            "decision": 0,
+            "change": 0,
+            "fix": 0,
+            "discovery": 0.96,
+            "convention": 0,
+            "none": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.34,
+          "confidence": 0.65,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.03,
+            "2": 0.59,
+            "3": 0.38,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.78
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.64
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.9,
+          "probabilities": {
+            "c2": 0.01,
+            "c1": 0.93,
+            "c0": 0.06,
+            "none": 0
+          }
+        }
+      },
+      "inputTokens": 1393
+    },
+    "en-fix-diacritics": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.91
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 0.87,
+          "probabilities": {
+            "change": 0.03,
+            "gotcha": 0.07,
+            "convention": 0,
+            "fix": 0.89,
+            "decision": 0,
+            "none": 0,
+            "discovery": 0.01
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.68,
+          "confidence": 0.73,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.28,
+            "3": 0.71,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.22
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.77
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.82
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.35,
+          "probabilities": {
+            "c0": 0.01,
+            "c2": 0.47,
+            "none": 0.01,
+            "c1": 0.51
+          }
+        }
+      },
+      "inputTokens": 1369
+    },
+    "en-convention-commit-style": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.78
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "convention",
+          "confidence": 1,
+          "probabilities": {
+            "convention": 1,
+            "change": 0,
+            "discovery": 0,
+            "decision": 0,
+            "fix": 0,
+            "none": 0,
+            "gotcha": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.2,
+          "confidence": 0.32,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.14,
+            "2": 0.35,
+            "3": 0.44,
+            "4": 0.01
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.77
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.62
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.35,
+          "probabilities": {
+            "c0": 0.57,
+            "none": 0,
+            "c1": 0.43
+          }
+        }
+      },
+      "inputTokens": 1132
+    },
+    "pt-decision-gemini": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.88
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "decision",
+          "confidence": 0.97,
+          "probabilities": {
+            "convention": 0,
+            "discovery": 0,
+            "none": 0,
+            "gotcha": 0,
+            "change": 0.02,
+            "decision": 0.98,
+            "fix": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.71,
+          "confidence": 0.75,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.26,
+            "3": 0.72,
+            "4": 0.01
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.74
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.82
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c2",
+          "confidence": 0.83,
+          "probabilities": {
+            "c1": 0.08,
+            "c0": 0.04,
+            "none": 0.01,
+            "c2": 0.87
+          }
+        }
+      },
+      "inputTokens": 1376
+    },
+    "en-fix-pending-timer": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 0.49,
+          "probabilities": {
+            "decision": 0,
+            "discovery": 0,
+            "gotcha": 0.43,
+            "change": 0,
+            "none": 0,
+            "convention": 0,
+            "fix": 0.5700000000000001
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.67,
+          "confidence": 0.72,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0,
+            "1": 0.01,
+            "2": 0.3,
+            "3": 0.69,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.23
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.74
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.74
+        },
+        "durable_3": {
+          "type": "noul",
+          "noul": 0.64
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.92,
+          "probabilities": {
+            "c2": 0.05,
+            "c3": 0.01,
+            "none": 0,
+            "c1": 0.9299999999999999,
+            "c0": 0.01
+          }
+        }
+      },
+      "inputTokens": 1537
+    },
+    "pt-decision-baseline": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "change",
+          "confidence": 0.51,
+          "probabilities": {
+            "decision": 0,
+            "fix": 0.4,
+            "none": 0,
+            "convention": 0,
+            "discovery": 0,
+            "change": 0.59,
+            "gotcha": 0.01
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 2.77,
+          "confidence": 0.81,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.02,
+            "2": 0.16,
+            "3": 0.81,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.82
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.68,
+          "probabilities": {
+            "c1": 0.21,
+            "c0": 0.79,
+            "none": 0
+          }
+        }
+      },
+      "inputTokens": 1209
+    },
+    "en-none-thanks": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 1,
+          "probabilities": {
+            "gotcha": 0,
+            "convention": 0,
+            "none": 1,
+            "discovery": 0,
+            "change": 0,
+            "fix": 0,
+            "decision": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.02,
+          "confidence": 0.99,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.99,
+            "1": 0.01,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "title": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.72,
+          "probabilities": {
+            "none": 0.86,
+            "c0": 0.14
+          }
+        }
+      },
+      "inputTokens": 939
+    },
+    "pt-none-status": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.99,
+          "probabilities": {
+            "gotcha": 0,
+            "discovery": 0.01,
+            "convention": 0,
+            "decision": 0,
+            "fix": 0,
+            "change": 0,
+            "none": 0.99
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.95,
+          "confidence": 0.56,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.29,
+            "1": 0.49,
+            "2": 0.2,
+            "3": 0.02,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.99,
+          "probabilities": {
+            "c0": 1,
+            "c1": 0,
+            "none": 0
+          }
+        }
+      },
+      "inputTokens": 1125
+    },
+    "en-none-obvious-from-code": {
+      "answers": {
+        "kind": {
+          "type": "choice",
+          "choice": "discovery",
+          "confidence": 0.99,
+          "probabilities": {
+            "gotcha": 0,
+            "decision": 0,
+            "convention": 0,
+            "none": 0.01,
+            "fix": 0,
+            "change": 0,
+            "discovery": 0.99
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.62,
+          "confidence": 0.57,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.07,
+            "1": 0.3,
+            "2": 0.5700000000000001,
+            "3": 0.06,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.8
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.41,
+          "probabilities": {
+            "c0": 0.38,
+            "c1": 0.61,
+            "none": 0.01
+          }
+        },
+        "worth": {
+          "type": "noul",
+          "noul": 0.39
+        }
+      },
+      "inputTokens": 1135
+    },
+    "en-none-plan-not-done": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.65,
+          "probabilities": {
+            "discovery": 0,
+            "none": 0.7,
+            "change": 0.02,
+            "fix": 0,
+            "convention": 0.16,
+            "gotcha": 0,
+            "decision": 0.12
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.89,
+          "confidence": 0.51,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.35,
+            "1": 0.43,
+            "2": 0.2,
+            "3": 0.02,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.25
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.87,
+          "probabilities": {
+            "none": 0.03,
+            "c0": 0.07,
+            "c1": 0.9,
+            "c2": 0
+          }
+        }
+      },
+      "inputTokens": 1307
+    },
+    "pt-none-question-back": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.16
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.97,
+          "probabilities": {
+            "decision": 0.02,
+            "discovery": 0,
+            "gotcha": 0,
+            "fix": 0,
+            "convention": 0,
+            "none": 0.98,
+            "change": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.75,
+          "confidence": 0.36,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.17,
+            "1": 0.18,
+            "2": 0.4,
+            "3": 0.25,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.62,
+          "probabilities": {
+            "c0": 0.74,
+            "c1": 0.02,
+            "none": 0.24
+          }
+        }
+      },
+      "inputTokens": 1146
+    },
+    "en-none-typo": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "fix",
+          "confidence": 0.78,
+          "probabilities": {
+            "gotcha": 0,
+            "discovery": 0,
+            "convention": 0,
+            "none": 0.16,
+            "fix": 0.81,
+            "decision": 0,
+            "change": 0.03
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.47,
+          "confidence": 0.6,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.63,
+            "1": 0.3,
+            "2": 0.06,
+            "3": 0.01,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.94,
+          "probabilities": {
+            "none": 0.03,
+            "c0": 0.97
+          }
+        }
+      },
+      "inputTokens": 929
+    },
+    "en-none-formatter": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "change",
+          "confidence": 0.47,
+          "probabilities": {
+            "none": 0.45,
+            "fix": 0,
+            "change": 0.55,
+            "convention": 0,
+            "discovery": 0,
+            "decision": 0,
+            "gotcha": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.17,
+          "confidence": 0.49,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.22,
+            "1": 0.43,
+            "2": 0.31,
+            "3": 0.04,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.99,
+          "probabilities": {
+            "c0": 0.99,
+            "none": 0.01
+          }
+        }
+      },
+      "inputTokens": 948
+    },
+    "pt-none-listing": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.16
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "discovery",
+          "confidence": 0.88,
+          "probabilities": {
+            "discovery": 0.9,
+            "none": 0.1,
+            "fix": 0,
+            "gotcha": 0,
+            "convention": 0,
+            "decision": 0,
+            "change": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.17,
+          "confidence": 0.48,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.23,
+            "1": 0.38,
+            "2": 0.37,
+            "3": 0.02,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.62
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.8,
+          "probabilities": {
+            "c1": 0.87,
+            "none": 0.03,
+            "c0": 0.1
+          }
+        }
+      },
+      "inputTokens": 1138
+    },
+    "en-none-unresolved": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.99,
+          "probabilities": {
+            "convention": 0,
+            "discovery": 0.01,
+            "fix": 0,
+            "gotcha": 0,
+            "change": 0,
+            "decision": 0,
+            "none": 0.99
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.96,
+          "confidence": 0.2,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.41,
+            "1": 0.25,
+            "2": 0.31,
+            "3": 0.03,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "durable_2": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.78,
+          "probabilities": {
+            "c2": 0.11,
+            "c1": 0.84,
+            "c0": 0.01,
+            "none": 0.04
+          }
+        }
+      },
+      "inputTokens": 1274
+    },
+    "en-none-greeting": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 1,
+          "probabilities": {
+            "discovery": 0,
+            "gotcha": 0,
+            "decision": 0,
+            "change": 0,
+            "convention": 0,
+            "fix": 0,
+            "none": 1
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0,
+          "confidence": 1,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.01
+        },
+        "title": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.45,
+          "probabilities": {
+            "c0": 0.27,
+            "none": 0.73
+          }
+        }
+      },
+      "inputTokens": 927
+    },
+    "pt-none-restatement": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.83,
+          "probabilities": {
+            "fix": 0,
+            "discovery": 0.15,
+            "change": 0,
+            "decision": 0,
+            "none": 0.85,
+            "gotcha": 0,
+            "convention": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.6,
+          "confidence": 0.5,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.61,
+            "1": 0.22,
+            "2": 0.15,
+            "3": 0.02,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c1",
+          "confidence": 0.65,
+          "probabilities": {
+            "c1": 0.76,
+            "none": 0.07,
+            "c0": 0.17
+          }
+        }
+      },
+      "inputTokens": 1138
+    },
+    "en-none-tests-pass": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.88,
+          "probabilities": {
+            "change": 0,
+            "none": 0.9,
+            "fix": 0,
+            "convention": 0,
+            "decision": 0,
+            "gotcha": 0,
+            "discovery": 0.1
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.9,
+          "confidence": 0.25,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.41,
+            "1": 0.35,
+            "2": 0.18,
+            "3": 0.06,
+            "4": 0
+          }
+        }
+      },
+      "inputTokens": 721
+    },
+    "en-none-general-knowledge": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.24
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "discovery",
+          "confidence": 0.96,
+          "probabilities": {
+            "none": 0.03,
+            "decision": 0,
+            "convention": 0,
+            "fix": 0,
+            "discovery": 0.97,
+            "gotcha": 0,
+            "change": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.78,
+          "confidence": 0.53,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.1,
+            "1": 0.19,
+            "2": 0.55,
+            "3": 0.16,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.76
+        },
+        "durable_1": {
+          "type": "noul",
+          "noul": 0.84
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.62,
+          "probabilities": {
+            "none": 0,
+            "c0": 0.75,
+            "c1": 0.25
+          }
+        }
+      },
+      "inputTokens": 1146
+    },
+    "pt-none-progress": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.99,
+          "probabilities": {
+            "gotcha": 0,
+            "none": 0.99,
+            "discovery": 0,
+            "convention": 0,
+            "change": 0,
+            "decision": 0.01,
+            "fix": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.37,
+          "confidence": 0.69,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.76,
+            "1": 0.13,
+            "2": 0.08,
+            "3": 0.03,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "title": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.09,
+          "probabilities": {
+            "none": 0.55,
+            "c0": 0.45
+          }
+        }
+      },
+      "inputTokens": 945
+    },
+    "en-none-version-bump": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.38
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "change",
+          "confidence": 0.97,
+          "probabilities": {
+            "decision": 0,
+            "discovery": 0,
+            "convention": 0,
+            "gotcha": 0,
+            "none": 0.03,
+            "change": 0.97,
+            "fix": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 1.44,
+          "confidence": 0.39,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.14,
+            "1": 0.41000000000000003,
+            "2": 0.32,
+            "3": 0.13,
+            "4": 0
+          }
+        },
+        "durable_0": {
+          "type": "noul",
+          "noul": 0.74
+        },
+        "title": {
+          "type": "choice",
+          "choice": "c0",
+          "confidence": 0.95,
+          "probabilities": {
+            "c0": 0.97,
+            "none": 0.03
+          }
+        }
+      },
+      "inputTokens": 962
+    },
+    "pt-none-interrupted": {
+      "answers": {
+        "worth": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "kind": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 1,
+          "probabilities": {
+            "convention": 0,
+            "none": 1,
+            "discovery": 0,
+            "change": 0,
+            "gotcha": 0,
+            "decision": 0,
+            "fix": 0
+          }
+        },
+        "importance": {
+          "type": "score",
+          "score": 0.27,
+          "confidence": 0.78,
+          "legend": {
+            "0": "Trivial: nothing is lost",
+            "1": "Minor: saves a few minutes",
+            "2": "Useful: avoids a wrong turn or a repeated investigation",
+            "3": "Important: avoids a bug, a rejected approach, or repeating a user correction",
+            "4": "Critical: avoids data loss, a security problem, or breaking a hard project rule"
+          },
+          "probabilities": {
+            "0": 0.88,
+            "1": 0.03,
+            "2": 0.04,
+            "3": 0.04,
+            "4": 0.01
+          }
+        }
+      },
+      "inputTokens": 713
+    }
+  }
+}

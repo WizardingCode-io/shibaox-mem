@@ -39,6 +39,7 @@ export function withFallback(
   return {
     name: "fallback",
     version: `${primary.version}+${fallback.version}`,
+    versions: { ...fallback.versions, ...primary.versions },
     distill: (input) =>
       attempt(
         () => primary.distill(input),

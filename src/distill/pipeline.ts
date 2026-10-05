@@ -213,7 +213,7 @@ export async function distillTurn(
         commit: turn.commit,
         origin: "distilled",
         judge: verdict.source,
-        judgeVersion: deps.judge.version,
+        judgeVersion: deps.judge.versions[verdict.source] ?? deps.judge.version,
         sourceTurnId: turn.id,
         files: draft.files,
         now,

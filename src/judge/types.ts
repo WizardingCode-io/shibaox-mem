@@ -60,6 +60,8 @@ export interface Judge {
   readonly name: JudgeSource | "fallback";
   /** Recorded on each memory, so that it can be judged again when a judge improves. */
   readonly version: string;
+  /** The version of each judge that may answer through this one, by its name. */
+  readonly versions: Partial<Record<JudgeSource, string>>;
   distill(input: DistillInput): Promise<DistillVerdict>;
   consolidate(input: ConsolidateInput): Promise<ConsolidateVerdict>;
 }

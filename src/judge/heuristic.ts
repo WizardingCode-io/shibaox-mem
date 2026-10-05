@@ -215,6 +215,7 @@ function consolidate(input: ConsolidateInput): ConsolidateVerdict {
 export const heuristicJudge: Judge = {
   name: "heuristic",
   version: "1",
+  versions: { heuristic: "1" },
   distill: async (input) => distill(input),
   consolidate: async (input) => consolidate(input),
 };

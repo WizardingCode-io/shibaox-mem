@@ -384,6 +384,7 @@ describe("withFallback", () => {
   const failing = (error: unknown): Judge => ({
     name: "typesafe",
     version: "1",
+    versions: { typesafe: "1" },
     distill: async () => {
       throw error;
     },
@@ -394,6 +395,7 @@ describe("withFallback", () => {
   const working: Judge = {
     ...heuristicJudge,
     name: "typesafe",
+    versions: { typesafe: "1" },
     distill: async (input) => ({ ...(await heuristicJudge.distill(input)), source: "typesafe" }),
   };
 
@@ -406,6 +408,8 @@ describe("withFallback", () => {
     );
     expect((await judge.distill(distillInput)).source).toBe("typesafe");
     expect(judge.name).toBe("fallback");
+    // Each memory records the version of the judge that actually produced it.
+    expect(judge.versions).toEqual({ typesafe: "1", heuristic: "1" });
   });
 
   test("falls back when the primary fails, reports the failure, and remembers it", async () => {
