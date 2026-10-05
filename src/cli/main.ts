@@ -11,6 +11,8 @@ const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   hook: () => import("./commands/hook.ts"),
   distill: () => import("./commands/distill.ts"),
   mcp: () => import("./commands/mcp.ts"),
+  install: () => import("./commands/install.ts"),
+  uninstall: () => import("./commands/uninstall.ts"),
   __spike: () => import("./commands/spike.ts"),
 };
 
