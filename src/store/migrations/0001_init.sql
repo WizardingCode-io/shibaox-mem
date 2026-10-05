@@ -122,7 +122,8 @@ CREATE TRIGGER memories_au AFTER UPDATE OF title, body, terms ON memories BEGIN
   INSERT INTO memories_fts(rowid, title, body, terms) VALUES (new.id, new.title, new.body, new.terms);
 END;
 
--- What was shown to the agent, and when. Also what stops a memory being shown twice.
+-- What was shown to the agent, and when. Also what stops a memory being shown twice:
+-- once by name in a session brief, and once in full on a prompt, per context.
 CREATE TABLE injections (
   id INTEGER PRIMARY KEY,
   session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -133,7 +134,7 @@ CREATE TABLE injections (
   tokens INTEGER NOT NULL,
   at INTEGER NOT NULL
 );
-CREATE UNIQUE INDEX injections_once ON injections(session_id, context_epoch, memory_id) WHERE event <> 'mcp';
+CREATE UNIQUE INDEX injections_once ON injections(session_id, context_epoch, memory_id, event) WHERE event <> 'mcp';
 
 -- Local latency record. No payloads. Without telemetry this is how regressions are seen.
 CREATE TABLE hook_runs (

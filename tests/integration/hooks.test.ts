@@ -313,10 +313,24 @@ describe("hook: what the agent is told", () => {
     expect(hook("prompt", { turnId: "p2", prompt: "so busy_timeout again?" })).toBe("");
   });
 
-  test("what the brief already said is not repeated on a prompt", () => {
+  test("a note the brief said in full is not repeated on a prompt", () => {
     remember(RULE);
     hook("session-start", { source: "startup" });
     expect(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" })).toBe("");
+  });
+
+  // The brief lists headings only. A note with more to say is still owed in full.
+  test("a note the brief only named is given in full, once, when a prompt bears on it", () => {
+    remember(RULE, "Otherwise the first query fails at once.");
+    expect(told(hook("session-start", { source: "startup" }))?.additionalContext).not.toContain(
+      "Otherwise the first query fails at once.",
+    );
+    expect(
+      told(hook("prompt", { turnId: "p1", prompt: "why is busy_timeout ignored here?" }))
+        ?.additionalContext,
+    ).toContain("Otherwise the first query fails at once.");
+    expect(hook("prompt", { turnId: "p2", prompt: "so busy_timeout again?" })).toBe("");
+    expect(injections().map((row) => row.event)).toEqual(["session-start", "prompt"]);
   });
 
   test("an unrelated prompt is given nothing", () => {

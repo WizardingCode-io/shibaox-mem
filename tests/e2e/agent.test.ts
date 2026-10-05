@@ -86,16 +86,13 @@ describe("the compiled binary, driven as an agent drives it", () => {
     expect(brief).toContain("Where things stood");
     expect(brief).toContain("the server stops answering under load");
     expect(brief).toContain(POOL_TITLE);
-    // The brief already showed it, so a related prompt does not repeat it.
-    expect(await second.prompt("why does workerPool hold on to connections?")).toBeNull();
-
-    // A session that starts on something else is told the detail when it becomes relevant.
-    const third = agent("s3");
-    await third.start("resume");
-    const notes = await third.prompt("why does workerPool hold on to connections?");
+    // The brief names the note; its detail arrives when a prompt makes it relevant, once.
+    expect(brief).not.toContain("Context: the server stops answering under load");
+    const notes = await second.prompt("why does workerPool hold on to connections?");
     expect(notes).toContain(POOL_TITLE);
-    expect(notes).toContain("releases it in a finally block");
-    expect(await third.prompt("write a haiku about autumn leaves")).toBeNull();
+    expect(notes).toContain("Context: the server stops answering under load");
+    expect(await second.prompt("so workerPool again?")).toBeNull();
+    expect(await second.prompt("write a haiku about autumn leaves")).toBeNull();
   }, 60_000);
 
   test("a turn the user interrupted is still learned from", async () => {

@@ -22,8 +22,23 @@ interface Candidate {
   overlap: number;
 }
 
-const NOT_YET_SHOWN = `m.id NOT IN (SELECT memory_id FROM injections
-                                    WHERE session_id = ? AND context_epoch = ? AND event <> 'mcp')`;
+/**
+ * A condition that leaves out the notes this context has already been given.
+ *
+ * A note is owed in full once per context. The session brief only names notes, so one
+ * it named still counts as unseen, unless its title is all there is to it. The ids are
+ * looked up first and inlined: a subquery here would be re-run for every candidate row.
+ */
+function notYetShown(db: Db, sessionId: number, epoch: number): string {
+  const shown = db
+    .query<{ id: number }, [number, number]>(
+      `SELECT DISTINCT i.memory_id AS id FROM injections i JOIN memories m ON m.id = i.memory_id
+        WHERE i.session_id = ? AND i.context_epoch = ?
+          AND (i.event = 'prompt' OR (i.event = 'session-start' AND m.body = ''))`,
+    )
+    .all(sessionId, epoch);
+  return shown.length === 0 ? "1" : `m.id NOT IN (${shown.map((row) => row.id).join(", ")})`;
+}
 
 function sessionFiles(db: Db, sessionId: number): string[] {
   const files = new Set<string>();
@@ -86,15 +101,16 @@ export function retrieveForPrompt(
   const query = buildQuery(input.prompt);
   if (query === null) return [];
 
+  const unseen = notYetShown(db, input.sessionId, input.epoch);
   const candidates = new Map<number, Candidate>();
   const matched = db
-    .query<MemoryRow & { bm25: number }, [string, number, number, number, number]>(
+    .query<MemoryRow & { bm25: number }, [string, number, number]>(
       `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0) AS bm25
          FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
-        WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active' AND ${NOT_YET_SHOWN}
+        WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active' AND ${unseen}
         ORDER BY bm25 LIMIT ?`,
     )
-    .all(query.match, input.projectId, input.sessionId, input.epoch, CANDIDATES_PER_CHANNEL);
+    .all(query.match, input.projectId, CANDIDATES_PER_CHANNEL);
   for (const { bm25, ...row } of matched) candidates.set(row.id, { row, bm25, overlap: 0 });
 
   const files = sessionFiles(db, input.sessionId);
@@ -104,10 +120,10 @@ export function retrieveForPrompt(
         `SELECT ${MEMORY_COLUMNS}, count(*) AS overlap
            FROM memory_files f JOIN memories m ON m.id = f.memory_id
           WHERE f.path IN (${files.map(() => "?").join(", ")})
-            AND m.project_id = ? AND m.status = 'active' AND ${NOT_YET_SHOWN}
+            AND m.project_id = ? AND m.status = 'active' AND ${unseen}
           GROUP BY m.id ORDER BY overlap DESC LIMIT ?`,
       )
-      .all(...files, input.projectId, input.sessionId, input.epoch, CANDIDATES_PER_CHANNEL);
+      .all(...files, input.projectId, CANDIDATES_PER_CHANNEL);
     for (const { overlap, ...row } of touched) {
       const known = candidates.get(row.id);
       if (known === undefined) candidates.set(row.id, { row, overlap });
