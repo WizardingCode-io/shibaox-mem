@@ -2,6 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { type Check, runChecks } from "../../doctor/checks.ts";
 import { codexContext } from "../../install/codex.ts";
+import { cursorContext } from "../../install/cursor.ts";
 import { geminiContext } from "../../install/gemini.ts";
 import { opencodePluginPath } from "../../install/opencode.ts";
 import { defaultDataDir } from "../../util/paths.ts";
@@ -23,6 +24,7 @@ export function run(): number {
       "settings.json",
     ),
     codexHooksPath: codexContext("").settingsPath,
+    cursorHooksPath: cursorContext("").settingsPath,
     geminiSettingsPath: geminiContext("").settingsPath,
     opencodePluginPath: opencodePluginPath(),
     which: (command) => Bun.which(command),

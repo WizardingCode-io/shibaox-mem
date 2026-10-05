@@ -35,6 +35,12 @@ export interface HostSpec {
   /** The host's own commands for its MCP server registry. */
   mcpAdd(binaryPath: string): string[];
   mcpRemove: string[];
+  /** When set, the MCP server is written into this JSON file instead (`mcpServers`). */
+  mcpFile?: (context: InstallContext) => string;
+  /** grouped: event → [{ hooks: [entry] }] (Claude Code, Codex, Gemini). flat: event → [entry] (Cursor). */
+  layout?: "grouped" | "flat";
+  /** Keys the file must hold besides `hooks`, such as Cursor's `version`. */
+  topLevel?: Json;
   /** Anything the user still has to do by hand after installing. */
   notes: string[];
 }
@@ -42,6 +48,8 @@ export interface HostSpec {
 export interface InstallContext {
   /** The host's hooks file (Claude Code: settings.json; Codex: hooks.json). */
   settingsPath: string;
+  /** The host's MCP configuration file, for hosts without a command to register servers. */
+  mcpPath?: string;
   dataDir: string;
   /** Absolute path the hooks will execute. */
   binaryPath: string;
@@ -56,6 +64,8 @@ export interface InstallResult {
   mcp: "registered" | "manual";
   /** The command that registers the MCP server, for when it has to be run by hand. */
   mcpCommand: string[];
+  /** The file the server was written into, for hosts without a command. */
+  mcpPath?: string;
   notes: string[];
 }
 
@@ -120,6 +130,12 @@ function withoutOurs(spec: HostSpec, settings: Json): { settings: Json; removed:
       hooks[event] = groups;
       continue;
     }
+    if (spec.layout === "flat") {
+      const others = groups.filter((entry) => !spec.isOurs(entry));
+      removed += groups.length - others.length;
+      if (others.length > 0 || groups.length === 0) hooks[event] = others;
+      continue;
+    }
     const kept: unknown[] = [];
     for (const group of groups) {
       if (!isObject(group) || !Array.isArray(group.hooks)) {
@@ -142,12 +158,13 @@ function withOurs(spec: HostSpec, settings: Json, binaryPath: string): Json {
   const hooks: Json = { ...(isObject(settings.hooks) ? settings.hooks : {}) };
   for (const [hostEvent, event] of spec.events) {
     const groups = hooks[hostEvent];
+    const entry = spec.entry(binaryPath, event);
     hooks[hostEvent] = [
       ...(Array.isArray(groups) ? groups : []),
-      { hooks: [spec.entry(binaryPath, event)] },
+      spec.layout === "flat" ? entry : { hooks: [entry] },
     ];
   }
-  return { ...settings, hooks };
+  return { ...(spec.topLevel ?? {}), ...settings, hooks };
 }
 
 /** Serialises in the file's own style: its indentation, and its final newline or lack of one. */
@@ -235,12 +252,51 @@ export function installHooksFile(spec: HostSpec, context: InstallContext): Insta
     );
   }
 
-  // The MCP server is registered through the host's own command: its config file
-  // holds unrelated state and is rewritten by the application itself.
   const mcpCommand = spec.mcpAdd(binaryPath);
+  if (spec.mcpFile !== undefined) {
+    const mcpPath = spec.mcpFile(context);
+    writeMcpServer(mcpPath, binaryPath);
+    return { settingsPath, changed, mcp: "registered", mcpCommand, mcpPath, notes: spec.notes };
+  }
+  // Otherwise the MCP server is registered through the host's own command: its config
+  // file holds unrelated state and is rewritten by the application itself.
   context.run(spec.mcpRemove);
   const mcp = context.run(mcpCommand).ok ? "registered" : "manual";
   return { settingsPath, changed, mcp, mcpCommand, notes: spec.notes };
+}
+
+/** Adds our server to a host's `mcpServers` file, keeping every other entry. */
+function writeMcpServer(path: string, binaryPath: string): void {
+  const file = resolved(path);
+  const previous = existsSync(file) ? readFileSync(file, "utf8") : null;
+  const config = parseSettings(path, previous);
+  const servers = isObject(config.mcpServers) ? config.mcpServers : {};
+  const next = serialise(
+    { ...config, mcpServers: { ...servers, [MCP_NAME]: { command: binaryPath, args: ["mcp"] } } },
+    previous,
+  );
+  if (next === previous) return;
+  mkdirSync(dirname(file), { recursive: true });
+  writeAtomically(file, next);
+}
+
+/** Takes our server out of a host's `mcpServers` file; a file left empty by that goes away. */
+function removeMcpServer(path: string): void {
+  const file = resolved(path);
+  if (!existsSync(file)) return;
+  const previous = readFileSync(file, "utf8");
+  let config: Json;
+  try {
+    config = parseSettings(path, previous);
+  } catch {
+    return;
+  }
+  if (!isObject(config.mcpServers) || !(MCP_NAME in config.mcpServers)) return;
+  const { [MCP_NAME]: _ours, ...servers } = config.mcpServers;
+  const next: Json = { ...config, mcpServers: servers };
+  if (Object.keys(servers).length === 0) delete next.mcpServers;
+  if (Object.keys(next).length === 0) rmSync(file);
+  else writeAtomically(file, serialise(next, previous));
 }
 
 export function uninstallHooksFile(spec: HostSpec, context: InstallContext): UninstallResult {
@@ -273,7 +329,8 @@ export function uninstallHooksFile(spec: HostSpec, context: InstallContext): Uni
     }
   }
 
-  context.run(spec.mcpRemove);
+  if (spec.mcpFile !== undefined) removeMcpServer(spec.mcpFile(context));
+  else context.run(spec.mcpRemove);
   if (receipt?.backupPath) rmSync(receipt.backupPath, { force: true });
   rmSync(receiptPath(dataDir, spec.agent, settingsPath), { force: true });
   return { settingsPath, settings: outcome };
@@ -291,7 +348,13 @@ export function inspectHooksFile(
     for (const [hostEvent] of spec.events) {
       const groups = settings.hooks[hostEvent];
       for (const group of Array.isArray(groups) ? groups : []) {
-        for (const hook of isObject(group) && Array.isArray(group.hooks) ? group.hooks : []) {
+        const entries =
+          spec.layout === "flat"
+            ? [group]
+            : isObject(group) && Array.isArray(group.hooks)
+              ? group.hooks
+              : [];
+        for (const hook of entries) {
           if (spec.isOurs(hook)) {
             if (!events.includes(hostEvent)) events.push(hostEvent);
             binaries.add(spec.binaryOf(hook as Json));

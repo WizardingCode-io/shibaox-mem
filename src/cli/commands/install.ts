@@ -5,6 +5,7 @@ import { stageBinary } from "../../install/binary.ts";
 import { installClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
+import { cursorContext, installCursor } from "../../install/cursor.ts";
 import { geminiContext, installGemini } from "../../install/gemini.ts";
 import type { InstallResult } from "../../install/hooks-file.ts";
 import { installOpenCode, opencodePluginPath } from "../../install/opencode.ts";
@@ -20,17 +21,18 @@ import { defaultDataDir } from "../../util/paths.ts";
 import { isCompiled } from "../../util/self.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-export const SUPPORTED_AGENTS = ["claude-code", "codex", "gemini", "opencode"];
+export const SUPPORTED_AGENTS = ["claude-code", "codex", "cursor", "gemini", "opencode"];
 export const AGENT_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
   codex: "Codex",
+  cursor: "Cursor",
   gemini: "Gemini CLI",
   opencode: "OpenCode",
 };
 
 const USAGE = `Usage: shibaox-mem install <agent> [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  <agent>             claude-code | codex | gemini | opencode
+  <agent>             claude-code | codex | cursor | gemini | opencode
   --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
@@ -46,7 +48,9 @@ function describeInstall(
 ): string {
   const mcp =
     result.mcp === "registered"
-      ? "registered"
+      ? result.mcpCommand.length === 0 && result.mcpPath !== undefined
+        ? `registered in ${result.mcpPath}`
+        : "registered"
       : `not registered. Run: ${result.mcpCommand.join(" ")}`;
   return [
     `Installed shibaox-mem for ${AGENT_NAMES[agent]}.`,
@@ -124,6 +128,12 @@ export function run(argv: string[]): number {
           "Start a new OpenCode session for it to take effect.",
           "",
         ].join("\n"),
+      );
+      return 0;
+    }
+    if (agent === "cursor") {
+      process.stdout.write(
+        describeInstall(agent, installCursor(cursorContext(binaryPath)), binaryPath, lines),
       );
       return 0;
     }

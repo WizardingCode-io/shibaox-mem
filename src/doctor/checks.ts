@@ -3,6 +3,7 @@ import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CLAUDE_CODE } from "../install/claude-code.ts";
 import { CODEX } from "../install/codex.ts";
+import { CURSOR } from "../install/cursor.ts";
 import { GEMINI } from "../install/gemini.ts";
 import { type HostSpec, inspectHooksFile } from "../install/hooks-file.ts";
 import { PLUGIN_MARKER } from "../install/opencode-plugin.ts";
@@ -23,6 +24,7 @@ export interface DoctorContext {
   settingsPath: string;
   /** Where each other host keeps what `install` wrote. */
   codexHooksPath: string;
+  cursorHooksPath: string;
   geminiSettingsPath: string;
   opencodePluginPath: string;
   /** Whether a host's command is on this machine; null when it is not. */
@@ -258,6 +260,7 @@ export function runChecks(context: DoctorContext): Check[] {
       // Claude Code is the host this started on: its absence is a warning, not a skip.
       hooksHost("Claude Code", CLAUDE_CODE, context.settingsPath, null, context),
       hooksHost("Codex", CODEX, context.codexHooksPath, "codex", context),
+      hooksHost("Cursor", CURSOR, context.cursorHooksPath, "cursor", context),
       hooksHost("Gemini CLI", GEMINI, context.geminiSettingsPath, "gemini", context),
       openCode(context),
     ];

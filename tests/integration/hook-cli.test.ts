@@ -81,6 +81,28 @@ describe("shibaox-mem hook", () => {
     ]);
   });
 
+  test("a whole turn from Cursor: the prompt is let through, the response closes the turn", async () => {
+    const common = { conversation_id: "conv-1", generation_id: "g1", workspace_roots: [dir] };
+    const before = await hook(
+      JSON.stringify({
+        ...common,
+        hook_event_name: "beforeSubmitPrompt",
+        prompt: "why does it fail?",
+      }),
+      "cursor",
+      "prompt",
+    );
+    expect(before).toEqual({ exitCode: 0, stdout: '{"continue":true}', stderr: "" });
+    await hook(
+      JSON.stringify({ ...common, hook_event_name: "afterAgentResponse", text: "Because of X." }),
+      "cursor",
+      "turn-end",
+    );
+    expect(rows("SELECT state, completeness, final_text FROM turns")).toEqual([
+      { state: "pending", completeness: "full", final_text: "Because of X." },
+    ]);
+  });
+
   test("an interrupted turn is queued by the session end that follows it", async () => {
     await hook(payload("interrupted.user-prompt-submit"), "claude-code", "prompt");
     await hook(payload("interrupted.session-end"), "claude-code", "session-end");
