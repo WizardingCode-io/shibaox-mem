@@ -4,12 +4,13 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 // Installs ai-mem into Claude Code's user settings and removes it again.
 //
@@ -68,7 +69,19 @@ type Json = Record<string, unknown>;
 const isObject = (value: unknown): value is Json =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const sha256 = (text: string) => new Bun.CryptoHasher("sha256").update(text).digest("hex");
-const receiptPath = (dataDir: string) => join(dataDir, "install", "claude-code.json");
+// One receipt per settings file: several Claude Code profiles may share a data directory.
+const profileKey = (settingsPath: string) => sha256(settingsPath).slice(0, 12);
+const receiptPath = (dataDir: string, settingsPath: string) =>
+  join(dataDir, "install", `claude-code-${profileKey(settingsPath)}.json`);
+
+/** The file to read and write: the target, when the settings file is a symlink into dotfiles. */
+function resolved(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
 
 function isOurs(hook: unknown): boolean {
   if (!isObject(hook) || typeof hook.command !== "string" || !Array.isArray(hook.args))
@@ -158,10 +171,12 @@ function writeAtomically(path: string, text: string): void {
   renameSync(temporary, path);
 }
 
-function readReceipt(dataDir: string): Receipt | null {
+function readReceipt(dataDir: string, settingsPath: string): Receipt | null {
   try {
-    const receipt = JSON.parse(readFileSync(receiptPath(dataDir), "utf8")) as Receipt;
-    return receipt.agent === "claude-code" ? receipt : null;
+    const receipt = JSON.parse(readFileSync(receiptPath(dataDir, settingsPath), "utf8")) as Receipt;
+    return receipt.agent === "claude-code" && receipt.settingsPath === settingsPath
+      ? receipt
+      : null;
   } catch {
     return null;
   }
@@ -169,7 +184,8 @@ function readReceipt(dataDir: string): Receipt | null {
 
 export function installClaudeCode(context: InstallContext): InstallResult {
   const { settingsPath, dataDir, binaryPath } = context;
-  const previous = existsSync(settingsPath) ? readFileSync(settingsPath, "utf8") : null;
+  const file = resolved(settingsPath);
+  const previous = existsSync(file) ? readFileSync(file, "utf8") : null;
   // Validated before anything is changed or run.
   const settings = parseSettings(settingsPath, previous);
   const next = serialise(withOurs(withoutOurs(settings).settings, binaryPath), previous);
@@ -178,26 +194,47 @@ export function installClaudeCode(context: InstallContext): InstallResult {
   if (changed) {
     const installDir = join(dataDir, "install");
     mkdirSync(join(installDir, "backups"), { recursive: true, mode: 0o700 });
-    // The receipt of a first install describes the user's own file; later installs keep it.
-    const earlier = readReceipt(dataDir);
-    let backupPath = earlier?.backupPath ?? null;
-    if (earlier === null && previous !== null) {
-      backupPath = join(installDir, "backups", `claude-code-settings-${context.now()}.json`);
-      copyFileSync(settingsPath, backupPath);
-      chmodSync(backupPath, 0o600);
+
+    // An earlier receipt still describes this file only if nobody has changed the file
+    // since we wrote it. Otherwise its backup is of a file that no longer exists, and
+    // restoring it later would throw away whatever was done in between.
+    const earlier = readReceipt(dataDir, settingsPath);
+    const earlierHolds =
+      earlier !== null && previous !== null && sha256(previous) === earlier.installedSha256;
+    let existedBefore: boolean;
+    let backupPath: string | null;
+    if (earlier !== null && earlierHolds) {
+      ({ existedBefore, backupPath } = earlier);
+    } else {
+      if (earlier?.backupPath) rmSync(earlier.backupPath, { force: true });
+      existedBefore = previous !== null;
+      backupPath = null;
+      // Only the user's own file, from before any install of ours, is worth putting back.
+      if (earlier === null && previous !== null) {
+        backupPath = join(
+          installDir,
+          "backups",
+          `claude-code-settings-${profileKey(settingsPath)}-${context.now()}.json`,
+        );
+        copyFileSync(file, backupPath);
+        chmodSync(backupPath, 0o600);
+      }
     }
-    mkdirSync(join(settingsPath, ".."), { recursive: true });
-    writeAtomically(settingsPath, next);
+
+    mkdirSync(dirname(file), { recursive: true });
+    writeAtomically(file, next);
     const receipt: Receipt = {
       agent: "claude-code",
       installedAt: context.now(),
       binaryPath,
       settingsPath,
-      existedBefore: earlier?.existedBefore ?? previous !== null,
+      existedBefore,
       backupPath,
       installedSha256: sha256(next),
     };
-    writeFileSync(receiptPath(dataDir), `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 });
+    writeFileSync(receiptPath(dataDir, settingsPath), `${JSON.stringify(receipt, null, 2)}\n`, {
+      mode: 0o600,
+    });
   }
 
   // The MCP server is registered through Claude Code's own command: its config file
@@ -210,8 +247,9 @@ export function installClaudeCode(context: InstallContext): InstallResult {
 
 export function uninstallClaudeCode(context: InstallContext): UninstallResult {
   const { settingsPath, dataDir } = context;
-  const receipt = readReceipt(dataDir);
-  const current = existsSync(settingsPath) ? readFileSync(settingsPath, "utf8") : null;
+  const file = resolved(settingsPath);
+  const receipt = readReceipt(dataDir, settingsPath);
+  const current = existsSync(file) ? readFileSync(file, "utf8") : null;
   let outcome: UninstallResult["settings"] = "untouched";
 
   if (current !== null) {
@@ -225,13 +263,13 @@ export function uninstallClaudeCode(context: InstallContext): UninstallResult {
       existsSync(receipt.backupPath)
     ) {
       // Nobody changed the file since: the original bytes go back exactly.
-      writeAtomically(settingsPath, readFileSync(receipt.backupPath, "utf8"));
+      writeAtomically(file, readFileSync(receipt.backupPath, "utf8"));
       outcome = "restored";
     } else {
       // The file has moved on: take out what is ours and keep everything else.
       const { settings, removed } = withoutOurs(parseSettings(settingsPath, current));
       if (removed > 0) {
-        writeAtomically(settingsPath, serialise(settings, current));
+        writeAtomically(file, serialise(settings, current));
         outcome = "edited";
       }
     }
@@ -239,7 +277,7 @@ export function uninstallClaudeCode(context: InstallContext): UninstallResult {
 
   context.run(["claude", "mcp", "remove", "--scope", "user", MCP_NAME]);
   if (receipt?.backupPath) rmSync(receipt.backupPath, { force: true });
-  rmSync(receiptPath(dataDir), { force: true });
+  rmSync(receiptPath(dataDir, settingsPath), { force: true });
   return { settingsPath, settings: outcome };
 }
 

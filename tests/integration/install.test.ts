@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -49,6 +51,14 @@ const context = (binaryPath = BIN): InstallContext => ({
   },
 });
 const settings = () => JSON.parse(readFileSync(settingsPath, "utf8"));
+const receipts = () => {
+  const dir = join(dataDir, "install");
+  return existsSync(dir)
+    ? readdirSync(dir)
+        .filter((name) => name.endsWith(".json"))
+        .map((name) => join(dir, name))
+    : [];
+};
 const ours = (event: string) => ({
   hooks: [{ type: "command", command: BIN, args: ["hook", "claude-code", event], timeout: 5 }],
 });
@@ -137,8 +147,12 @@ describe("install claude-code", () => {
     expect(readFileSync(join(dataDir, "install", "backups", backups[0] as string), "utf8")).toBe(
       original,
     );
-    const receipt = JSON.parse(readFileSync(join(dataDir, "install", "claude-code.json"), "utf8"));
-    expect(receipt).toMatchObject({ agent: "claude-code", settingsPath, binaryPath: BIN });
+    expect(receipts()).toHaveLength(1);
+    expect(JSON.parse(readFileSync(receipts()[0] as string, "utf8"))).toMatchObject({
+      agent: "claude-code",
+      settingsPath,
+      binaryPath: BIN,
+    });
   });
 
   test("registers the MCP server through the host's own command", () => {
@@ -210,9 +224,83 @@ describe("uninstall claude-code", () => {
     commands = [];
     uninstallClaudeCode(context());
     expect(commands).toEqual([["claude", "mcp", "remove", "--scope", "user", "ai-mem"]]);
-    expect(existsSync(join(dataDir, "install", "claude-code.json"))).toBe(false);
+    expect(receipts()).toEqual([]);
     expect(readFileSync(join(dataDir, "ai-mem.db"), "utf8")).toBe("data");
   });
+});
+
+describe("install and uninstall, over time", () => {
+  // Reinstalling happens on every upgrade. What the user did to the file in between is theirs.
+  test("changes made between two installs survive an uninstall", () => {
+    writeFileSync(settingsPath, JSON.stringify({ model: "opus" }, null, 2));
+    installClaudeCode(context("/old/place/ai-mem"));
+    const edited = settings();
+    edited.permissions = { allow: ["Bash(npm test:*)"] };
+    writeFileSync(settingsPath, JSON.stringify(edited, null, 2));
+    installClaudeCode(context());
+
+    expect(uninstallClaudeCode(context()).settings).toBe("edited");
+    expect(settings()).toEqual({ model: "opus", permissions: { allow: ["Bash(npm test:*)"] } });
+  });
+
+  test("a file ai-mem created is not deleted once the user has put settings in it", () => {
+    installClaudeCode(context("/old/place/ai-mem"));
+    const edited = settings();
+    edited.model = "sonnet";
+    writeFileSync(settingsPath, JSON.stringify(edited, null, 2));
+    installClaudeCode(context());
+
+    expect(uninstallClaudeCode(context()).settings).toBe("edited");
+    expect(settings()).toEqual({ model: "sonnet" });
+  });
+
+  test("reinstalling over an untouched install still restores the original exactly", () => {
+    const original = '{\n    "model":   "opus"\n}';
+    writeFileSync(settingsPath, original);
+    installClaudeCode(context("/old/place/ai-mem"));
+    installClaudeCode(context());
+    expect(uninstallClaudeCode(context()).settings).toBe("restored");
+    expect(readFileSync(settingsPath, "utf8")).toBe(original);
+  });
+
+  test("two Claude Code profiles sharing one data directory do not touch each other", () => {
+    const other = join(home, "work", "settings.json");
+    mkdirSync(join(home, "work"));
+    const mine = '{\n  "model": "opus"\n}\n';
+    const theirs = '{\n  "model": "sonnet"\n}\n';
+    writeFileSync(settingsPath, mine);
+    writeFileSync(other, theirs);
+    const work = { ...context(), settingsPath: other };
+
+    installClaudeCode(context());
+    installClaudeCode(work);
+    expect(uninstallClaudeCode(work).settings).toBe("restored");
+    expect(readFileSync(other, "utf8")).toBe(theirs);
+    // The first profile is still installed, and still knows how to undo itself.
+    expect(settings().hooks.Stop).toEqual([ours("turn-end")]);
+    expect(uninstallClaudeCode(context()).settings).toBe("restored");
+    expect(readFileSync(settingsPath, "utf8")).toBe(mine);
+  });
+
+  test.skipIf(process.platform === "win32")(
+    "a settings file that is a symlink stays one, and its target is what changes",
+    () => {
+      const dotfiles = join(home, "dotfiles");
+      mkdirSync(dotfiles);
+      const target = join(dotfiles, "claude-settings.json");
+      const original = '{\n  "model": "opus"\n}\n';
+      writeFileSync(target, original);
+      symlinkSync(target, settingsPath);
+
+      installClaudeCode(context());
+      expect(lstatSync(settingsPath).isSymbolicLink()).toBe(true);
+      expect(JSON.parse(readFileSync(target, "utf8")).hooks.Stop).toEqual([ours("turn-end")]);
+
+      expect(uninstallClaudeCode(context()).settings).toBe("restored");
+      expect(lstatSync(settingsPath).isSymbolicLink()).toBe(true);
+      expect(readFileSync(target, "utf8")).toBe(original);
+    },
+  );
 });
 
 describe("stageBinary", () => {
