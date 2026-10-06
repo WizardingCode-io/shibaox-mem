@@ -5,28 +5,28 @@
 class ShibaoxMem < Formula
   desc "Persistent memory for coding agents: one local binary, no daemon"
   homepage "https://github.com/WizardingCode-io/shibaox-mem"
-  version "0.2.1"
+  version "0.3.0"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.2.1/shibaox-mem-darwin-arm64"
-      sha256 "514a8e67e013611129e275579e76144addc8f513851cab10c9e50a3bf8a652bf"
+      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.3.0/shibaox-mem-darwin-arm64"
+      sha256 "07243b2b60302465d66854cfa0c04a14fa3fb7a9cfa6a49d80456984ded58734"
     end
     on_intel do
-      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.2.1/shibaox-mem-darwin-x64"
-      sha256 "359fd50d46e73a894b66f0d93fc0d9d5e47865c5793855c59217eb3bf3427e51"
+      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.3.0/shibaox-mem-darwin-x64"
+      sha256 "94d80e2e951f3319bd1c3876669c344f239e63b3467e13a091426116343aa571"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.2.1/shibaox-mem-linux-arm64"
-      sha256 "19af34bf44c897ec2a3ec8fc8b83a53303b7d22a0c8fef4bbf25bdd592ceafb8"
+      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.3.0/shibaox-mem-linux-arm64"
+      sha256 "0deff1db69409b88622b1fd831233bbac41e84ca2d6523fb085d291fdce2ea46"
     end
     on_intel do
-      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.2.1/shibaox-mem-linux-x64"
-      sha256 "7ce1a37f8468f7332402eb1589f3f15c111b81817414cd60582db5b13e090c98"
+      url "https://github.com/WizardingCode-io/shibaox-mem/releases/download/v0.3.0/shibaox-mem-linux-x64"
+      sha256 "32e128401cfdc72bc474ed5b595bdfb4c34d68bd64cdd32ddd915a03358ae4c8"
     end
   end
 
