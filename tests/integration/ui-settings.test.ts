@@ -224,3 +224,58 @@ describe("shibaox-mem ui: storage", () => {
     expect(memories.status).toBe(200);
   });
 });
+
+describe("shibaox-mem ui: backups", () => {
+  test("without a target there is nothing to list, and nothing to run", async () => {
+    const s = await start();
+    expect(await (await api(s, "/api/backups")).json()).toEqual({
+      target: null,
+      last: null,
+      due: false,
+      entries: [],
+    });
+    expect((await api(s, "/api/backups", { method: "POST", body: "{}" })).status).toBe(400);
+  });
+
+  test("with a folder as target: back up now, list, restore", async () => {
+    const folder = join(base, "nas");
+    const s = await start();
+    await api(s, "/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ SHIBAOX_MEM_BACKUP_TO: folder }),
+    });
+    const made = await api(s, "/api/backups", { method: "POST", body: "{}" });
+    expect(made.status).toBe(200);
+    const { name } = (await made.json()) as { name: string };
+    expect(name).toMatch(/^shibaox-mem-.*\.db\.gz$/);
+
+    const listed = (await (await api(s, "/api/backups")).json()) as {
+      target: { kind: string; label: string };
+      last: { name: string };
+      due: boolean;
+      entries: { name: string; bytes: number }[];
+    };
+    expect(listed.target).toEqual({ kind: "folder", label: folder });
+    expect(listed.last.name).toBe(name);
+    expect(listed.due).toBe(false);
+    expect(listed.entries.map((e) => e.name)).toEqual([name]);
+
+    // Lose a memory, then bring the copy back.
+    const gone = await api(s, "/api/memories/1", {
+      method: "POST",
+      body: JSON.stringify({ status: "archived" }),
+    });
+    expect(gone.status).toBe(200);
+    expect(
+      (await api(s, "/api/backups/restore", { method: "POST", body: JSON.stringify({ name }) }))
+        .status,
+    ).toBe(400);
+    const restored = await api(s, "/api/backups/restore", {
+      method: "POST",
+      body: JSON.stringify({ name, confirm: true }),
+    });
+    expect(restored.status).toBe(200);
+    const memory = (await (await api(s, "/api/memories/1")).json()) as { status: string };
+    expect(memory.status).toBe("active");
+  });
+});

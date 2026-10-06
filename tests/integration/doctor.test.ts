@@ -7,6 +7,7 @@ import { resolveProject } from "../../src/core/project.ts";
 import type { Redacted } from "../../src/core/redact.ts";
 import { type Db, openDb } from "../../src/store/db.ts";
 import { insertMemory } from "../../src/store/memories.ts";
+import { setMeta } from "../../src/store/meta.ts";
 import { runCliWith } from "../helpers/cli.ts";
 
 let home: string;
@@ -422,5 +423,46 @@ describe("shibaox-mem status", () => {
     const result = await cli("status");
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("newer than this shibaox-mem supports");
+  });
+});
+
+describe("doctor: backups", () => {
+  test("says when none are configured, and warns when the schedule has slipped", async () => {
+    seed((db, projectId) => void memory(db, projectId, "one"));
+    const off = await cli("doctor");
+    expect(off.stdout).toMatch(/ok {2}\s+backups: not configured/);
+
+    const nas = join(home, "nas");
+    const fresh = await cliWith(
+      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      "doctor",
+    );
+    expect(fresh.stdout).toMatch(/warn\s+backups: none yet/);
+
+    seed((db) =>
+      setMeta(
+        db,
+        "backup.last",
+        JSON.stringify({ name: "x", bytes: 1, at: Date.now() - 3 * 3_600_000, label: nas }),
+      ),
+    );
+    const late = await cliWith(
+      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      "doctor",
+    );
+    expect(late.stdout).toMatch(/warn\s+backups: the last copy is 3 h old/);
+
+    seed((db) =>
+      setMeta(
+        db,
+        "backup.last",
+        JSON.stringify({ name: "x", bytes: 1, at: Date.now() - 600_000, label: nas }),
+      ),
+    );
+    const good = await cliWith(
+      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      "doctor",
+    );
+    expect(good.stdout).toMatch(/ok {2}\s+backups: last copy 10 min ago/);
   });
 });

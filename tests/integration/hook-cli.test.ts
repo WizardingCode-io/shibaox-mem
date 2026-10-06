@@ -352,3 +352,42 @@ describe("the viewer at session start, from the command line", () => {
     expect(await Bun.file(join(dir, "ui.json")).exists()).toBe(false);
   });
 });
+
+describe("backups from the command line hooks", () => {
+  test("a turn's end with a backup target due writes a copy there, and the hook stays silent", async () => {
+    const nas = join(dir, "nas");
+    const env = {
+      SHIBAOX_MEM_DATA_DIR: dir,
+      SHIBAOX_MEM_DISTILL: "off",
+      SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+      SHIBAOX_MEM_BACKUP_TO: nas,
+      SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1",
+    };
+    expect(
+      await runCliWith(
+        { input: payload("user-prompt-submit"), env },
+        "hook",
+        "claude-code",
+        "prompt",
+      ),
+    ).toEqual(SILENT_SUCCESS);
+    expect(
+      await runCliWith({ input: payload("stop"), env }, "hook", "claude-code", "turn-end"),
+    ).toEqual(SILENT_SUCCESS);
+    let copies: string[] = [];
+    for (let i = 0; i < 100 && copies.length === 0; i++) {
+      await Bun.sleep(50);
+      copies = await Bun.file(nas)
+        .exists()
+        .then(() => [] as string[])
+        .catch(() => []);
+      try {
+        copies = (await import("node:fs")).readdirSync(nas).filter((n) => n.endsWith(".db.gz"));
+      } catch {
+        copies = [];
+      }
+    }
+    expect(copies).toHaveLength(1);
+    expect(copies[0]).toMatch(/^shibaox-mem-\d{8}T\d{6}Z-v\d+\.db\.gz$/);
+  }, 15_000);
+});

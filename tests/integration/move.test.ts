@@ -76,7 +76,7 @@ describe("moveStore", () => {
     expect(memories(target)).toBe(3);
     expect(readEnvFile(join(dataDir, "env")).SHIBAOX_MEM_STORE_DIR).toBe(target);
     expect(existsSync(join(dataDir, DB_FILE))).toBe(false);
-    const kept = readdirSync(dataDir).filter((name) => name.startsWith(`${DB_FILE}.moved-`));
+    const kept = readdirSync(dataDir).filter((name) => /\.moved-\d+$/.test(name));
     expect(kept).toHaveLength(1);
     expect((outcome as { keptOld: string }).keptOld).toBe(join(dataDir, kept[0] as string));
     expect(memories(target)).toBe(3);

@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { lastBackup } from "../backup/schedule.ts";
 import { CLAUDE_CODE } from "../install/claude-code.ts";
 import { CODEX } from "../install/codex.ts";
 import { CURSOR } from "../install/cursor.ts";
@@ -102,6 +103,45 @@ function database(context: DoctorContext): { check: Check; db: Db | null } {
         : `cannot be opened: ${error instanceof Error ? error.message : String(error)}`;
     return { check: { name, status: "fail", detail }, db: null };
   }
+}
+
+/** How long ago, in the units a person would use. */
+function agoLabel(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 48) return `${hours} h ago`;
+  return `${Math.round(ms / 86_400_000)} d ago`;
+}
+
+function backups(context: DoctorContext, db: Db | null): Check {
+  const name = "backups";
+  const settings = loadSettings(process.env, context.dataDir);
+  const { to, everyHours } = settings.backup;
+  if (to === null) {
+    return {
+      name,
+      status: "ok",
+      detail: "not configured: set a folder or a bucket in the viewer's settings to keep copies",
+    };
+  }
+  const last = db === null ? null : lastBackup(db);
+  if (last === null) {
+    return {
+      name,
+      status: "warn",
+      detail: `none yet; ${everyHours > 0 ? "the next turn's end makes one" : "run shibaox-mem backup"} (${to})`,
+    };
+  }
+  const age = context.now - last.at;
+  if (everyHours > 0 && age > 2 * everyHours * HOUR_MS) {
+    return {
+      name,
+      status: "warn",
+      detail: `the last copy is ${Math.round(age / HOUR_MS)} h old, with one due every ${everyHours} h; check the target (${to}) and the logs`,
+    };
+  }
+  return { name, status: "ok", detail: `last copy ${agoLabel(age)} · ${last.name} · ${to}` };
 }
 
 function fullTextSearch(): Check {
@@ -360,6 +400,7 @@ export function runChecks(context: DoctorContext): Check[] {
         : queue(db, context.now),
       hookSpeed(db),
       typeSafe(context, db),
+      backups(context, db),
       // Claude Code is the host this started on: its absence is a warning, not a skip.
       hooksHost("Claude Code", CLAUDE_CODE, context.settingsPath, null, context),
       hooksHost("Codex", CODEX, context.codexHooksPath, "codex", context),

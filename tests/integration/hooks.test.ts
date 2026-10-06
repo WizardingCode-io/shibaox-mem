@@ -18,6 +18,8 @@ let clock: number;
 let spawned: number;
 let viewers: number;
 let viewerThrows: boolean;
+let backups: number;
+let backupIsDue: boolean;
 
 beforeEach(() => {
   base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-hooks-")));
@@ -28,6 +30,8 @@ beforeEach(() => {
   spawned = 0;
   viewers = 0;
   viewerThrows = false;
+  backups = 0;
+  backupIsDue = false;
   errors = [];
 });
 afterEach(() => {
@@ -51,6 +55,8 @@ function hook(
       viewers++;
       if (viewerThrows) throw new Error("no browser here");
     },
+    backupDue: () => backupIsDue,
+    spawnBackup: () => void backups++,
     onError: (error: unknown) => void errors.push(error),
   };
   return handleHook(deps, adapter, {
@@ -497,5 +503,25 @@ describe("the viewer at session start", () => {
     const out = hook("session-start", { source: "startup" });
     expect(errors).toHaveLength(1);
     expect(out).toBe("");
+  });
+});
+
+describe("backups from the hooks", () => {
+  test("a turn's end or a session's end starts one when it is due; nothing else does", () => {
+    backupIsDue = true;
+    hook("session-start", { source: "startup" });
+    hook("prompt", { prompt: "hello", turnId: "t1" });
+    expect(backups).toBe(0);
+    hook("turn-end", { turnId: "t1", finalText: "done" });
+    expect(backups).toBe(1);
+    hook("session-end");
+    expect(backups).toBe(2);
+  });
+
+  test("nothing starts when none is due", () => {
+    hook("prompt", { prompt: "hello", turnId: "t1" });
+    hook("turn-end", { turnId: "t1", finalText: "done" });
+    hook("session-end");
+    expect(backups).toBe(0);
   });
 });

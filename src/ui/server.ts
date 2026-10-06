@@ -2,6 +2,9 @@ import { randomBytes } from "node:crypto";
 import { statSync } from "node:fs";
 import { join } from "node:path";
 import pkg from "../../package.json" with { type: "json" };
+import { lastBackup, restoreBackup, runBackup } from "../backup/backup.ts";
+import { backupDue } from "../backup/schedule.ts";
+import { targetFor } from "../backup/target.ts";
 import { runChecks } from "../doctor/checks.ts";
 import { doctorContext } from "../doctor/context.ts";
 import { loadSettings, publicSettings, saveSettings, validatePatch } from "../settings/settings.ts";
@@ -217,6 +220,65 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
     }
     if (path === "/api/overview" && request.method === "GET") {
       return json({ version: pkg.version, dataDir: options.dataDir, storeDir, projects: listProjects(db) });
+    }
+    // Backups: the target the settings name, what is there, a copy now, and the way back.
+    if (path === "/api/backups" && request.method === "GET") {
+      const settings = loadSettings(env, options.dataDir);
+      const target = targetFor(settings);
+      if (target === null) return json({ target: null, last: null, due: false, entries: [] });
+      let entries: unknown = [];
+      let error: string | undefined;
+      try {
+        entries = await target.list();
+      } catch (failure) {
+        error = failure instanceof Error ? failure.message : String(failure);
+      }
+      return json({
+        target: { kind: target.kind, label: target.label },
+        last: lastBackup(db),
+        due: backupDue(db, settings.backup.everyHours, now()),
+        entries,
+        ...(error === undefined ? {} : { error }),
+      });
+    }
+    if (path === "/api/backups" && request.method === "POST") {
+      const settings = loadSettings(env, options.dataDir);
+      const target = targetFor(settings);
+      if (target === null) return problem(400, "no backup target is configured");
+      const outcome = await runBackup({
+        db,
+        storeDir,
+        target,
+        keep: settings.backup.keep,
+        now: now(),
+        owner: `ui-${process.pid}`,
+      });
+      return json(outcome, outcome.ok ? 200 : outcome.reason === "busy" ? 409 : 400);
+    }
+    if (path === "/api/backups/test" && request.method === "POST") {
+      const target = targetFor(loadSettings(env, options.dataDir));
+      if (target === null) return problem(400, "no backup target is configured");
+      try {
+        const entries = await target.list();
+        return json({ ok: true, label: target.label, entries: entries.length });
+      } catch (failure) {
+        return json({ ok: false, label: target.label, detail: failure instanceof Error ? failure.message : String(failure) });
+      }
+    }
+    if (path === "/api/backups/restore" && request.method === "POST") {
+      const body = await jsonObject(request);
+      if (body instanceof Response) return body;
+      if (typeof body.name !== "string") return problem(400, "name is required");
+      if (body.confirm !== true) return problem(400, "confirm: true is required to restore a backup");
+      const target = targetFor(loadSettings(env, options.dataDir));
+      if (target === null) return problem(400, "no backup target is configured");
+      db.close();
+      try {
+        const outcome = await restoreBackup({ storeDir, target, name: body.name, now: now() });
+        return json(outcome, outcome.ok ? 200 : outcome.reason === "busy" ? 409 : 400);
+      } finally {
+        db = openDb({ dataDir: storeDir, busyTimeoutMs: 2000 });
+      }
     }
     // Storage: where the database is, and moving it somewhere else.
     if (path === "/api/storage" && request.method === "GET") {

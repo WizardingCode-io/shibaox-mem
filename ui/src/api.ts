@@ -127,6 +127,23 @@ export interface TargetReport {
 export type MoveOutcome =
   | { ok: true; to: string; keptOld: string; bytes: number }
   | { ok: false; reason: string; detail: string };
+export interface BackupEntry {
+  name: string;
+  bytes: number;
+  at: number;
+  version: number;
+}
+export interface BackupsView {
+  target: { kind: "folder" | "s3"; label: string } | null;
+  last: { name: string; bytes: number; at: number; label: string } | null;
+  due: boolean;
+  entries: BackupEntry[];
+  error?: string;
+}
+export type BackupOutcome =
+  | { ok: true; name: string; bytes: number }
+  | { ok: false; reason: string; detail: string };
+export type RestoreOutcome = { ok: true; replaced: string } | { ok: false; reason: string; detail: string };
 /** A refused settings change: one message per key. */
 export class SettingsError extends Error {
   constructor(public errors: Partial<Record<SettingKey, string>>) {
@@ -181,6 +198,18 @@ export const api = {
   saveSettings: (patch: SettingsPatch) =>
     call<SettingsView>("/api/settings", { method: "PUT", body: JSON.stringify(patch) }),
   doctor: () => call<Check[]>("/api/doctor"),
+  backups: () => call<BackupsView>("/api/backups"),
+  backupNow: () => call<BackupOutcome>("/api/backups", { method: "POST", body: "{}" }),
+  testBackups: () =>
+    call<{ ok: boolean; label: string; entries?: number; detail?: string }>("/api/backups/test", {
+      method: "POST",
+      body: "{}",
+    }),
+  restoreBackup: (name: string) =>
+    call<RestoreOutcome>("/api/backups/restore", {
+      method: "POST",
+      body: JSON.stringify({ name, confirm: true }),
+    }),
   storage: () => call<StorageInfo>("/api/storage"),
   inspectTarget: (path: string) =>
     call<TargetReport>("/api/storage/inspect", { method: "POST", body: JSON.stringify({ path }) }),

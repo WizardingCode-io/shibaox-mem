@@ -25,6 +25,10 @@ export interface HookDeps {
   spawnDistill: () => void;
   /** Shows the viewer, or starts it, in the background; absent where no one would see it. */
   spawnViewer?: () => void;
+  /** Whether a scheduled backup should happen now. */
+  backupDue?: () => boolean;
+  /** Starts one in the background and returns at once. */
+  spawnBackup?: () => void;
   /** Told about failures that were contained here rather than thrown. */
   onError?: (error: unknown) => void;
 }
@@ -156,6 +160,14 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
   if (input.event === "session-start" && input.source !== "resume") {
     try {
       deps.spawnViewer?.();
+    } catch (error) {
+      deps.onError?.(error);
+    }
+  }
+  // Backups wait for the end of a turn or a session: the events with time to spare.
+  if (input.event === "turn-end" || input.event === "session-end") {
+    try {
+      if (deps.backupDue?.()) deps.spawnBackup?.();
     } catch (error) {
       deps.onError?.(error);
     }

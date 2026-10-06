@@ -184,7 +184,9 @@ export async function moveStore(options: MoveOptions): Promise<MoveOutcome> {
     writeEnvFile(join(dataDir, ENV_FILE), { SHIBAOX_MEM_STORE_DIR: to });
     const keptOld = join(from, `${DB_FILE}.moved-${now}`);
     renameSync(source, keptOld);
-    for (const suffix of ["-wal", "-shm"]) rmSync(source + suffix, { force: true });
+    for (const suffix of ["-wal", "-shm"]) {
+      if (existsSync(source + suffix)) renameSync(source + suffix, keptOld + suffix);
+    }
     return { ok: true, to, keptOld, bytes: statSync(join(to, DB_FILE)).size };
   } catch (error) {
     return {

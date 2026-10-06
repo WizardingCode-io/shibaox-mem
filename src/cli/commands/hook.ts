@@ -1,4 +1,5 @@
 import { ADAPTERS } from "../../adapters/index.ts";
+import { backupDue } from "../../backup/schedule.ts";
 import type { HookEvent } from "../../core/types.ts";
 import { handleHook } from "../../hooks/handle.ts";
 import { loadSettings } from "../../settings/settings.ts";
@@ -132,6 +133,15 @@ export async function run(argv: string[]): Promise<number> {
         now: Date.now,
         spawnDistill,
         spawnViewer,
+        backupDue: () => {
+          const { backup } = loadSettings(process.env, defaultDataDir());
+          return (
+            backup.to !== null &&
+            backup.everyHours > 0 &&
+            backupDue(db as Db, backup.everyHours, Date.now())
+          );
+        },
+        spawnBackup: () => spawnDetached("backup"),
         onError: (error) => logError(`hook ${agent} ${event} (lookup)`, error),
       },
       adapter,
