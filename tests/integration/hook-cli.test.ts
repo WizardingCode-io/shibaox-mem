@@ -341,7 +341,12 @@ describe("the viewer at session start, from the command line", () => {
     const result = await runCliWith(
       {
         input: payload("session-start.startup", "codex"),
-        env: { SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off", CI: "1" },
+        env: {
+          SHIBAOX_MEM_DATA_DIR: dir,
+          SHIBAOX_MEM_DISTILL: "off",
+          SHIBAOX_MEM_UI_AUTO_OPEN: "on",
+          CI: "1",
+        },
       },
       "hook",
       "codex",

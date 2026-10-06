@@ -28,7 +28,11 @@ afterEach(() => {
   rmSync(base, { recursive: true, force: true });
 });
 
-const env = () => ({ SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "off" });
+const env = () => ({
+  SHIBAOX_MEM_DATA_DIR: dataDir,
+  SHIBAOX_MEM_DISTILL: "off",
+  SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+});
 
 /** One agent session against the binary. Each call is one hook invocation. */
 function agent(sessionId: string) {
@@ -201,7 +205,11 @@ describe("the compiled binary, driven as an agent drives it", () => {
           prompt_id: "s1-p1",
           last_assistant_message: POOL_FIX,
         }),
-        env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "" },
+        env: {
+          SHIBAOX_MEM_DATA_DIR: dataDir,
+          SHIBAOX_MEM_DISTILL: "",
+          SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+        },
       });
       expect(detached.exitCode).toBe(0);
 
