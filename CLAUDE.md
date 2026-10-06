@@ -1,39 +1,39 @@
 # shibaox-mem
 
-Memória persistente entre sessões para agentes de código, da marca **shibaox** (WizardingCode). Um binário, sem daemon, sem LLM generativo, local por omissão.
+Persistent memory across sessions for coding agents, from the **shibaox** brand (WizardingCode). One binary, no daemon, no generative LLM, local by default.
 
-Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; variáveis `SHIBAOX_<COISA>_*`; dados em `~/.shibaox/<coisa>` (respeitar `SHIBAOX_HOME`). Ver `docs/adr/0004-marca-e-nome.md`.
+Brand conventions: products, plugins and skills are called `shibaox-<thing>`; variables `SHIBAOX_<THING>_*`; data in `~/.shibaox/<thing>` (honouring `SHIBAOX_HOME`). See `docs/adr/0004-brand-and-name.md`.
 
-Convenções da marca: produtos, plugins e skills chamam-se `shibaox-<coisa>`; variáveis `SHIBAOX_<COISA>_*`; dados em `~/.shibaox/<coisa>` (respeitar `SHIBAOX_HOME`).
+## The non-negotiable rule
 
-## Regra inegociável
+**This project is written from scratch. It is not a fork of claude-mem.** Never copy code, schema, prompts, text or names from claude-mem, and never open its source to implement a feature. See `CLEAN-ROOM.md`.
 
-**Este projeto é escrito de raiz. Não é um fork do claude-mem.** Nunca copiar código, esquema, prompts, textos ou nomes do claude-mem, nem abrir o código-fonte dele para implementar funcionalidades. Ver `CLEAN-ROOM.md`.
+## Where things are
 
-## Onde está o quê
+- Design and decisions: `docs/design/2026-10-05-shibaox-mem-design.md`
+- Measured decisions and departures from the design: `docs/adr/` (read the latest before touching the schema or retrieval)
 
-- Desenho e decisões: `docs/design/2026-10-05-shibaox-mem-design.md`
-- Decisões medidas e desvios ao desenho: `docs/adr/` (ler o mais recente antes de mexer no esquema ou na recuperação)
+## Commands
 
-## Comandos
+- `bun run check` — typecheck, lint and tests
+- `bun run build` — compiles the five binaries into `dist/`
+- `bun run format` — formats and fixes lint
+- `bun run plugins` — rewrites what each agent installs (manifests, hooks, `shibaox-mem.sh`, the OpenCode package) from `scripts/plugins.ts`; run it after changing the version or the events
+- `shibaox-mem install [claude-code|codex|cursor|gemini|opencode]` installs for one agent; with no agent, for every one it finds. In Claude Code it imports claude-mem's memories and retires it (with confirmation); `shibaox-mem import claude-mem` only imports. claude-mem's database is only read, never changed.
+- Adapters in `src/adapters/<agent>/`; installers in `src/install/`. The design per agent, and what was or was not confirmed in real sessions, is in ADR 0006.
+- Installation is native in each agent (plugin, extension, npm package): ADR 0009. The files in `.claude-plugin/`, `hooks/`, `plugin/` and `plugins/` are generated; do not edit them by hand.
+- `shibaox-mem rejudge [--limit n] [--concurrency n]` asks TypeSafe for the kind and importance of imported memories; what is not worth keeping becomes `archived` (never deleted). Resumable; needs a key.
+- `shibaox-mem ui [--port n] [--no-open] [--auto]` opens the viewer (loopback, token in the URL, stops when idle and no tab is open; `--auto` is what the session-start hook runs: show the viewer already running, or become it). `shibaox-mem compact [--dry-run]` prunes old records; never deletes memories. `shibaox-mem backup [--list | --restore <name>]` copies the database to the configured folder or bucket.
+- Settings live in `<data dir>/env` (dotenv, 0600; `src/settings/`), edited from the viewer's Settings tab; keys are named like the environment variables and the environment wins. The data directory (`defaultDataDir`) holds the binary, the settings, the logs and `ui.json`; the database may live elsewhere (`resolvePaths().storeDir`, `SHIBAOX_MEM_STORE_DIR`): open it with `openDb()` and its default, never from `dataDir` directly. ADR 0010.
 
-- `bun run check` — typecheck, lint e testes
-- `bun run build` — compila os cinco binários para `dist/`
-- `bun run format` — formata e corrige lint
-- `bun run plugins` — reescreve o que cada agente instala (manifestos, hooks, `shibaox-mem.sh`, pacote OpenCode) a partir de `scripts/plugins.ts`; correr depois de mudar a versão ou os eventos
-- `shibaox-mem install [claude-code|codex|cursor|gemini|opencode]` instala para um agente; sem agente, para todos os que encontrar. No Claude Code importa as memórias do claude-mem e retira-o (com confirmação); `shibaox-mem import claude-mem` só importa. A base de dados do claude-mem é só lida, nunca alterada.
-- Adaptadores em `src/adapters/<agente>/`; instaladores em `src/install/`. O desenho por agente e o que foi ou não confirmado em sessões reais está no ADR 0006.
-- A instalação é nativa em cada agente (plugin, extensão, pacote npm): ADR 0009. Os ficheiros em `.claude-plugin/`, `hooks/`, `plugin/` e `plugins/` são gerados; não editar à mão.
-- `shibaox-mem rejudge [--limit n] [--concurrency n]` pede ao TypeSafe tipo e importância das memórias importadas; o que não vale guardar fica `archived` (nunca apagado). Retomável; precisa de chave.
-- `shibaox-mem ui [--port n] [--no-open]` abre o viewer (loopback, token na URL, desliga-se inativo). `shibaox-mem compact [--dry-run]` poda registos antigos; nunca apaga memórias.
+The `bun` the scripts use is the one pinned in `devDependencies`, not the global one; run tests as `bun run test` (or `./node_modules/.bin/bun test <files>`).
 
-O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
+## Conventions
 
-## Convenções
-
-- TDD: o teste é escrito e visto a falhar antes do código.
-- Os hooks nunca saem com código 2 (nos agentes, 2 bloqueia a ação). Falham em aberto: código 0 e stdout vazio.
-- Nada de SDKs pesados no caminho dos hooks; usar `await import()` por comando.
-- Juízos semânticos passam pela interface `Judge` (TypeSafe opt-in, heurísticas como recurso). Regras exatas e cálculos ficam em código.
-- Imports com extensão `.ts` explícita.
-- O viewer é uma app Vue 3 + Tailwind 4 + Nuxt UI em `ui/`, compilada pelo Vite num só `src/ui/dist/index.html` (fora do git; `bun run ui:build`, incluído em `test`, `build` e `check`) que o binário embute. Os tokens da marca vivem em `ui/src/app.css` e alimentam as variáveis `--ui-*` do Nuxt UI; os ícones são embutidos na compilação; as fontes em `src/ui/assets/` viajam no binário. Nada sai para a rede a partir do viewer. `bun run ui:dev` para desenvolver contra um `shibaox-mem ui` a correr.
+- TDD: the test is written and seen failing before the code.
+- Hooks never exit with code 2 (in the agents, 2 blocks the action). They fail open: code 0 and empty stdout. In tests, `SHIBAOX_MEM_DISTILL=off` and `SHIBAOX_MEM_UI_AUTO_OPEN=off` keep hooks from starting background work; `SHIBAOX_MEM_UI_BROWSER=none` keeps the browser closed.
+- No heavy SDKs on the hook path; use `await import()` per command.
+- Semantic judgements go through the `Judge` interface (TypeSafe opt-in, heuristics as the fallback). Exact rules and calculations stay in code.
+- Imports with an explicit `.ts` extension.
+- The viewer is a Vue 3 + Tailwind 4 + Nuxt UI app in `ui/`, built by Vite into a single `src/ui/dist/index.html` (not in git; `bun run ui:build`, included in `test`, `build` and `check`) that the binary embeds. The brand's tokens live in `ui/src/app.css` and feed Nuxt UI's `--ui-*` variables; icons are bundled at build time; the fonts in `src/ui/assets/` travel in the binary. Nothing leaves for the network from the viewer. `bun run ui:dev` to develop against a running `shibaox-mem ui`.
+- Repository documents (README, design, ADRs, this file) are written in English.

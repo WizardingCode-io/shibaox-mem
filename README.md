@@ -246,7 +246,7 @@ The importer can only map claude-mem's types onto ours and give every memory of 
 | OpenCode | npm plugin | the plugin API | the system prompt | verified up to the prompt |
 | Cursor | plugin | hooks | session start | from the documentation; not yet run |
 
-"As documented" means the adapter follows the agent's published hook contract and has not yet been exercised in a live session on that event; the [decision records](docs/adr/0006-m3-multi-agente.md) say exactly what was captured and what was not.
+"As documented" means the adapter follows the agent's published hook contract and has not yet been exercised in a live session on that event; the [decision records](docs/adr/0006-m3-multi-agent.md) say exactly what was captured and what was not.
 
 ## Development
 
