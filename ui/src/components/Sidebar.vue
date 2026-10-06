@@ -42,6 +42,10 @@ const shown = computed(() => {
       <div class="px-2 text-[11px] leading-4 text-(--ink-muted)">
         <div>Data</div>
         <div class="truncate font-mono" :title="state.dataDir">{{ shortPath(state.dataDir) }}</div>
+        <template v-if="state.storeDir && state.storeDir !== state.dataDir">
+          <div class="mt-1">Database</div>
+          <div class="truncate font-mono" :title="state.storeDir">{{ shortPath(state.storeDir) }}</div>
+        </template>
       </div>
     </div>
   </nav>

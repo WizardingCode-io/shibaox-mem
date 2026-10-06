@@ -5,6 +5,7 @@ import { shortPath } from "../format";
 import Agents from "./settings/Agents.vue";
 import Judge from "./settings/Judge.vue";
 import Retention from "./settings/Retention.vue";
+import Storage from "./settings/Storage.vue";
 import Viewer from "./settings/Viewer.vue";
 
 onMounted(() => {
@@ -20,6 +21,7 @@ onMounted(() => {
       <Viewer />
       <Retention />
       <Agents />
+      <Storage />
       <div class="text-xs text-(--ink-muted)">
         Settings live in <span class="font-mono" :title="settingsState.view.dataDir">{{ shortPath(settingsState.view.dataDir) }}/env</span>, readable by you only. A variable in the environment always wins over the file.
       </div>

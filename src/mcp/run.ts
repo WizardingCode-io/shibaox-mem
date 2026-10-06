@@ -1,7 +1,7 @@
 import { resolveProject } from "../core/project.ts";
 import { makeJudge } from "../judge/index.ts";
 import { openDb } from "../store/db.ts";
-import { defaultDataDir } from "../util/paths.ts";
+import { resolvePaths } from "../util/paths.ts";
 import { getMemories, saveMemory, searchMemories, type ToolContext } from "./tools.ts";
 
 // The three tools, reachable from the MCP server and from `shibaox-mem tool` alike.
@@ -45,8 +45,8 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
  * `projectDir`. Throws on failure; callers decide how to report it.
  */
 export async function runTool(name: ToolName, args: unknown, projectDir: string): Promise<string> {
-  const dataDir = defaultDataDir();
-  const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+  const { dataDir, storeDir } = resolvePaths();
+  const db = openDb({ dataDir: storeDir, busyTimeoutMs: 2000 });
   try {
     const now = Date.now();
     const project = resolveProject(db, projectDir, now);

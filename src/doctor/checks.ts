@@ -12,6 +12,7 @@ import { keyFingerprint } from "../judge/key.ts";
 import { loadSettings } from "../settings/settings.ts";
 import { hookLatency } from "../status/report.ts";
 import { DB_FILE, type Db, LATEST_VERSION, openExisting, SchemaTooNewError } from "../store/db.ts";
+import { inspectTarget } from "../store/move.ts";
 
 export interface Check {
   name: string;
@@ -21,6 +22,8 @@ export interface Check {
 
 export interface DoctorContext {
   dataDir: string;
+  /** Where the database is: the data directory, unless the store was moved. */
+  storeDir: string;
   /** Claude Code's user settings.json. */
   settingsPath: string;
   /** Where each other host keeps what `install` wrote. */
@@ -41,28 +44,39 @@ const HOUR_MS = 3_600_000;
 
 function dataDirectory(context: DoctorContext): Check {
   const name = "data directory";
-  if (SYNCED.test(`${context.dataDir}/`)) {
-    return {
-      name,
-      status: "warn",
-      detail: `${context.dataDir} is inside a synced or shared folder; SQLite files can be corrupted there. Set SHIBAOX_MEM_DATA_DIR to a local path.`,
-    };
+  const moved = context.storeDir !== context.dataDir;
+  const where = moved ? `${context.dataDir}; database in ${context.storeDir}` : context.dataDir;
+  for (const dir of moved ? [context.storeDir, context.dataDir] : [context.dataDir]) {
+    if (SYNCED.test(`${dir}/`)) {
+      return {
+        name,
+        status: "warn",
+        detail: `${dir} is inside a synced or shared folder; SQLite files can be corrupted there. Move the store to a local path.`,
+      };
+    }
+  }
+  if (moved) {
+    const target = inspectTarget(context.storeDir);
+    if (target.network) {
+      return { name, status: "warn", detail: `${where}: ${target.warnings[0]}` };
+    }
   }
   if (!existsSync(context.dataDir)) {
     return { name, status: "ok", detail: `${context.dataDir} (created on first use)` };
   }
   try {
     accessSync(context.dataDir, constants.R_OK | constants.W_OK);
-    return { name, status: "ok", detail: context.dataDir };
+    if (moved) accessSync(context.storeDir, constants.R_OK | constants.W_OK);
+    return { name, status: "ok", detail: where };
   } catch {
-    return { name, status: "fail", detail: `${context.dataDir} is not readable and writable` };
+    return { name, status: "fail", detail: `${where} is not readable and writable` };
   }
 }
 
 function database(context: DoctorContext): { check: Check; db: Db | null } {
   const name = "database";
   try {
-    const db = openExisting(context.dataDir);
+    const db = openExisting(context.storeDir);
     if (db === null) return { check: { name, status: "ok", detail: "not created yet" }, db };
     const version =
       db.query<{ user_version: number }, []>("PRAGMA user_version").get()?.user_version ?? 0;
@@ -74,7 +88,7 @@ function database(context: DoctorContext): { check: Check; db: Db | null } {
         check: {
           name,
           status: "fail",
-          detail: `${join(context.dataDir, DB_FILE)} failed its integrity check: ${integrity}. Restore a file from ${join(context.dataDir, "backups")}.`,
+          detail: `${join(context.storeDir, DB_FILE)} failed its integrity check: ${integrity}. Restore a file from ${join(context.storeDir, "backups")}.`,
         },
         db: null,
       };

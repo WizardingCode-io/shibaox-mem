@@ -1,12 +1,17 @@
 import { randomBytes } from "node:crypto";
+import { statSync } from "node:fs";
+import { join } from "node:path";
 import pkg from "../../package.json" with { type: "json" };
 import { runChecks } from "../doctor/checks.ts";
 import { doctorContext } from "../doctor/context.ts";
 import { loadSettings, publicSettings, saveSettings, validatePatch } from "../settings/settings.ts";
 import { statusReport } from "../status/report.ts";
 import { compact } from "../store/compact.ts";
-import { type Db, openDb } from "../store/db.ts";
+import { DB_FILE, type Db, openDb } from "../store/db.ts";
+import { drainActive } from "../store/meta.ts";
+import { inspectTarget, moveStore } from "../store/move.ts";
 import { logError } from "../util/log.ts";
+import { storeDirOf } from "../util/paths.ts";
 import { clearUiState, writeUiState } from "./state.ts";
 import {
   getMemory,
@@ -84,6 +89,15 @@ const json = (body: unknown, status = 200) =>
   });
 const problem = (status: number, detail: string) => json({ error: detail }, status);
 
+/** Sessions seen in the last five minutes: a move is best done between them. */
+function recentSessionCount(db: Db, now: number): number {
+  return (
+    db
+      .query<{ n: number }, [number]>("SELECT count(*) AS n FROM sessions WHERE last_seen_at > ?")
+      .get(now - 5 * 60_000)?.n ?? 0
+  );
+}
+
 /** A JSON object from the request, or the 400 to answer with. */
 async function jsonObject(request: Request): Promise<Record<string, unknown> | Response> {
   let body: unknown;
@@ -118,7 +132,9 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
   const token = randomBytes(16).toString("hex");
   const now = options.now ?? Date.now;
   const env = options.env ?? process.env;
-  const db: Db = openDb({ dataDir: options.dataDir, busyTimeoutMs: 2000 });
+  // The database may move while the server runs (Storage settings): `db` is reopened.
+  let storeDir = storeDirOf(options.dataDir, env);
+  let db: Db = openDb({ dataDir: storeDir, busyTimeoutMs: 2000 });
   const idleMs = options.idleMs ?? DEFAULT_IDLE_MS;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
@@ -200,7 +216,45 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
       return json({ opened: true });
     }
     if (path === "/api/overview" && request.method === "GET") {
-      return json({ version: pkg.version, dataDir: options.dataDir, projects: listProjects(db) });
+      return json({ version: pkg.version, dataDir: options.dataDir, storeDir, projects: listProjects(db) });
+    }
+    // Storage: where the database is, and moving it somewhere else.
+    if (path === "/api/storage" && request.method === "GET") {
+      let dbBytes = 0;
+      try {
+        dbBytes = statSync(join(storeDir, DB_FILE)).size;
+      } catch {
+        // No file yet.
+      }
+      return json({
+        dataDir: options.dataDir,
+        storeDir,
+        dbBytes,
+        busy: drainActive(db, now()),
+        recentSessions: recentSessionCount(db, now()),
+      });
+    }
+    if (path === "/api/storage/inspect" && request.method === "POST") {
+      const body = await jsonObject(request);
+      if (body instanceof Response) return body;
+      if (typeof body.path !== "string" || body.path.trim() === "") return problem(400, "path is required");
+      return json(inspectTarget(body.path.trim()));
+    }
+    if (path === "/api/storage/move" && request.method === "POST") {
+      const body = await jsonObject(request);
+      if (body instanceof Response) return body;
+      if (typeof body.path !== "string" || body.path.trim() === "") return problem(400, "path is required");
+      if (body.confirm !== true) return problem(400, "confirm: true is required to move the store");
+      const to = body.path.trim();
+      // Our own connection must not hold the file while it is renamed.
+      db.close();
+      try {
+        const outcome = await moveStore({ dataDir: options.dataDir, from: storeDir, to, now: now() });
+        if (outcome.ok) storeDir = outcome.to;
+        return json(outcome, outcome.ok ? 200 : outcome.reason === "busy" ? 409 : 400);
+      } finally {
+        db = openDb({ dataDir: storeDir, busyTimeoutMs: 2000 });
+      }
     }
     // Settings: the file in the data directory, shown with sources, secrets as fingerprints.
     if (path === "/api/settings" && request.method === "GET") {

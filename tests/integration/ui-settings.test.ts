@@ -179,3 +179,48 @@ describe("shibaox-mem ui: settings", () => {
     db.close();
   });
 });
+
+describe("shibaox-mem ui: storage", () => {
+  test("says where the data and the store are, and how big the database is", async () => {
+    const s = await start();
+    const body = (await (await api(s, "/api/storage")).json()) as Record<string, unknown>;
+    expect(body).toMatchObject({ dataDir, storeDir: dataDir, busy: false });
+    expect(body.dbBytes as number).toBeGreaterThan(0);
+  });
+
+  test("inspects a target, then moves the store there and carries on from it", async () => {
+    const s = await start();
+    const target = join(base, "external", "mem");
+    const report = await (
+      await api(s, "/api/storage/inspect", {
+        method: "POST",
+        body: JSON.stringify({ path: target }),
+      })
+    ).json();
+    expect(report).toMatchObject({ exists: false, hasDb: false, writable: true, network: false });
+
+    const unconfirmed = await api(s, "/api/storage/move", {
+      method: "POST",
+      body: JSON.stringify({ path: target }),
+    });
+    expect(unconfirmed.status).toBe(400);
+
+    const moved = await api(s, "/api/storage/move", {
+      method: "POST",
+      body: JSON.stringify({ path: target, confirm: true }),
+    });
+    expect(moved.status).toBe(200);
+    expect(await moved.json()).toMatchObject({ ok: true, to: target });
+
+    const overview = (await (await api(s, "/api/overview")).json()) as {
+      storeDir: string;
+      projects: unknown[];
+    };
+    expect(overview.storeDir).toBe(target);
+    expect(overview.projects).toHaveLength(1);
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toContain(`SHIBAOX_MEM_STORE_DIR=${target}`);
+    // The viewer keeps working on the new store.
+    const memories = await api(s, "/api/memories?project=1");
+    expect(memories.status).toBe(200);
+  });
+});

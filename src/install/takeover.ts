@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { type ImportReport, importClaudeMem } from "../import/claude-mem.ts";
 import { type Db, openDb } from "../store/db.ts";
-import { defaultDataDir } from "../util/paths.ts";
+import { resolvePaths } from "../util/paths.ts";
 import {
   type Detection,
   detectClaudeMem,
@@ -45,7 +45,7 @@ export function importInto(db: Db, database: string, now: number): ImportReport 
 }
 
 export function importIntoDefaultStore(database: string): ImportReport {
-  const db = openDb({ dataDir: defaultDataDir(), busyTimeoutMs: 5000 });
+  const db = openDb({ dataDir: resolvePaths().storeDir, busyTimeoutMs: 5000 });
   try {
     return importInto(db, database, Date.now());
   } finally {

@@ -2,7 +2,7 @@ import { loadSettings } from "../../settings/settings.ts";
 import { compact } from "../../store/compact.ts";
 import { type Db, openDb } from "../../store/db.ts";
 import { logError } from "../../util/log.ts";
-import { defaultDataDir } from "../../util/paths.ts";
+import { resolvePaths } from "../../util/paths.ts";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const size = (bytes: number) =>
@@ -18,8 +18,8 @@ export function run(argv: string[]): number {
   const dryRun = argv.includes("--dry-run");
   let db: Db | undefined;
   try {
-    const dataDir = defaultDataDir();
-    db = openDb({ dataDir, busyTimeoutMs: 5000 });
+    const { dataDir, storeDir } = resolvePaths();
+    db = openDb({ dataDir: storeDir, busyTimeoutMs: 5000 });
     const { retentionDays } = loadSettings(process.env, dataDir);
     const report = compact(db, { now: Date.now(), dryRun, retentionDays });
     const what = `${plural(report.turns, "turn")}, ${plural(report.sessions, "session")}, ${plural(report.hookRuns, "hook run")}`;

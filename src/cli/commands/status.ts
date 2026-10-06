@@ -1,14 +1,14 @@
 import { findProject } from "../../core/project.ts";
 import { formatStatus, statusReport } from "../../status/report.ts";
 import { type Db, openExisting } from "../../store/db.ts";
-import { defaultDataDir } from "../../util/paths.ts";
+import { resolvePaths } from "../../util/paths.ts";
 
 /** `shibaox-mem status [--json]`: what is stored for this project, and how shibaox-mem is behaving. */
 export function run(argv: string[]): number {
-  const dataDir = defaultDataDir();
+  const { dataDir, storeDir } = resolvePaths();
   let db: Db | null = null;
   try {
-    db = openExisting(dataDir);
+    db = openExisting(storeDir);
     const project = db === null ? null : findProject(db, process.cwd());
     const report = statusReport(db, project, dataDir);
     process.stdout.write(

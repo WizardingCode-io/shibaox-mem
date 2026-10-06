@@ -11,6 +11,7 @@ export const PAGE = 50;
 const state = reactive({
   version: "",
   dataDir: "",
+  storeDir: "",
   projects: [] as Project[],
   projectId: null as number | null,
   tab: "memories" as Tab,
@@ -32,6 +33,7 @@ export async function loadOverview(): Promise<void> {
   const overview = await api.overview();
   state.version = overview.version;
   state.dataDir = overview.dataDir;
+  state.storeDir = overview.storeDir;
   state.projects = overview.projects;
   if (state.projectId === null && overview.projects.length > 0) {
     await selectProject(overview.projects[0]!.id);

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { defaultDataDir } from "../util/paths.ts";
+import { resolvePaths } from "../util/paths.ts";
 import init from "./migrations/0001_init.sql" with { type: "text" };
 import ftsProject from "./migrations/0002_fts_project.sql" with { type: "text" };
 
@@ -35,7 +35,7 @@ export class SchemaTooNewError extends Error {
 }
 
 export interface OpenOptions {
-  /** Defaults to SHIBAOX_MEM_DATA_DIR, then ~/.shibaox/mem. */
+  /** The directory of the database file. Defaults to the store directory (see `resolvePaths`). */
   dataDir?: string;
   /** How long a statement waits for another process's lock. Keep it below the caller's own deadline. */
   busyTimeoutMs: number;
@@ -48,7 +48,13 @@ function userVersion(db: Db): number {
 }
 
 function restrict(path: string, mode: number): void {
-  if (process.platform !== "win32" && existsSync(path)) chmodSync(path, mode);
+  if (process.platform === "win32" || !existsSync(path)) return;
+  try {
+    chmodSync(path, mode);
+  } catch {
+    // A filesystem without permissions (exFAT, vfat on an external disk) cannot be made
+    // stricter; the database is still usable there.
+  }
 }
 
 function backup(db: Db, dir: string, version: number): void {
@@ -141,7 +147,7 @@ function migrate(
 }
 
 export function openDb(options: OpenOptions): Db {
-  const dir = options.dataDir ?? defaultDataDir();
+  const dir = options.dataDir ?? resolvePaths().storeDir;
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, DB_FILE);
   const db = new Database(path, { create: true });
@@ -168,7 +174,7 @@ export function withWrite<T>(db: Db, fn: () => T): T {
  * Opens the database for reading only, without creating or migrating anything.
  * Null when there is no database yet. For commands that inspect: status and doctor.
  */
-export function openExisting(dataDir: string = defaultDataDir()): Db | null {
+export function openExisting(dataDir: string = resolvePaths().storeDir): Db | null {
   const path = join(dataDir, DB_FILE);
   if (!existsSync(path)) return null;
   const db = new Database(path, { readonly: true });

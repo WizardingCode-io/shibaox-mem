@@ -4,7 +4,7 @@ import { rejudge } from "../../judge/rejudge.ts";
 import { type Db, openDb } from "../../store/db.ts";
 import { getMeta } from "../../store/meta.ts";
 import { logError } from "../../util/log.ts";
-import { defaultDataDir } from "../../util/paths.ts";
+import { resolvePaths } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
 const USAGE = "Usage: shibaox-mem rejudge [--limit <n>] [--concurrency <n>]\n";
@@ -34,8 +34,8 @@ export async function run(argv: string[]): Promise<number> {
   }
   let db: Db | undefined;
   try {
-    const dataDir = defaultDataDir();
-    db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    const { dataDir, storeDir } = resolvePaths();
+    db = openDb({ dataDir: storeDir, busyTimeoutMs: 2000 });
     const judge = makeJudge({ db, dataDir });
     if (judge.versions.typesafe === undefined) {
       process.stderr.write(

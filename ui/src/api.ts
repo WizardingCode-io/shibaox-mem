@@ -108,6 +108,25 @@ export interface CompactReport {
   bytesBefore: number;
   bytesAfter: number;
 }
+export interface StorageInfo {
+  dataDir: string;
+  storeDir: string;
+  dbBytes: number;
+  busy: boolean;
+  recentSessions: number;
+}
+export interface TargetReport {
+  path: string;
+  exists: boolean;
+  hasDb: boolean;
+  writable: boolean;
+  network: boolean;
+  fsType: string | null;
+  warnings: string[];
+}
+export type MoveOutcome =
+  | { ok: true; to: string; keptOld: string; bytes: number }
+  | { ok: false; reason: string; detail: string };
 /** A refused settings change: one message per key. */
 export class SettingsError extends Error {
   constructor(public errors: Partial<Record<SettingKey, string>>) {
@@ -129,7 +148,8 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  overview: () => call<{ version: string; dataDir: string; projects: Project[] }>("/api/overview"),
+  overview: () =>
+    call<{ version: string; dataDir: string; storeDir: string; projects: Project[] }>("/api/overview"),
   memories: (params: Record<string, string | number>) =>
     call<{ total: number; items: MemoryItem[] }>(
       `/api/memories?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`,
@@ -161,6 +181,14 @@ export const api = {
   saveSettings: (patch: SettingsPatch) =>
     call<SettingsView>("/api/settings", { method: "PUT", body: JSON.stringify(patch) }),
   doctor: () => call<Check[]>("/api/doctor"),
+  storage: () => call<StorageInfo>("/api/storage"),
+  inspectTarget: (path: string) =>
+    call<TargetReport>("/api/storage/inspect", { method: "POST", body: JSON.stringify({ path }) }),
+  moveStore: (path: string) =>
+    call<MoveOutcome>("/api/storage/move", {
+      method: "POST",
+      body: JSON.stringify({ path, confirm: true }),
+    }),
   compact: (dryRun: boolean) =>
     call<CompactReport>("/api/compact", { method: "POST", body: JSON.stringify({ dryRun }) }),
 };
