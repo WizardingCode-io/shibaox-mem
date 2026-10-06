@@ -147,13 +147,13 @@ The agent also gets three tools — `memory_search`, `memory_get` and `memory_sa
 
 ```mermaid
 flowchart LR
-    A[Your prompt] -->|hook, ~25 ms| H[(shibaox-mem.db)]
-    H -->|relevant notes| A
-    B[The agent's answer] -->|hook| Q[turn queue]
-    Q -->|background, exits when done| D[distill]
+    A["Your prompt"] -->|"hook, ~25 ms"| H[("shibaox-mem.db")]
+    H -->|"relevant notes"| A
+    B["The agent's answer"] -->|hook| Q["turn queue"]
+    Q -->|"background, exits when done"| D[distill]
     D --> J{judge}
     J -->|rules| M[memory]
-    J -->|TypeSafe, optional| M
+    J -->|"TypeSafe, optional"| M
     M --> H
 ```
 
