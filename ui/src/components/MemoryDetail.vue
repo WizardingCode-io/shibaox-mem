@@ -77,7 +77,7 @@ async function copy() {
 <template>
   <!-- `isolate` keeps the sticky toolbar's z-index inside the column, so that Nuxt UI's
        overlays (which rely on coming last in the document) still cover it. -->
-  <aside class="isolate flex min-h-0 flex-col overflow-auto border-l border-(--line) bg-(--surface)" aria-label="Memory">
+  <aside class="isolate flex min-h-0 flex-col overflow-auto border-(--line) bg-(--surface) xl:w-[460px]" :class="{ 'xl:border-l': state.detail }" aria-label="Memory">
     <template v-if="state.detail">
       <div class="sticky top-0 z-10 flex items-center gap-2 border-b border-(--line) bg-(--surface) px-4 py-3">
         <template v-if="!editing">
@@ -145,9 +145,5 @@ async function copy() {
       </div>
     </template>
 
-    <div v-else class="m-auto max-w-[360px] px-5 py-6 text-center text-[13px] leading-5 text-(--ink-muted)">
-      <p class="m-0">Select a memory to read it in full, edit it, archive it or bring it back.</p>
-      <div class="mt-3 inline-flex items-center gap-1.5 text-xs"><UKbd value="↑" size="sm" /><UKbd value="↓" size="sm" /> move <UKbd value="Esc" size="sm" /> close</div>
-    </div>
   </aside>
 </template>

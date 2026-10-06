@@ -116,7 +116,12 @@ onMounted(async () => {
 
 <template>
   <UApp :toaster="{ position: 'bottom-center', duration: 2200 }">
-    <div class="grid h-full grid-cols-[264px_minmax(0,1fr)] overflow-hidden xl:grid-cols-[264px_minmax(0,1fr)_minmax(0,460px)]">
+    <!-- From 1280px the detail is a third column that opens with a selection and closes
+         without one; the track animates, the column keeps its width so nothing reflows. -->
+    <div
+      class="grid h-full grid-cols-[264px_minmax(0,1fr)] overflow-hidden motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
+      :class="state.detail ? 'xl:grid-cols-[264px_minmax(0,1fr)_460px]' : 'xl:grid-cols-[264px_minmax(0,1fr)_0px]'"
+    >
       <Sidebar class="min-h-0" />
       <main class="flex min-h-0 min-w-0 flex-col">
         <div class="grid grid-cols-[auto_minmax(220px,1fr)_auto_auto_auto] items-center gap-3 border-b border-(--line) px-5 pt-4 pb-3">

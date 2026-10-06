@@ -34,6 +34,7 @@
   --warning: #8a5e00; --warning-soft: #fbefc9; --danger: #c42840; --danger-soft: #fbe1e4;
   --shadow-sm: 0 1px 2px #1c140e0f, 0 1px 3px #1c140e14; --shadow-md: 0 2px 4px #1c140e0d, 0 8px 20px -4px #1c140e1f; --shadow-lg: 0 4px 8px #1c140e14, 0 16px 40px -8px #1c140e33;
   --focus-ring: 0 0 0 2px #fbf6ef, 0 0 0 4px #a94a0a;
+  --scrollbar-thumb: #d9cab8; --scrollbar-thumb-hover: #9a846f; --scrollbar-track: transparent;
 
   --ui-radius: 0.5rem;
   --ui-primary: var(--shiba-strong);
@@ -50,12 +51,23 @@
   --warning: #f2c150; --warning-soft: #35290a; --danger: #ff7a8a; --danger-soft: #3d1219;
   --shadow-sm: 0 1px 2px #00000080; --shadow-md: 0 8px 20px -4px #000000b3; --shadow-lg: 0 16px 40px -8px #000000d9;
   --focus-ring: 0 0 0 2px #140e0a, 0 0 0 4px #ffa15c;
+  --scrollbar-thumb: #3b2e24; --scrollbar-thumb-hover: #7e6856; --scrollbar-track: transparent;
 
   --ui-primary: var(--shiba-strong);
   --ui-text-dimmed: #7e6856; --ui-text-muted: var(--ink-muted); --ui-text-toned: #d9c7b3; --ui-text: var(--ink); --ui-text-highlighted: #ffffff; --ui-text-inverted: var(--bg);
   --ui-bg: var(--bg); --ui-bg-muted: var(--surface-sunken); --ui-bg-elevated: var(--surface); --ui-bg-accented: var(--surface-hover); --ui-bg-inverted: var(--ink);
   --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--line-strong); --ui-border-inverted: var(--ink);
   --ui-success: var(--matcha); --ui-info: var(--info); --ui-warning: var(--warning); --ui-error: var(--danger);
+}
+
+/* Scrollbars: thin, the brand's neutrals, on every scrolling region (the design system's rule). */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+/* WebKit without `scrollbar-color` (Safari): the same look drawn by hand. */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
 }
 
 html, body, #app { height: 100%; margin: 0; }
