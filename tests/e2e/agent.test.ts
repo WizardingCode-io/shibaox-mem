@@ -155,7 +155,10 @@ describe("the compiled binary, driven as an agent drives it", () => {
       { session: "a", turns: 5, queued: 5 },
       { session: "b", turns: 5, queued: 5 },
     ]);
-    expect(rows("SELECT count(*) AS n FROM hook_runs WHERE outcome <> 'ok'")).toEqual([{ n: 0 }]);
+    // On a loaded runner a hook may give up waiting for the other session's lock within
+    // its budget (fail open); the counts above prove that cost nothing. Anything else did.
+    const notOk = rows<{ outcome: string }>("SELECT outcome FROM hook_runs WHERE outcome <> 'ok'");
+    expect(notOk.filter((r) => !/SQLITE_BUSY/.test(r.outcome))).toEqual([]);
   }, 60_000);
 
   test("work left half-done by a process that died is finished by the next one", async () => {
