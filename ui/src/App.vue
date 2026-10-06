@@ -9,7 +9,7 @@ import Settings from "./components/Settings.vue";
 import Sidebar from "./components/Sidebar.vue";
 import TurnDetail from "./components/TurnDetail.vue";
 import TurnsList from "./components/TurnsList.vue";
-import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, state, theme, type Tab } from "./viewer";
+import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, startHeartbeat, state, theme, type Tab } from "./viewer";
 
 const tabs = [
   { label: "Memories", value: "memories", icon: "i-lucide-sticky-note" },
@@ -104,6 +104,7 @@ function onKey(e: KeyboardEvent) {
 
 onMounted(async () => {
   document.addEventListener("keydown", onKey);
+  onBeforeUnmount(startHeartbeat());
   const deep = /^#m(\d+)$/.exec(location.hash);
   const hashTab = /^#(turns|overview|settings)$/.exec(location.hash)?.[1] as Tab | undefined;
   if (hashTab) state.tab = hashTab;

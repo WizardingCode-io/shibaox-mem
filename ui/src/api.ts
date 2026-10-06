@@ -145,6 +145,18 @@ export const api = {
   stats: (projectId: number) => call<ProjectStats>(`/api/projects/${projectId}/stats`),
   search: (q: string, limit = 20) =>
     call<SearchHit[]>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+  /** This tab is here: the server keeps running and opens no second tab. */
+  ping: () =>
+    fetch("/api/ping", { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } }).catch(
+      () => undefined,
+    ),
+  /** This tab is going away. */
+  bye: () =>
+    fetch("/api/bye", {
+      method: "POST",
+      keepalive: true,
+      headers: { Authorization: `Bearer ${TOKEN}` },
+    }).catch(() => undefined),
   settings: () => call<SettingsView>("/api/settings"),
   saveSettings: (patch: SettingsPatch) =>
     call<SettingsView>("/api/settings", { method: "PUT", body: JSON.stringify(patch) }),

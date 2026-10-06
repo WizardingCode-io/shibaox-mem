@@ -7,6 +7,7 @@ import { statusReport } from "../status/report.ts";
 import { compact } from "../store/compact.ts";
 import { type Db, openDb } from "../store/db.ts";
 import { logError } from "../util/log.ts";
+import { clearUiState, writeUiState } from "./state.ts";
 import {
   getMemory,
   getTurn,
@@ -42,7 +43,23 @@ export interface UiOptions {
   onIdle?: () => void;
   /** The environment the settings are read against; tests pass their own. */
   env?: Record<string, string | undefined>;
+  /** How the browser is opened; tests count instead. */
+  openBrowser?: (url: string) => void;
+  /** Refuse to start when another viewer is already on record (see `UiClaimedError`). */
+  exclusive?: boolean;
 }
+
+/** Thrown by an exclusive start that lost the race to another viewer. */
+export class UiClaimedError extends Error {
+  constructor() {
+    super("another viewer is already on record");
+  }
+}
+
+/** A tab that pinged this recently is there; opening another would duplicate it. */
+const TAB_ALIVE_MS = 90_000;
+/** Two sessions starting together must not open two tabs. */
+const REOPEN_GUARD_MS = 10_000;
 
 export interface UiServer {
   origin: string;
@@ -81,7 +98,9 @@ async function jsonObject(request: Request): Promise<Record<string, unknown> | R
   return body as Record<string, unknown>;
 }
 
-function openBrowser(url: string): void {
+/** Opens the page in the user's browser; `SHIBAOX_MEM_UI_BROWSER=none` keeps it closed. */
+export function openBrowser(url: string): void {
+  if (process.env.SHIBAOX_MEM_UI_BROWSER === "none") return;
   const command =
     process.platform === "darwin"
       ? ["open", url]
@@ -104,12 +123,20 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
 
+  const open = options.openBrowser ?? openBrowser;
+  // When a tab last said it was there, and when a browser was last opened.
+  let lastPingAt: number | null = null;
+  let openedAt: number | null = null;
+  // The page's own address, known once the port is.
+  let pageUrl = "";
+
   const stop = async () => {
     if (stopped) return;
     stopped = true;
     if (idleTimer !== undefined) clearTimeout(idleTimer);
     await server.stop(true);
     db.close();
+    clearUiState(options.dataDir, process.pid);
   };
   const touch = () => {
     if (idleTimer !== undefined) clearTimeout(idleTimer);
@@ -147,6 +174,30 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
       return new Response(page as unknown as string, {
         headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
       });
+    }
+    // Presence: who is here, a tab's heartbeat, and whether to open a browser.
+    if (path === "/api/ping" && request.method === "GET") {
+      return json({ pid: process.pid, lastPingAt });
+    }
+    if (path === "/api/ping" && request.method === "POST") {
+      lastPingAt = now();
+      return new Response(null, { status: 204 });
+    }
+    if (path === "/api/bye" && request.method === "POST") {
+      lastPingAt = null;
+      return new Response(null, { status: 204 });
+    }
+    if (path === "/api/open" && request.method === "POST") {
+      const at = now();
+      if (lastPingAt !== null && at - lastPingAt < TAB_ALIVE_MS) {
+        return json({ opened: false, reason: "tab" });
+      }
+      if (openedAt !== null && at - openedAt < REOPEN_GUARD_MS) {
+        return json({ opened: false, reason: "recent" });
+      }
+      openedAt = at;
+      open(pageUrl);
+      return json({ opened: true });
     }
     if (path === "/api/overview" && request.method === "GET") {
       return json({ version: pkg.version, dataDir: options.dataDir, projects: listProjects(db) });
@@ -272,6 +323,19 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
 
   const origin = `http://127.0.0.1:${server.port}`;
   const url = `${origin}/?token=${token}`;
-  if (options.open) openBrowser(url);
+  pageUrl = url;
+  const recorded = writeUiState(
+    options.dataDir,
+    { pid: process.pid, origin, token, startedAt: now() },
+    options.exclusive ?? false,
+  );
+  if (!recorded) {
+    await stop();
+    throw new UiClaimedError();
+  }
+  if (options.open) {
+    openedAt = now();
+    open(url);
+  }
   return { origin, url, token, stop };
 }

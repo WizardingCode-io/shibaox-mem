@@ -1,8 +1,10 @@
 import { ADAPTERS } from "../../adapters/index.ts";
 import type { HookEvent } from "../../core/types.ts";
 import { handleHook } from "../../hooks/handle.ts";
+import { loadSettings } from "../../settings/settings.ts";
 import { type Db, openDb } from "../../store/db.ts";
 import { errorLabel, logError } from "../../util/log.ts";
+import { defaultDataDir } from "../../util/paths.ts";
 import { spawnDetached } from "../../util/self.ts";
 
 // How long each event may wait for another process's database lock. The two events
@@ -36,6 +38,21 @@ async function readStdin(): Promise<string | null> {
 function spawnDistill(): void {
   // SHIBAOX_MEM_DISTILL=off leaves queued turns for a later run, e.g. `shibaox-mem distill` by hand.
   if (process.env.SHIBAOX_MEM_DISTILL !== "off") spawnDetached("distill");
+}
+
+/**
+ * Shows the viewer for a session that just began, unless no one would see it: a
+ * non-interactive run (CI), a remote shell, a Linux box without a display, or the user
+ * turned it off (SHIBAOX_MEM_UI_AUTO_OPEN=off). The work happens in `ui --auto`,
+ * detached; this costs one small file read and one spawn.
+ */
+function spawnViewer(): void {
+  const env = process.env;
+  if (env.SHIBAOX_MEM_UI_AUTO_OPEN === "off") return;
+  if (env.CI || env.SSH_CONNECTION || env.SSH_TTY) return;
+  if (process.platform === "linux" && !env.DISPLAY && !env.WAYLAND_DISPLAY) return;
+  if (!loadSettings(env, defaultDataDir()).uiAutoOpen) return;
+  spawnDetached("ui", "--auto");
 }
 
 /**
@@ -114,6 +131,7 @@ export async function run(argv: string[]): Promise<number> {
         db,
         now: Date.now,
         spawnDistill,
+        spawnViewer,
         onError: (error) => logError(`hook ${agent} ${event} (lookup)`, error),
       },
       adapter,

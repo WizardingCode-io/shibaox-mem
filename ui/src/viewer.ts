@@ -111,4 +111,26 @@ export const theme = computed<"light" | "dark">({
     isDark.value = t === "dark";
   },
 });
+/**
+ * Tells the server this tab exists: every half minute, and again when it comes back
+ * into view; a goodbye when it closes. That is how a session starting later reuses this
+ * tab instead of opening another, and why the server does not stop while it is open.
+ */
+export function startHeartbeat(): () => void {
+  const HEARTBEAT_MS = 30_000;
+  void api.ping();
+  const timer = setInterval(() => void api.ping(), HEARTBEAT_MS);
+  const onVisible = () => {
+    if (document.visibilityState === "visible") void api.ping();
+  };
+  const onHide = () => void api.bye();
+  document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("pagehide", onHide);
+  return () => {
+    clearInterval(timer);
+    document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("pagehide", onHide);
+  };
+}
+
 export { state };

@@ -16,6 +16,8 @@ let project: string;
 let db: Db;
 let clock: number;
 let spawned: number;
+let viewers: number;
+let viewerThrows: boolean;
 
 beforeEach(() => {
   base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-hooks-")));
@@ -24,6 +26,8 @@ beforeEach(() => {
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
   clock = 1_000_000;
   spawned = 0;
+  viewers = 0;
+  viewerThrows = false;
   errors = [];
 });
 afterEach(() => {
@@ -43,6 +47,10 @@ function hook(
     db,
     now: () => clock,
     spawnDistill: () => void spawned++,
+    spawnViewer: () => {
+      viewers++;
+      if (viewerThrows) throw new Error("no browser here");
+    },
     onError: (error: unknown) => void errors.push(error),
   };
   return handleHook(deps, adapter, {
@@ -462,5 +470,32 @@ describe("hook: what the agent is told", () => {
     remember(RULE);
     db.run("UPDATE projects SET disabled = 1");
     expect(hook("session-start", { source: "startup" })).toBe("");
+  });
+});
+
+describe("the viewer at session start", () => {
+  test("a new session asks for the viewer once", () => {
+    hook("session-start", { source: "startup" });
+    expect(viewers).toBe(1);
+  });
+
+  test("a resumed session does not: its viewer is already there", () => {
+    hook("session-start", { source: "resume" });
+    expect(viewers).toBe(0);
+  });
+
+  test("no other event does", () => {
+    hook("session-start", { source: "startup" });
+    hook("prompt", { prompt: "hello", turnId: "t1" });
+    hook("turn-end", { turnId: "t1", finalText: "done" });
+    hook("session-end");
+    expect(viewers).toBe(1);
+  });
+
+  test("a failure to start it is reported and changes nothing the host sees", () => {
+    viewerThrows = true;
+    const out = hook("session-start", { source: "startup" });
+    expect(errors).toHaveLength(1);
+    expect(out).toBe("");
   });
 });

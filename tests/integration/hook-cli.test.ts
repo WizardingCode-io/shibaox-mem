@@ -20,7 +20,14 @@ afterEach(() => {
 
 const hook = (input: string, ...args: string[]) =>
   runCliWith(
-    { input, env: { SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off" } },
+    {
+      input,
+      env: {
+        SHIBAOX_MEM_DATA_DIR: dir,
+        SHIBAOX_MEM_DISTILL: "off",
+        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+      },
+    },
     "hook",
     ...args,
   );
@@ -129,6 +136,7 @@ describe("shibaox-mem hook", () => {
           env: {
             SHIBAOX_MEM_DATA_DIR: dir,
             SHIBAOX_MEM_DISTILL: "off",
+            SHIBAOX_MEM_UI_AUTO_OPEN: "off",
             CLAUDE_CONFIG_DIR: config,
             CLAUDE_PLUGIN_ROOT: "/plugins/shibaox-mem",
           },
@@ -178,6 +186,7 @@ describe("shibaox-mem hook", () => {
               HOME: dir,
               SHIBAOX_MEM_DATA_DIR: join(dir, "data"),
               SHIBAOX_MEM_DISTILL: "off",
+              SHIBAOX_MEM_UI_AUTO_OPEN: "off",
             },
           },
           "hook",
@@ -288,7 +297,12 @@ describe("shibaox-mem hook", () => {
   test("gives up on a stdin that is never closed, silently", async () => {
     const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
     const proc = Bun.spawn([process.execPath, main, "hook", "claude-code", "prompt"], {
-      env: { ...process.env, SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off" },
+      env: {
+        ...process.env,
+        SHIBAOX_MEM_DATA_DIR: dir,
+        SHIBAOX_MEM_DISTILL: "off",
+        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+      },
       stdin: "pipe",
       stdout: "pipe",
       stderr: "pipe",
@@ -308,12 +322,33 @@ describe("shibaox-mem hook", () => {
     const result = await runCliWith(
       {
         input: payload("user-prompt-submit"),
-        env: { SHIBAOX_MEM_DATA_DIR: file, SHIBAOX_MEM_DISTILL: "off" },
+        env: {
+          SHIBAOX_MEM_DATA_DIR: file,
+          SHIBAOX_MEM_DISTILL: "off",
+          SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+        },
       },
       "hook",
       "claude-code",
       "prompt",
     );
     expect(result).toEqual(SILENT_SUCCESS);
+  });
+});
+
+describe("the viewer at session start, from the command line", () => {
+  test("is not opened where there is no one to see it (CI), and the hook stays silent", async () => {
+    const result = await runCliWith(
+      {
+        input: payload("session-start.startup", "codex"),
+        env: { SHIBAOX_MEM_DATA_DIR: dir, SHIBAOX_MEM_DISTILL: "off", CI: "1" },
+      },
+      "hook",
+      "codex",
+      "session-start",
+    );
+    expect(result).toEqual(SILENT_SUCCESS);
+    await Bun.sleep(500);
+    expect(await Bun.file(join(dir, "ui.json")).exists()).toBe(false);
   });
 });

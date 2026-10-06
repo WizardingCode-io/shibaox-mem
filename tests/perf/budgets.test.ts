@@ -121,7 +121,11 @@ async function measure(
   for (let run = -1; run < RUNS; run++) {
     const result = await runBinary(binary, ["hook", "claude-code", event], {
       input: JSON.stringify({ session_id: `perf-${event}`, cwd: project, ...payload(run) }),
-      env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_DISTILL: "off" },
+      env: {
+        SHIBAOX_MEM_DATA_DIR: dataDir,
+        SHIBAOX_MEM_DISTILL: "off",
+        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+      },
     });
     expect([result.exitCode, result.stderr]).toEqual([0, ""]);
     if (run >= 0) {

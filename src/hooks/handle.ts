@@ -23,6 +23,8 @@ export interface HookDeps {
   now: () => number;
   /** Starts background distillation and returns at once. */
   spawnDistill: () => void;
+  /** Shows the viewer, or starts it, in the background; absent where no one would see it. */
+  spawnViewer?: () => void;
   /** Told about failures that were contained here rather than thrown. */
   onError?: (error: unknown) => void;
 }
@@ -149,6 +151,14 @@ export function handleHook(deps: HookDeps, adapter: AgentAdapter, input: HookInp
     if (hasQueuedTurns(db, now) && !drainActive(db, now)) deps.spawnDistill();
   } catch (error) {
     deps.onError?.(error);
+  }
+  // A new session is when the viewer should be there; a resumed one already has it.
+  if (input.event === "session-start" && input.source !== "resume") {
+    try {
+      deps.spawnViewer?.();
+    } catch (error) {
+      deps.onError?.(error);
+    }
   }
   return adapter.render(input.event, context);
 }
