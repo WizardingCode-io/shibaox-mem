@@ -9,20 +9,31 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "bun test",
-    "build": "bun scripts/build.ts",
-    "check": "bun run typecheck && bun run lint && bun run test",
-    "plugins": "bun scripts/plugins.ts"
+    "test": "bun run ui:build && bun test",
+    "build": "bun run ui:build && bun scripts/build.ts",
+    "check": "bun run typecheck && bun run lint && bun run ui:build && bun run test",
+    "plugins": "bun scripts/plugins.ts",
+    "ui:build": "vite build --config ui/vite.config.ts",
+    "ui:dev": "vite --config ui/vite.config.ts"
   },
   "trustedDependencies": [
+    "@biomejs/biome",
     "bun",
-    "@biomejs/biome"
+    "esbuild",
+    "vue-demi"
   ],
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@iconify-json/lucide": "^1.2.140",
+    "@nuxt/ui": "^4.11.3",
     "@types/bun": "1.4.2",
+    "@vitejs/plugin-vue": "^6.0.9",
     "bun": "1.4.2",
-    "typescript": "7.0.2"
+    "tailwindcss": "^4.3.3",
+    "typescript": "7.0.2",
+    "vite": "^8.3.3",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vue": "^3.5.43"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.0",

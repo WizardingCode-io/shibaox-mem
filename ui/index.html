@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>shibaox-mem</title>
+<script>
+  // The theme before paint, from the same place Nuxt UI's colour mode keeps it.
+  (function () {
+    var pinned = new URLSearchParams(location.search).get("theme");
+    var saved = null;
+    try { saved = localStorage.getItem("vueuse-color-scheme"); } catch (e) { saved = null; }
+    var dark = pinned === "dark" || (pinned !== "light" && (saved === "dark" || ((saved === null || saved === "auto") && matchMedia("(prefers-color-scheme: dark)").matches)));
+    if (dark) document.documentElement.classList.add("dark");
+  })();
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

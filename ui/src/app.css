@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* The brand's fonts, served by the binary. */
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 700; font-display: swap; src: url("/assets/bricolage-grotesque-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist"; font-weight: 400; font-display: swap; src: url("/assets/geist-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist"; font-weight: 500; font-display: swap; src: url("/assets/geist-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 400; font-display: swap; src: url("/assets/geist-mono-latin-400-normal.woff2") format("woff2"); }
+
+/* The shiba palette as a Tailwind colour (primary), plus the brand's type and radii. */
+@theme static {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --color-shiba-50: #fff3e3;
+  --color-shiba-100: #fde6d2;
+  --color-shiba-200: #fbcfa6;
+  --color-shiba-300: #f9b479;
+  --color-shiba-400: #f69a4d;
+  --color-shiba-500: #f2842b;
+  --color-shiba-600: #db6716;
+  --color-shiba-700: #a94a0a;
+  --color-shiba-800: #7a3508;
+  --color-shiba-900: #4a2007;
+  --color-shiba-950: #2b1304;
+}
+
+/* Brand tokens (from the design system's tokens.css), and Nuxt UI's semantics on top of them. */
+:root {
+  --bg: #fbf6ef; --surface: #ffffff; --surface-sunken: #f4ece2; --surface-hover: #f7efe5;
+  --line: #e8dccd; --line-strong: #9a846f; --ink: #1c140e; --ink-muted: #6b5a4c;
+  --shiba: #f2842b; --on-shiba: #1c140e; --shiba-strong: #a94a0a; --shiba-soft: #fde6d2;
+  --matcha: #266e43; --matcha-soft: #ddf1e3; --info: #2a63c4; --info-soft: #e1eafa;
+  --warning: #8a5e00; --warning-soft: #fbefc9; --danger: #c42840; --danger-soft: #fbe1e4;
+  --shadow-sm: 0 1px 2px #1c140e0f, 0 1px 3px #1c140e14; --shadow-md: 0 2px 4px #1c140e0d, 0 8px 20px -4px #1c140e1f; --shadow-lg: 0 4px 8px #1c140e14, 0 16px 40px -8px #1c140e33;
+  --focus-ring: 0 0 0 2px #fbf6ef, 0 0 0 4px #a94a0a;
+
+  --ui-radius: 0.5rem;
+  --ui-primary: var(--shiba-strong);
+  --ui-text-dimmed: #9a846f; --ui-text-muted: var(--ink-muted); --ui-text-toned: #4e3f33; --ui-text: var(--ink); --ui-text-highlighted: var(--ink); --ui-text-inverted: #ffffff;
+  --ui-bg: var(--bg); --ui-bg-muted: var(--surface-sunken); --ui-bg-elevated: var(--surface); --ui-bg-accented: var(--surface-hover); --ui-bg-inverted: var(--ink);
+  --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--line-strong); --ui-border-inverted: var(--ink);
+  --ui-success: var(--matcha); --ui-info: var(--info); --ui-warning: var(--warning); --ui-error: var(--danger);
+}
+.dark {
+  --bg: #140e0a; --surface: #1e1611; --surface-sunken: #0d0906; --surface-hover: #271d16;
+  --line: #33271e; --line-strong: #7e6856; --ink: #f7ede2; --ink-muted: #b9a694;
+  --shiba: #ff9142; --on-shiba: #1c140e; --shiba-strong: #ffa15c; --shiba-soft: #3b2213;
+  --matcha: #6acb8e; --matcha-soft: #12301e; --info: #86aef5; --info-soft: #16264a;
+  --warning: #f2c150; --warning-soft: #35290a; --danger: #ff7a8a; --danger-soft: #3d1219;
+  --shadow-sm: 0 1px 2px #00000080; --shadow-md: 0 8px 20px -4px #000000b3; --shadow-lg: 0 16px 40px -8px #000000d9;
+  --focus-ring: 0 0 0 2px #140e0a, 0 0 0 4px #ffa15c;
+
+  --ui-primary: var(--shiba-strong);
+  --ui-text-dimmed: #7e6856; --ui-text-muted: var(--ink-muted); --ui-text-toned: #d9c7b3; --ui-text: var(--ink); --ui-text-highlighted: #ffffff; --ui-text-inverted: var(--bg);
+  --ui-bg: var(--bg); --ui-bg-muted: var(--surface-sunken); --ui-bg-elevated: var(--surface); --ui-bg-accented: var(--surface-hover); --ui-bg-inverted: var(--ink);
+  --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--line-strong); --ui-border-inverted: var(--ink);
+  --ui-success: var(--matcha); --ui-info: var(--info); --ui-warning: var(--warning); --ui-error: var(--danger);
+}
+
+html, body, #app { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 24px; -webkit-font-smoothing: antialiased; }
+.font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+.overline { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+.mascot { width: 112px; height: 112px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

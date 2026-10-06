@@ -5,21 +5,26 @@ import { type Db, openDb } from "../store/db.ts";
 import { logError } from "../util/log.ts";
 import {
   getMemory,
+  getTurn,
   listMemories,
   listProjects,
   projectRef,
+  projectStats,
   recentTurns,
+  searchAll,
   setMemoryStatus,
+  updateMemory,
 } from "./api.ts";
 import bricolage from "./assets/bricolage-grotesque-latin-700-normal.woff2" with { type: "file" };
 import geistMono from "./assets/geist-mono-latin-400-normal.woff2" with { type: "file" };
 import geist400 from "./assets/geist-sans-latin-400-normal.woff2" with { type: "file" };
 import geist500 from "./assets/geist-sans-latin-500-normal.woff2" with { type: "file" };
-import { renderPage } from "./page.ts";
+import page from "./dist/index.html" with { type: "text" };
 
 // The viewer: a local page over the database. Loopback only, a token in the URL that
 // every request must carry, the Host header checked, and it stops itself when idle.
-// Nothing is loaded from the network: fonts and the mascot travel in the binary.
+// Nothing is loaded from the network: the app (built by Vite into src/ui/dist), the
+// fonts and the mascot travel in the binary.
 
 export interface UiOptions {
   dataDir: string;
@@ -96,9 +101,20 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
 
   const handle = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
+    const path = url.pathname;
     const host = request.headers.get("host") ?? "";
     if (host !== `127.0.0.1:${server.port}` && host !== `localhost:${server.port}`) {
       return problem(403, "wrong host");
+    }
+    // Fonts are served without the token: a browser cannot add one to a font request,
+    // and they are the brand's, not the user's data.
+    if (request.method === "GET" && path.startsWith("/assets/")) {
+      const font = FONTS[path.slice("/assets/".length)];
+      if (font === undefined) return problem(404, "no such asset");
+      touch();
+      return new Response(Bun.file(font), {
+        headers: { "content-type": "font/woff2", "cache-control": "private, max-age=86400" },
+      });
     }
     const presented =
       request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
@@ -106,17 +122,9 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
     if (presented !== token) return problem(401, "missing or wrong token");
     touch();
 
-    const path = url.pathname;
     if (request.method === "GET" && path === "/") {
-      return new Response(renderPage({ token, version: pkg.version }), {
+      return new Response(page as unknown as string, {
         headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
-      });
-    }
-    if (request.method === "GET" && path.startsWith("/assets/")) {
-      const font = FONTS[path.slice("/assets/".length)];
-      if (font === undefined) return problem(404, "no such asset");
-      return new Response(Bun.file(font), {
-        headers: { "content-type": "font/woff2", "cache-control": "private, max-age=86400" },
       });
     }
     if (path === "/api/overview" && request.method === "GET") {
@@ -148,23 +156,47 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
         const memory = getMemory(db, id);
         return memory === null ? problem(404, "no such memory") : json(memory);
       }
-      if (request.method === "POST") {
+      if (request.method === "POST" || request.method === "PATCH") {
         let body: unknown;
         try {
           body = await request.json();
         } catch {
           return problem(400, "body must be JSON");
         }
-        const status =
-          body !== null && typeof body === "object"
-            ? (body as { status?: unknown }).status
-            : undefined;
+        if (body === null || typeof body !== "object")
+          return problem(400, "body must be an object");
+        if (request.method === "PATCH") {
+          const outcome = updateMemory(db, id, body as Parameters<typeof updateMemory>[2], now());
+          if (outcome === "ok") return json(getMemory(db, id));
+          if (outcome === "not-found") return problem(404, "no such memory");
+          return problem(
+            400,
+            "only title, body, kind (one of ours) and importance (1–5) can change; a superseded memory cannot",
+          );
+        }
+        const status = (body as { status?: unknown }).status;
         if (typeof status !== "string") return problem(400, "status is required");
         const outcome = setMemoryStatus(db, id, status, now());
         if (outcome === "ok") return json(getMemory(db, id));
         if (outcome === "not-found") return problem(404, "no such memory");
         return problem(400, "a memory can only be archived or made active again");
       }
+    }
+    const oneTurn = /^\/api\/turns\/(\d+)$/.exec(path);
+    if (oneTurn !== null && request.method === "GET") {
+      const turn = getTurn(db, Number(oneTurn[1]));
+      return turn === null ? problem(404, "no such turn") : json(turn);
+    }
+    const stats = /^\/api\/projects\/(\d+)\/stats$/.exec(path);
+    if (stats !== null && request.method === "GET") {
+      const found = projectStats(db, Number(stats[1]), now());
+      return found === null ? problem(404, "no such project") : json(found);
+    }
+    if (path === "/api/search" && request.method === "GET") {
+      const limit = Number(url.searchParams.get("limit") ?? 20);
+      return json(
+        searchAll(db, url.searchParams.get("q") ?? "", Number.isFinite(limit) ? limit : 20),
+      );
     }
     if (path === "/api/status" && request.method === "GET") {
       const projectId = Number(url.searchParams.get("project"));

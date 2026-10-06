@@ -102,8 +102,11 @@ describe("shibaox-mem ui: the page", () => {
     expect(page.headers.get("content-type")).toContain("text/html");
     const html = await page.text();
     expect(html).toContain("<title>shibaox-mem</title>");
+    expect(html).toContain('<div id="app">');
+    // Built into one file: no script or stylesheet fetched from anywhere.
+    expect(html).not.toMatch(/<script[^>]+src=/);
+    expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/);
     expect(html).toContain("--shiba:");
-    expect(html).toContain('data-mascot="default"');
   });
 
   test("without the token, nothing is served", async () => {
@@ -119,9 +122,9 @@ describe("shibaox-mem ui: the page", () => {
     expect(r.status).toBe(403);
   });
 
-  test("the brand fonts are served from the binary, not from the network", async () => {
+  test("the brand fonts are served from the binary, not from the network, and need no token", async () => {
     const s = await start();
-    const r = await api(s, "/assets/geist-sans-latin-400-normal.woff2");
+    const r = await fetch(`${s.origin}/assets/geist-sans-latin-400-normal.woff2`);
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("font/woff2");
     expect((await r.arrayBuffer()).byteLength).toBeGreaterThan(10_000);
@@ -261,6 +264,137 @@ describe("shibaox-mem ui: the API", () => {
       ).status,
     ).toBe(400);
     expect((await api(s, "/api/memories/1", { method: "POST", body: "nope" })).status).toBe(400);
+  });
+
+  test("a memory can be edited: title, body, kind and importance; the judge becomes the user", async () => {
+    const s = await start();
+    const edited = await api(s, "/api/memories/1", {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: "Totals are rounded once.",
+        body: "At the end.",
+        kind: "convention",
+        importance: 5,
+      }),
+    });
+    expect(edited.status).toBe(200);
+    expect((await edited.json()) as object).toMatchObject({
+      id: 1,
+      title: "Totals are rounded once.",
+      body: "At the end.",
+      kind: "convention",
+      importance: 5,
+      judge: "user",
+    });
+    // Searchable under the new words, no longer under the old.
+    const found = (await (await api(s, `/api/memories?project=${projectId}&q=rounded`)).json()) as {
+      total: number;
+    };
+    expect(found.total).toBe(1);
+    const gone = (await (await api(s, `/api/memories?project=${projectId}&q=drift`)).json()) as {
+      total: number;
+    };
+    expect(gone.total).toBe(0);
+    // Only those fields, and only valid values.
+    for (const bad of [
+      { kind: "rumour" },
+      { importance: 9 },
+      { title: "" },
+      { status: "archived" },
+    ]) {
+      expect(
+        (await api(s, "/api/memories/1", { method: "PATCH", body: JSON.stringify(bad) })).status,
+      ).toBe(400);
+    }
+    expect(
+      (await api(s, "/api/memories/999", { method: "PATCH", body: JSON.stringify({ title: "x" }) }))
+        .status,
+    ).toBe(404);
+  });
+
+  test("a turn in full, with the memories that came from it; the memory points back at its turn", async () => {
+    const s = await start();
+    const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    const sessionId = db
+      .query<{ id: number }, [number]>(
+        "INSERT INTO sessions (agent, agent_session_id, project_id, cwd, started_at, last_seen_at) VALUES ('codex', 'x', ?, '/p', 1, 1) RETURNING id",
+      )
+      .get(projectId)?.id as number;
+    const turnId = db
+      .query<{ id: number }, [number, number]>(
+        `INSERT INTO turns (session_id, project_id, seq, state, prompt, final_text, files_changed, commands, errors, started_at, ended_at)
+         VALUES (?, ?, 1, 'done', 'why does the total drift?', 'Rounded once now.', '["src/cart/total.ts"]', '["bun test"]', '[]', 10, 20) RETURNING id`,
+      )
+      .get(sessionId, projectId)?.id as number;
+    db.run("UPDATE memories SET source_turn_id = ? WHERE id = 1", [turnId]);
+    db.close();
+
+    const turns = (await (await api(s, `/api/turns?project=${projectId}`)).json()) as {
+      id: number;
+      memoryIds: number[];
+    }[];
+    expect(turns).toHaveLength(1);
+    expect(turns[0]).toMatchObject({ id: turnId, memoryIds: [1] });
+    const turn = (await (await api(s, `/api/turns/${turnId}`)).json()) as object;
+    expect(turn).toMatchObject({
+      id: turnId,
+      agent: "codex",
+      state: "done",
+      prompt: "why does the total drift?",
+      finalText: "Rounded once now.",
+      filesChanged: ["src/cart/total.ts"],
+      commands: ["bun test"],
+      memories: [{ id: 1, title: "The cart total is rounded once, at the end.", kind: "decision" }],
+    });
+    expect((await api(s, "/api/turns/999")).status).toBe(404);
+    const memory = (await (await api(s, "/api/memories/1")).json()) as {
+      source: { turnId: number };
+    };
+    expect(memory.source.turnId).toBe(turnId);
+  });
+
+  test("a project's numbers: by kind, status, importance and judge, by week, and the hooks' speed", async () => {
+    const s = await start();
+    const stats = (await (await api(s, `/api/projects/${projectId}/stats`)).json()) as {
+      byKind: Record<string, number>;
+      byStatus: Record<string, number>;
+      byImportance: Record<string, number>;
+      byJudge: Record<string, number>;
+      turns: Record<string, number>;
+      weekly: { weekStart: number; memories: number; turns: number }[];
+      hooks: unknown[];
+    };
+    expect(stats.byKind).toMatchObject({
+      decision: 1,
+      convention: 1,
+      change: 0,
+      fix: 0,
+      gotcha: 0,
+      discovery: 0,
+    });
+    expect(stats.byStatus).toEqual({ active: 2, archived: 1, superseded: 0 });
+    expect(stats.byImportance).toMatchObject({ "4": 2, "1": 0 });
+    expect(stats.byJudge).toEqual({ typesafe: 2 });
+    expect(stats.weekly).toHaveLength(8);
+    expect(stats.weekly.reduce((n, w) => n + w.memories, 0)).toBe(2);
+    expect((await api(s, "/api/projects/999/stats")).status).toBe(404);
+  });
+
+  test("a search across every project, for the command palette", async () => {
+    const s = await start();
+    const hits = (await (await api(s, "/api/search?q=rotates")).json()) as {
+      projectName: string;
+      title: string;
+    }[];
+    expect(hits).toEqual([
+      expect.objectContaining({
+        projectName: "other",
+        title: "Elsewhere: the API key rotates monthly.",
+      }),
+    ]);
+    const many = (await (await api(s, "/api/search?q=the")).json()) as unknown[];
+    expect(many.length).toBeGreaterThanOrEqual(2);
+    expect(await (await api(s, "/api/search?q=")).json()).toEqual([]);
   });
 
   test("the status report of a project, as the CLI shows it", async () => {

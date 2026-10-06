@@ -9,6 +9,8 @@
       "!**/tests/fixtures",
       "!**/src/ui/assets",
       "!**/docs/brand",
+      "!**/ui",
+      "!**/src/ui/dist",
       "!**/plugins",
       "!**/plugin",
       "!**/.claude-plugin",

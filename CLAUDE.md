@@ -36,4 +36,4 @@ O `bun` usado pelos scripts é o fixado em `devDependencies`, não o global.
 - Nada de SDKs pesados no caminho dos hooks; usar `await import()` por comando.
 - Juízos semânticos passam pela interface `Judge` (TypeSafe opt-in, heurísticas como recurso). Regras exatas e cálculos ficam em código.
 - Imports com extensão `.ts` explícita.
-- Assets do viewer em `src/ui/assets/` viajam no binário (`with { type: "file" | "text" }`); nada sai para a rede a partir do viewer.
+- O viewer é uma app Vue 3 + Tailwind 4 + Nuxt UI em `ui/`, compilada pelo Vite num só `src/ui/dist/index.html` (fora do git; `bun run ui:build`, incluído em `test`, `build` e `check`) que o binário embute. Os tokens da marca vivem em `ui/src/app.css` e alimentam as variáveis `--ui-*` do Nuxt UI; os ícones são embutidos na compilação; as fontes em `src/ui/assets/` viajam no binário. Nada sai para a rede a partir do viewer. `bun run ui:dev` para desenvolver contra um `shibaox-mem ui` a correr.

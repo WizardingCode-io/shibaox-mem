@@ -166,7 +166,7 @@ Memories are kept as what they are: a title, a body of sentences that were actua
 shibaox-mem ui
 ```
 
-Opens a local page over your memories: every project with its counts, memories newest first or by the same search the agent uses, each in full with its files and the prompt it came from. Archive what you do not want shown; bring it back when you do. It listens on the loopback only, behind a token in the URL, loads nothing from the network, and stops itself after half an hour without you.
+Opens a local page over your memories: every project with its counts, memories newest first or by the same search the agent uses, each in full with its files and the turn it came from. Press ⌘K for a command palette that searches every project at once. Edit a title, a body, a kind or an importance when the judge got it wrong; archive what you do not want shown and bring it back when you do. The **Turns** tab shows what each session did (prompt, answer, files, commands, errors) and which memories it left behind; **Overview** is the project's dashboard: what is stored, by kind and importance, eight weeks of activity, how fast the hooks have been. Light and dark, keyboard first (`/`, ↑ ↓, Esc). It listens on the loopback only, behind a token in the URL, loads nothing from the network, and stops itself after half an hour without you.
 
 ## Commands
 
