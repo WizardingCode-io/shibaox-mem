@@ -35,9 +35,11 @@ export default defineConfig({
   },
   server: {
     port: 5180,
+    // `changeOrigin`: the viewer's server checks the Host header, so the proxied request
+    // must carry the server's own host, not localhost:5180.
     proxy: {
-      "/api": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: false },
-      "/assets": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: false },
+      "/api": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
+      "/assets": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
     },
   },
 });
