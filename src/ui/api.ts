@@ -79,6 +79,8 @@ export interface ListOptions {
   q?: string;
   kind?: string;
   status?: string;
+  /** Only memories at least this important (1–5). */
+  minImportance?: number;
   limit?: number;
   offset?: number;
 }
@@ -93,8 +95,9 @@ export function listMemories(db: Db, options: ListOptions): { total: number; ite
       : null;
   const limit = Math.min(MAX_LIMIT, Math.max(1, options.limit ?? 50));
   const offset = Math.max(0, options.offset ?? 0);
-  const where = `m.project_id = ? AND (? = 'all' OR m.status = ?) AND (? IS NULL OR m.kind = ?)`;
-  const params: (string | number | null)[] = [options.projectId, status, status, kind, kind];
+  const floor = Math.min(5, Math.max(1, Math.trunc(options.minImportance ?? 1)));
+  const where = `m.project_id = ? AND (? = 'all' OR m.status = ?) AND (? IS NULL OR m.kind = ?) AND m.importance >= ?`;
+  const params: (string | number | null)[] = [options.projectId, status, status, kind, kind, floor];
 
   const q = (options.q ?? "").trim();
   if (q !== "") {

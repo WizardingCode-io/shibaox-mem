@@ -135,6 +135,7 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
           q: url.searchParams.get("q") ?? undefined,
           kind: url.searchParams.get("kind") ?? undefined,
           status: url.searchParams.get("status") ?? undefined,
+          minImportance: number("minImportance"),
           limit: number("limit"),
           offset: number("offset"),
         }),

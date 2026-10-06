@@ -189,6 +189,30 @@ describe("shibaox-mem ui: the API", () => {
     expect(none.items).toEqual([]);
   });
 
+  test("narrows to an importance floor, and to recent turns of a project", async () => {
+    const s = await start();
+    const important = (await (
+      await api(s, `/api/memories?project=${projectId}&minImportance=4`)
+    ).json()) as { total: number; items: { importance: number }[] };
+    expect(important.total).toBe(2);
+    expect(important.items.every((m) => m.importance >= 4)).toBe(true);
+    const critical = (await (
+      await api(s, `/api/memories?project=${projectId}&minImportance=5`)
+    ).json()) as {
+      total: number;
+      items: unknown[];
+    };
+    expect(critical).toEqual({ total: 0, items: [] });
+    const all = (await (
+      await api(s, `/api/memories?project=${projectId}&minImportance=1`)
+    ).json()) as {
+      total: number;
+    };
+    expect(all.total).toBe(2);
+    const turns = (await (await api(s, `/api/turns?project=${projectId}`)).json()) as unknown[];
+    expect(turns).toEqual([]);
+  });
+
   test("one memory in full, with its files; another project's is not found", async () => {
     const s = await start();
     const one = (await (await api(s, "/api/memories/1")).json()) as {
