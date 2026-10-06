@@ -145,17 +145,12 @@ The agent also gets three tools — `memory_search`, `memory_get` and `memory_sa
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A["Your prompt"] -->|"hook, ~25 ms"| H[("shibaox-mem.db")]
-    H -->|"relevant notes"| A
-    B["The agent's answer"] -->|hook| Q["turn queue"]
-    Q -->|"background, exits when done"| D[distill]
-    D --> J{judge}
-    J -->|rules| M[memory]
-    J -->|"TypeSafe, optional"| M
-    M --> H
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/how-it-works-dark.svg">
+    <img src="docs/images/how-it-works-light.svg" alt="A prompt is met by a hook that reads relevant notes from the database; the agent's answer is queued, distilled in the background, judged, and consolidated into memory" width="1040">
+  </picture>
+</p>
 
 1. **Capture.** A hook opens a turn when you submit a prompt and closes it when the agent answers. Hooks take tens of milliseconds, never block, and fail open: if anything goes wrong, your session goes on as if shibaox-mem were not there.
 2. **Distill.** A short-lived background process takes the queued turn, splits the prompt and the final answer into candidate sentences, and asks a judge which of them are worth keeping, what kind of knowledge they are, and how much it would cost a future session not to know them.
