@@ -75,7 +75,9 @@ async function copy() {
 </script>
 
 <template>
-  <aside class="flex min-h-0 flex-col overflow-auto border-l border-(--line) bg-(--surface)" aria-label="Memory">
+  <!-- `isolate` keeps the sticky toolbar's z-index inside the column, so that Nuxt UI's
+       overlays (which rely on coming last in the document) still cover it. -->
+  <aside class="isolate flex min-h-0 flex-col overflow-auto border-l border-(--line) bg-(--surface)" aria-label="Memory">
     <template v-if="state.detail">
       <div class="sticky top-0 z-10 flex items-center gap-2 border-b border-(--line) bg-(--surface) px-4 py-3">
         <template v-if="!editing">

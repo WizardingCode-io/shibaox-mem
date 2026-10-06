@@ -70,6 +70,8 @@ async function openMemory(id: number) {
 }
 
 function onKey(e: KeyboardEvent) {
+  // An overlay that took the key (Escape closing a sheet or the palette) keeps it.
+  if (e.defaultPrevented) return;
   const target = e.target as HTMLElement | null;
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(target?.tagName ?? "") || target?.isContentEditable;
   if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
