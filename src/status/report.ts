@@ -1,7 +1,7 @@
 import pkg from "../../package.json" with { type: "json" };
 import type { ProjectRef } from "../core/project.ts";
 import { USAGE_KEYS } from "../judge/index.ts";
-import { readTypeSafeKey } from "../judge/key.ts";
+import { loadSettings } from "../settings/settings.ts";
 import type { Db } from "../store/db.ts";
 import { getMeta } from "../store/meta.ts";
 
@@ -66,7 +66,9 @@ export interface JudgeReport {
 const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
 
 function judgeReport(db: Db | null, project: ProjectRef | null, dataDir: string): JudgeReport {
-  const configured = readTypeSafeKey(process.env, dataDir) === null ? "heuristic" : "typesafe";
+  const settings = loadSettings(process.env, dataDir);
+  const configured =
+    settings.typesafeKey === null || settings.typesafe === "off" ? "heuristic" : "typesafe";
   if (db === null) return { configured, requests: 0, inputTokens: 0, byJudge: {} };
   const byJudge: Record<string, number> = {};
   if (project !== null) {

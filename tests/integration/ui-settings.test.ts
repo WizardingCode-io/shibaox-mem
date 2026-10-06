@@ -1,0 +1,181 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { resolveProject } from "../../src/core/project.ts";
+import type { Redacted } from "../../src/core/redact.ts";
+import { keyFingerprint } from "../../src/judge/key.ts";
+import { type Db, openDb } from "../../src/store/db.ts";
+import { insertMemory } from "../../src/store/memories.ts";
+import { startUi, type UiServer } from "../../src/ui/server.ts";
+
+const NOW = Date.UTC(2026, 9, 5, 12);
+const DAY = 86_400_000;
+const KEY = "sk-live-0123456789abcdef";
+
+let base: string;
+let dataDir: string;
+let server: UiServer | undefined;
+
+beforeEach(() => {
+  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-ui-settings-")));
+  dataDir = join(base, "data");
+  const project = join(base, "shop");
+  mkdirSync(project);
+  const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+  const projectId = resolveProject(db, project, NOW).id;
+  insertMemory(db, {
+    projectId,
+    kind: "decision",
+    title: "The cart total is rounded once.",
+    body: "" as Redacted,
+    terms: "",
+    importance: 4,
+    branch: null,
+    commit: null,
+    origin: "manual",
+    judge: "heuristic",
+    judgeVersion: "1",
+    sourceTurnId: null,
+    files: [],
+    now: NOW,
+  });
+  // An old, finished turn nothing depends on: what compact would remove.
+  const old = NOW - 200 * DAY;
+  const sessionId = db
+    .query<{ id: number }, [number, number, number]>(
+      `INSERT INTO sessions (agent, agent_session_id, project_id, cwd, started_at, last_seen_at)
+       VALUES ('claude-code', 'old', ?, '/p', ?, ?) RETURNING id`,
+    )
+    .get(projectId, old, old)?.id as number;
+  db.run(
+    `INSERT INTO turns (session_id, project_id, seq, state, prompt, started_at, ended_at)
+     VALUES (?, ?, 1, 'done', 'p', ?, ?)`,
+    [sessionId, projectId, old, old],
+  );
+  db.close();
+});
+afterEach(async () => {
+  await server?.stop();
+  server = undefined;
+  rmSync(base, { recursive: true, force: true });
+});
+
+async function start(env: Record<string, string | undefined> = {}): Promise<UiServer> {
+  server = await startUi({ dataDir, port: 0, open: false, now: () => NOW, env });
+  return server;
+}
+const api = (s: UiServer, path: string, init: RequestInit = {}) =>
+  fetch(`${s.origin}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${s.token}`,
+      "content-type": "application/json",
+      ...(init.headers ?? {}),
+    },
+  });
+const count = (db: Db, table: string) =>
+  db.query<{ n: number }, []>(`SELECT count(*) AS n FROM ${table}`).get()?.n ?? 0;
+
+describe("shibaox-mem ui: settings", () => {
+  test("GET shows every setting with its source and never the key itself", async () => {
+    writeFileSync(join(dataDir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
+    const s = await start({ SHIBAOX_MEM_RETENTION_DAYS: "45" });
+    const response = await api(s, "/api/settings");
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).not.toContain(KEY);
+    const body = JSON.parse(text);
+    expect(body.settings.TYPESAFE_API_KEY).toEqual({
+      secret: true,
+      set: true,
+      fingerprint: keyFingerprint(KEY),
+      source: "file",
+    });
+    expect(body.settings.SHIBAOX_MEM_RETENTION_DAYS).toEqual({ value: "45", source: "env" });
+    expect(body.settings.SHIBAOX_MEM_UI_AUTO_OPEN).toEqual({ value: "on", source: "default" });
+    expect(body.dataDir).toBe(dataDir);
+  });
+
+  test("PUT writes the file and answers with the new view, without echoing the secret", async () => {
+    const s = await start();
+    const response = await api(s, "/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ TYPESAFE_API_KEY: KEY, SHIBAOX_MEM_RETENTION_DAYS: 30 }),
+    });
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).not.toContain(KEY);
+    expect(JSON.parse(text).settings.TYPESAFE_API_KEY).toMatchObject({ set: true, source: "file" });
+    expect(JSON.parse(text).settings.SHIBAOX_MEM_RETENTION_DAYS).toEqual({
+      value: "30",
+      source: "file",
+    });
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe(
+      `TYPESAFE_API_KEY=${KEY}\nSHIBAOX_MEM_RETENTION_DAYS=30\n`,
+    );
+  });
+
+  test("an empty PUT changes nothing; null clears a key", async () => {
+    writeFileSync(join(dataDir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
+    const s = await start();
+    expect((await api(s, "/api/settings", { method: "PUT", body: "{}" })).status).toBe(200);
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe(`TYPESAFE_API_KEY=${KEY}\n`);
+    const cleared = await api(s, "/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ TYPESAFE_API_KEY: null }),
+    });
+    const view = (await cleared.json()) as { settings: Record<string, unknown> };
+    expect(view.settings.TYPESAFE_API_KEY).toMatchObject({ set: false });
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe("");
+  });
+
+  test("a bad value is refused, key by key, and the file is left alone", async () => {
+    writeFileSync(join(dataDir, "env"), "SHIBAOX_MEM_RETENTION_DAYS=30\n");
+    const s = await start();
+    const response = await api(s, "/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ SHIBAOX_MEM_RETENTION_DAYS: 0, SHIBAOX_MEM_TYPESAFE: "off" }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "some settings could not be saved",
+      errors: { SHIBAOX_MEM_RETENTION_DAYS: expect.stringContaining("7") },
+    });
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe("SHIBAOX_MEM_RETENTION_DAYS=30\n");
+    expect((await api(s, "/api/settings", { method: "PUT", body: "nope" })).status).toBe(400);
+  });
+
+  test("the doctor's checks are served as they are", async () => {
+    const s = await start();
+    const checks = (await (await api(s, "/api/doctor")).json()) as {
+      name: string;
+      status: string;
+      detail: string;
+    }[];
+    expect(checks.length).toBeGreaterThan(5);
+    for (const check of checks) {
+      expect(["ok", "warn", "fail", "skip"]).toContain(check.status);
+      expect(typeof check.detail).toBe("string");
+    }
+    expect(checks.map((c) => c.name)).toContain("TypeSafe");
+  });
+
+  test("compact runs from the viewer, dry run first", async () => {
+    const s = await start();
+    const dry = await (
+      await api(s, "/api/compact", { method: "POST", body: JSON.stringify({ dryRun: true }) })
+    ).json();
+    expect(dry).toMatchObject({ dryRun: true, turns: 1, sessions: 1, hookRuns: 0 });
+    let db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    expect(count(db, "turns")).toBe(1);
+    db.close();
+
+    const real = await (await api(s, "/api/compact", { method: "POST", body: "{}" })).json();
+    expect(real).toMatchObject({ dryRun: false, turns: 1, sessions: 1 });
+    db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    expect(count(db, "turns")).toBe(0);
+    expect(count(db, "memories")).toBe(1);
+    db.close();
+  });
+});

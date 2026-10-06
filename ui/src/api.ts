@@ -76,13 +76,53 @@ export interface SearchHit {
   importance: number;
 }
 
+export type SettingSource = "env" | "file" | "default";
+export type PublicSetting =
+  | { value: string | null; source: SettingSource }
+  | { secret: true; set: boolean; fingerprint: string | null; source: SettingSource };
+export type SettingKey =
+  | "TYPESAFE_API_KEY"
+  | "SHIBAOX_MEM_TYPESAFE"
+  | "SHIBAOX_MEM_RETENTION_DAYS"
+  | "SHIBAOX_MEM_UI_AUTO_OPEN"
+  | "SHIBAOX_MEM_STORE_DIR"
+  | "SHIBAOX_MEM_BACKUP_TO"
+  | "SHIBAOX_MEM_BACKUP_EVERY_HOURS"
+  | "SHIBAOX_MEM_BACKUP_KEEP"
+  | "SHIBAOX_MEM_BACKUP_S3_ENDPOINT"
+  | "SHIBAOX_MEM_BACKUP_S3_REGION"
+  | "SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY"
+  | "SHIBAOX_MEM_BACKUP_S3_SECRET_KEY";
+export type SettingsView = { dataDir: string; settings: Record<SettingKey, PublicSetting> };
+export type SettingsPatch = Partial<Record<SettingKey, string | number | boolean | null>>;
+export interface Check {
+  name: string;
+  status: "ok" | "warn" | "fail" | "skip";
+  detail: string;
+}
+export interface CompactReport {
+  dryRun: boolean;
+  turns: number;
+  sessions: number;
+  hookRuns: number;
+  bytesBefore: number;
+  bytesAfter: number;
+}
+/** A refused settings change: one message per key. */
+export class SettingsError extends Error {
+  constructor(public errors: Partial<Record<SettingKey, string>>) {
+    super("some settings could not be saved");
+  }
+}
+
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(path, {
     ...init,
     headers: { Authorization: `Bearer ${TOKEN}`, ...(init.headers ?? {}) },
   });
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    const body = (await res.json().catch(() => ({}))) as { error?: string; errors?: Record<string, string> };
+    if (body.errors) throw new SettingsError(body.errors);
     throw new Error(body.error ?? res.statusText);
   }
   return (await res.json()) as T;
@@ -105,4 +145,10 @@ export const api = {
   stats: (projectId: number) => call<ProjectStats>(`/api/projects/${projectId}/stats`),
   search: (q: string, limit = 20) =>
     call<SearchHit[]>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+  settings: () => call<SettingsView>("/api/settings"),
+  saveSettings: (patch: SettingsPatch) =>
+    call<SettingsView>("/api/settings", { method: "PUT", body: JSON.stringify(patch) }),
+  doctor: () => call<Check[]>("/api/doctor"),
+  compact: (dryRun: boolean) =>
+    call<CompactReport>("/api/compact", { method: "POST", body: JSON.stringify({ dryRun }) }),
 };

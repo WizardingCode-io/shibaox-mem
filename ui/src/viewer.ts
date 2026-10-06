@@ -3,7 +3,7 @@ import { useDark } from "@vueuse/core";
 import { computed, reactive } from "vue";
 import { api, type Kind, type MemoryDetail, type MemoryItem, type Project, type TurnItem } from "./api";
 
-export type Tab = "memories" | "turns" | "overview";
+export type Tab = "memories" | "turns" | "overview" | "settings";
 export type Status = "active" | "archived" | "superseded" | "all";
 
 export const PAGE = 50;

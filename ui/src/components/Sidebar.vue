@@ -4,6 +4,7 @@ import mark from "../../../src/ui/assets/shibaox-mark.svg?raw";
 import { shortPath } from "../format";
 import { selectProject, state } from "../viewer";
 
+const emit = defineEmits<{ settings: [] }>();
 const filter = ref("");
 const shown = computed(() => {
   const f = filter.value.trim().toLowerCase();
@@ -36,9 +37,12 @@ const shown = computed(() => {
       </button>
       <div v-if="shown.length === 0" class="overline px-2 py-2">No project matches</div>
     </div>
-    <div class="mt-auto px-2 text-[11px] leading-4 text-(--ink-muted)">
-      <div>Data</div>
-      <div class="truncate font-mono" :title="state.dataDir">{{ shortPath(state.dataDir) }}</div>
+    <div class="mt-auto flex flex-col gap-2">
+      <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-settings" label="Settings" class="justify-start" :class="{ 'bg-(--shiba-soft) text-(--ink)': state.tab === 'settings' }" @click="emit('settings')" />
+      <div class="px-2 text-[11px] leading-4 text-(--ink-muted)">
+        <div>Data</div>
+        <div class="truncate font-mono" :title="state.dataDir">{{ shortPath(state.dataDir) }}</div>
+      </div>
     </div>
   </nav>
 </template>

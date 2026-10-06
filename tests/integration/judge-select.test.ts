@@ -55,6 +55,23 @@ describe("makeJudge", () => {
     expect(fetched).toBe(0);
   });
 
+  test("with a key but SHIBAOX_MEM_TYPESAFE=off, the heuristic judge alone", async () => {
+    writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\nSHIBAOX_MEM_TYPESAFE=off\n`);
+    let fetched = 0;
+    const judge = makeJudge({
+      db,
+      dataDir: dir,
+      env: {},
+      fetch: (async () => {
+        fetched++;
+        return new Response(JSON.stringify(okResponse));
+      }) as unknown as typeof fetch,
+    });
+    expect(judge.name).toBe("heuristic");
+    await judge.distill(input);
+    expect(fetched).toBe(0);
+  });
+
   test("with a key, TypeSafe answers and its cost is counted in the database", async () => {
     writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
     const judge = makeJudge({

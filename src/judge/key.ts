@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ENV_FILE, readEnvFile } from "../settings/env-file.ts";
 
 /**
  * The TypeSafe key, if the user configured one: `TYPESAFE_API_KEY` in the environment,
- * or the same line in `<data dir>/env`, a file only the user can read. Without a key the
- * heuristic judge does all the work and nothing leaves the machine.
+ * or the same line in `<data dir>/env`, the settings file only the user can read. Without
+ * a key the heuristic judge does all the work and nothing leaves the machine.
  */
 export function readTypeSafeKey(
   env: Record<string, string | undefined>,
@@ -12,18 +12,7 @@ export function readTypeSafeKey(
 ): string | null {
   const fromEnv = env.TYPESAFE_API_KEY?.trim();
   if (fromEnv) return fromEnv;
-  try {
-    const line = /^\s*(?:export\s+)?TYPESAFE_API_KEY\s*=\s*(.*)$/m.exec(
-      readFileSync(join(dataDir, "env"), "utf8"),
-    );
-    const value = line?.[1]
-      ?.trim()
-      .replace(/^(["'])(.*)\1$/, "$2")
-      .trim();
-    return value ? value : null;
-  } catch {
-    return null;
-  }
+  return readEnvFile(join(dataDir, ENV_FILE)).TYPESAFE_API_KEY ?? null;
 }
 
 /** A short, non-reversible name for a key: enough to notice that it changed. */

@@ -67,6 +67,7 @@ const groups = computed(() => [
       { label: "Show memories", icon: "i-lucide-sticky-note", kbds: ["1"], onSelect: () => { open.value = false; emit("tab", "memories"); } },
       { label: "Show turns", icon: "i-lucide-history", kbds: ["2"], onSelect: () => { open.value = false; emit("tab", "turns"); } },
       { label: "Show overview", icon: "i-lucide-chart-column", kbds: ["3"], onSelect: () => { open.value = false; emit("tab", "overview"); } },
+      { label: "Open settings", icon: "i-lucide-settings", kbds: ["4"], onSelect: () => { open.value = false; emit("tab", "settings"); } },
       { label: theme.value === "dark" ? "Switch to light" : "Switch to dark", icon: theme.value === "dark" ? "i-lucide-sun" : "i-lucide-moon", onSelect: () => { open.value = false; theme.value = theme.value === "dark" ? "light" : "dark"; } },
     ],
   },

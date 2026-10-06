@@ -1,10 +1,11 @@
+import { loadSettings } from "../settings/settings.ts";
 import type { Db } from "../store/db.ts";
 import { getMeta, setMeta } from "../store/meta.ts";
 import { logError } from "../util/log.ts";
 import { Breaker } from "./breaker.ts";
 import { withFallback } from "./fallback.ts";
 import { heuristicJudge } from "./heuristic.ts";
-import { keyFingerprint, readTypeSafeKey } from "./key.ts";
+import { keyFingerprint } from "./key.ts";
 import type { Judge } from "./types.ts";
 import { TypeSafeJudge } from "./typesafe.ts";
 
@@ -24,13 +25,15 @@ function count(db: Db, key: string, by: number): void {
 
 /**
  * The judge this installation uses: the heuristic one alone, unless the user
- * configured a TypeSafe key, in which case TypeSafe answers first and the heuristic
- * judge whenever it cannot. Nothing leaves the machine without a key.
+ * configured a TypeSafe key (and did not turn TypeSafe off), in which case TypeSafe
+ * answers first and the heuristic judge whenever it cannot. Nothing leaves the machine
+ * without a key.
  */
 export function makeJudge(options: JudgeOptions): Judge {
   const env = options.env ?? process.env;
-  const key = readTypeSafeKey(env, options.dataDir);
-  if (key === null) return heuristicJudge;
+  const settings = loadSettings(env, options.dataDir);
+  const key = settings.typesafeKey;
+  if (key === null || settings.typesafe === "off") return heuristicJudge;
   const { db } = options;
   // Tests and, one day, a managed service stand in for the public endpoint.
   const endpoint = env.SHIBAOX_MEM_TYPESAFE_URL;

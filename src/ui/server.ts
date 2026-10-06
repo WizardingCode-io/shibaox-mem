@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 import pkg from "../../package.json" with { type: "json" };
+import { runChecks } from "../doctor/checks.ts";
+import { doctorContext } from "../doctor/context.ts";
+import { loadSettings, publicSettings, saveSettings, validatePatch } from "../settings/settings.ts";
 import { statusReport } from "../status/report.ts";
+import { compact } from "../store/compact.ts";
 import { type Db, openDb } from "../store/db.ts";
 import { logError } from "../util/log.ts";
 import {
@@ -36,6 +40,8 @@ export interface UiOptions {
   /** Without a request for this long, the server stops. */
   idleMs?: number;
   onIdle?: () => void;
+  /** The environment the settings are read against; tests pass their own. */
+  env?: Record<string, string | undefined>;
 }
 
 export interface UiServer {
@@ -61,6 +67,20 @@ const json = (body: unknown, status = 200) =>
   });
 const problem = (status: number, detail: string) => json({ error: detail }, status);
 
+/** A JSON object from the request, or the 400 to answer with. */
+async function jsonObject(request: Request): Promise<Record<string, unknown> | Response> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return problem(400, "body must be JSON");
+  }
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    return problem(400, "body must be an object");
+  }
+  return body as Record<string, unknown>;
+}
+
 function openBrowser(url: string): void {
   const command =
     process.platform === "darwin"
@@ -78,6 +98,7 @@ function openBrowser(url: string): void {
 export async function startUi(options: UiOptions): Promise<UiServer> {
   const token = randomBytes(16).toString("hex");
   const now = options.now ?? Date.now;
+  const env = options.env ?? process.env;
   const db: Db = openDb({ dataDir: options.dataDir, busyTimeoutMs: 2000 });
   const idleMs = options.idleMs ?? DEFAULT_IDLE_MS;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -129,6 +150,30 @@ export async function startUi(options: UiOptions): Promise<UiServer> {
     }
     if (path === "/api/overview" && request.method === "GET") {
       return json({ version: pkg.version, dataDir: options.dataDir, projects: listProjects(db) });
+    }
+    // Settings: the file in the data directory, shown with sources, secrets as fingerprints.
+    if (path === "/api/settings" && request.method === "GET") {
+      return json({ dataDir: options.dataDir, settings: publicSettings(env, options.dataDir) });
+    }
+    if (path === "/api/settings" && request.method === "PUT") {
+      const body = await jsonObject(request);
+      if (body instanceof Response) return body;
+      const validated = validatePatch(body);
+      if (!validated.ok) {
+        return json({ error: "some settings could not be saved", errors: validated.errors }, 400);
+      }
+      saveSettings(options.dataDir, validated.changes);
+      return json({ dataDir: options.dataDir, settings: publicSettings(env, options.dataDir) });
+    }
+    if (path === "/api/doctor" && request.method === "GET") {
+      return json(runChecks(doctorContext(options.dataDir, now())));
+    }
+    if (path === "/api/compact" && request.method === "POST") {
+      const body = await jsonObject(request);
+      if (body instanceof Response) return body;
+      const dryRun = body.dryRun === true;
+      const { retentionDays } = loadSettings(env, options.dataDir);
+      return json(compact(db, { now: now(), dryRun, retentionDays }));
     }
     if (path === "/api/memories" && request.method === "GET") {
       const projectId = Number(url.searchParams.get("project"));

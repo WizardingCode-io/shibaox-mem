@@ -8,7 +8,8 @@ import { GEMINI } from "../install/gemini.ts";
 import { type HostSpec, inspectHooksFile } from "../install/hooks-file.ts";
 import { PLUGIN_MARKER } from "../install/opencode-plugin.ts";
 import { Breaker } from "../judge/breaker.ts";
-import { keyFingerprint, readTypeSafeKey } from "../judge/key.ts";
+import { keyFingerprint } from "../judge/key.ts";
+import { loadSettings } from "../settings/settings.ts";
 import { hookLatency } from "../status/report.ts";
 import { DB_FILE, type Db, LATEST_VERSION, openExisting, SchemaTooNewError } from "../store/db.ts";
 
@@ -294,12 +295,20 @@ function openCode(context: DoctorContext): Check {
 
 function typeSafe(context: DoctorContext, db: Db | null): Check {
   const name = "TypeSafe";
-  const key = readTypeSafeKey(process.env, context.dataDir);
+  const settings = loadSettings(process.env, context.dataDir);
+  const key = settings.typesafeKey;
   if (key === null) {
     return {
       name,
       status: "ok",
       detail: "not configured: the heuristic judge works alone and nothing leaves the machine",
+    };
+  }
+  if (settings.typesafe === "off") {
+    return {
+      name,
+      status: "ok",
+      detail: "turned off in the settings; the key is kept and the heuristic judge works alone",
     };
   }
   const fingerprint = keyFingerprint(key);

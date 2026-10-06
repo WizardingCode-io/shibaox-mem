@@ -5,6 +5,7 @@ import MemoryDetail from "./components/MemoryDetail.vue";
 import MemoryList from "./components/MemoryList.vue";
 import Palette from "./components/Palette.vue";
 import ProjectStats from "./components/ProjectStats.vue";
+import Settings from "./components/Settings.vue";
 import Sidebar from "./components/Sidebar.vue";
 import TurnDetail from "./components/TurnDetail.vue";
 import TurnsList from "./components/TurnsList.vue";
@@ -14,6 +15,7 @@ const tabs = [
   { label: "Memories", value: "memories", icon: "i-lucide-sticky-note" },
   { label: "Turns", value: "turns", icon: "i-lucide-history" },
   { label: "Overview", value: "overview", icon: "i-lucide-chart-column" },
+  { label: "Settings", value: "settings", icon: "i-lucide-settings" },
 ];
 const statusItems = [
   { label: "Active", value: "active" },
@@ -103,7 +105,7 @@ function onKey(e: KeyboardEvent) {
 onMounted(async () => {
   document.addEventListener("keydown", onKey);
   const deep = /^#m(\d+)$/.exec(location.hash);
-  const hashTab = /^#(turns|overview)$/.exec(location.hash)?.[1] as Tab | undefined;
+  const hashTab = /^#(turns|overview|settings)$/.exec(location.hash)?.[1] as Tab | undefined;
   if (hashTab) state.tab = hashTab;
   try {
     await loadOverview();
@@ -122,11 +124,11 @@ onMounted(async () => {
       class="grid h-full grid-cols-[264px_minmax(0,1fr)] overflow-hidden motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
       :class="state.detail ? 'xl:grid-cols-[264px_minmax(0,1fr)_460px]' : 'xl:grid-cols-[264px_minmax(0,1fr)_0px]'"
     >
-      <Sidebar class="min-h-0" />
+      <Sidebar class="min-h-0" @settings="tab = 'settings'" />
       <main class="flex min-h-0 min-w-0 flex-col">
         <div class="grid grid-cols-[auto_minmax(220px,1fr)_auto_auto_auto] items-center gap-3 border-b border-(--line) px-5 pt-4 pb-3">
           <h1 class="font-display m-0 max-w-[30vw] truncate text-[26px] leading-8 font-bold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
-          <UInput ref="search" v-model="q" icon="i-lucide-search" placeholder="Search titles, bodies, file names" aria-label="Search memories" :ui="{ trailing: 'pe-1.5' }">
+          <UInput ref="search" v-model="q" icon="i-lucide-search" placeholder="Search titles, bodies, file names" aria-label="Search memories" :ui="{ trailing: 'pe-1.5' }" :class="{ invisible: state.tab === 'settings' }">
             <template #trailing>
               <UButton v-if="q" color="neutral" variant="link" size="xs" icon="i-lucide-x" aria-label="Clear" @click="q = ''" />
               <UKbd v-else value="/" size="sm" />
@@ -146,6 +148,7 @@ onMounted(async () => {
         <div v-if="failed" class="m-5 rounded-lg border border-(--danger) bg-(--danger-soft) p-3 text-sm text-(--danger)">Could not reach shibaox-mem: {{ failed }}</div>
         <MemoryList v-else-if="state.tab === 'memories'" />
         <TurnsList v-else-if="state.tab === 'turns'" @open="turnId = $event" @open-memory="openMemory" />
+        <Settings v-else-if="state.tab === 'settings'" />
         <ProjectStats v-else />
       </main>
       <MemoryDetail v-if="isWide" @open-turn="turnId = $event" />

@@ -1,10 +1,5 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { type Check, runChecks } from "../../doctor/checks.ts";
-import { codexContext } from "../../install/codex.ts";
-import { cursorContext } from "../../install/cursor.ts";
-import { geminiContext } from "../../install/gemini.ts";
-import { opencodePluginPath } from "../../install/opencode.ts";
+import { doctorContext } from "../../doctor/context.ts";
 import { defaultDataDir } from "../../util/paths.ts";
 
 const LABEL: Record<Check["status"], string> = {
@@ -17,19 +12,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** `shibaox-mem doctor`: checks the installation and says what to do about anything wrong. */
 export function run(): number {
-  const checks = runChecks({
-    dataDir: defaultDataDir(),
-    settingsPath: join(
-      process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
-      "settings.json",
-    ),
-    codexHooksPath: codexContext("").settingsPath,
-    cursorHooksPath: cursorContext("").settingsPath,
-    geminiSettingsPath: geminiContext("").settingsPath,
-    opencodePluginPath: opencodePluginPath(),
-    which: (command) => Bun.which(command),
-    now: Date.now(),
-  });
+  const checks = runChecks(doctorContext(defaultDataDir()));
   const failures = checks.filter((check) => check.status === "fail").length;
   const warnings = checks.filter((check) => check.status === "warn").length;
   const summary =

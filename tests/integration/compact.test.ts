@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveProject } from "../../src/core/project.ts";
@@ -178,5 +178,17 @@ describe("shibaox-mem compact", () => {
     db = openDb({ dataDir, busyTimeoutMs: 2000 });
     expect(result.stdout).toContain("would remove");
     expect(count("turns")).toBe(1);
+  });
+
+  test("honours SHIBAOX_MEM_RETENTION_DAYS from the settings file", async () => {
+    writeFileSync(join(dataDir, "env"), "SHIBAOX_MEM_RETENTION_DAYS=30\n");
+    const recent = session("recent", Date.now() - 31 * DAY);
+    turn(recent, 1, "done", Date.now() - 31 * DAY);
+    db.close();
+    const result = await runCliWith({ env: { SHIBAOX_MEM_DATA_DIR: dataDir } }, "compact");
+    db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toMatch(/^compact: 1 turn, 1 session/);
+    expect(count("turns")).toBe(0);
   });
 });
