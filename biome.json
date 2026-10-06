@@ -7,7 +7,7 @@
       "!**/dist",
       "!**/docs",
       "!**/tests/fixtures",
-      "!**/src/ui/assets",
+      "!**/src/ui/assets", "!**/docs/brand",
       "!**/plugins",
       "!**/plugin",
       "!**/.claude-plugin",

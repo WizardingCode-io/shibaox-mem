@@ -141,7 +141,10 @@ select.quiet { height: 36px; border: 1px solid var(--line-strong); background: v
   const $ = (id) => document.getElementById(id);
   const state = { projects: [], projectId: null, q: "", kind: null, status: "active", items: [], total: 0, selected: null };
 
-  if (matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.dataset.theme = "dark";
+  // The theme follows the system; ?theme=light|dark pins it (screenshots, preference).
+  const pinned = new URLSearchParams(location.search).get("theme");
+  if (pinned === "light" || pinned === "dark") document.documentElement.dataset.theme = pinned;
+  else if (matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.dataset.theme = "dark";
 
   const api = async (path, init) => {
     const res = await fetch(path, { ...init, headers: { Authorization: "Bearer " + TOKEN, ...(init && init.headers || {}) } });
