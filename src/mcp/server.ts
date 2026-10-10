@@ -7,6 +7,7 @@ import {
   runGlobalTool,
   runTool,
   TOOL_DESCRIPTIONS,
+  TOOL_META,
   TOOL_NAMES,
   toolSchemas,
 } from "./run.ts";
@@ -39,6 +40,8 @@ export async function runMcpServer(options: { global?: boolean } = {}): Promise<
     server.registerTool(
       name,
       {
+        title: TOOL_META[name].title,
+        annotations: TOOL_META[name].annotations,
         description: global
           ? GLOBAL_TOOL_DESCRIPTIONS[name]
           : TOOL_DESCRIPTIONS[name as (typeof TOOL_NAMES)[number]],

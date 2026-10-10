@@ -110,3 +110,53 @@ describe("across every project", () => {
     expect(out).toContain("site · 0 memories");
   });
 });
+
+describe("the MCP server's tool list", () => {
+  test("names each tool for people and marks the ones that only read", async () => {
+    const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
+    const lines = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "test", version: "1" },
+        },
+      },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      { jsonrpc: "2.0", id: 2, method: "tools/list" },
+    ];
+    const proc = Bun.spawn([process.execPath, main, "mcp", "--global"], {
+      env: { ...process.env, WIZARDINGCODE_MEM_DATA_DIR: join(base, "data") },
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "ignore",
+    });
+    for (const line of lines) proc.stdin.write(`${JSON.stringify(line)}\n`);
+    proc.stdin.flush();
+    const reader = proc.stdout.getReader();
+    let text = "";
+    while (!text.includes('"id":2')) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      text += new TextDecoder().decode(value);
+    }
+    proc.kill();
+    const list = text
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l))
+      .find((m) => m.id === 2);
+    const tools = Object.fromEntries(
+      list.result.tools.map((t: { name: string }) => [t.name, t]),
+    ) as Record<string, { title?: string; annotations?: { readOnlyHint?: boolean } }>;
+    expect(tools.memory_search?.title).toBe("Search memories");
+    expect(tools.memory_search?.annotations?.readOnlyHint).toBe(true);
+    expect(tools.memory_get?.annotations?.readOnlyHint).toBe(true);
+    expect(tools.memory_projects?.annotations?.readOnlyHint).toBe(true);
+    expect(tools.memory_save?.title).toBe("Save a memory");
+    expect(tools.memory_save?.annotations?.readOnlyHint).toBe(false);
+  });
+});
