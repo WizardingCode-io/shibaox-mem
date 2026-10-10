@@ -41,13 +41,20 @@ export default defineConfig({
           variants: { size: { sm: { base: "h-7 text-[12.5px]" }, md: { base: "h-8 text-[13px]" } } },
         },
         textarea: { slots: { base: "rounded-lg text-[13px]" } },
+        // Fields as the Feedback artboard draws them: label 12px semibold above, hint and
+        // messages 12px below; switches labelled at 13px with a 12px line.
+        formField: {
+          slots: { label: "text-xs leading-4 font-semibold", hint: "text-xs leading-4", description: "text-xs leading-4", error: "mt-1 text-xs leading-4", help: "mt-1 text-xs leading-4" },
+          variants: { size: { md: { root: "text-[13px]" } } },
+        },
+        switch: { slots: { label: "text-[13px] leading-[18px] font-medium", description: "text-xs leading-4" } },
         badge: {
           slots: { base: "font-mono tracking-[.02em] rounded" },
           variants: { size: { sm: { base: "h-5 px-1.5 text-[11px]" } } },
         },
         kbd: { base: "font-mono text-[10.5px]" },
         tooltip: {
-          slots: { content: "bg-(--console) text-(--console-ink) ring-0 rounded-md px-2 py-1 text-xs" },
+          slots: { content: "bg-(--console) text-(--console-ink) ring-1 ring-[#332E2A] rounded-md px-2 py-1 text-xs shadow-lg" },
         },
         // Toasts are dark, as in Sales OS STATES.md: console surface, ivory text.
         toast: {
@@ -59,6 +66,8 @@ export default defineConfig({
           },
         },
         slideover: { slots: { content: "bg-(--surface)" } },
+        // Banners, as STATES.md draws them: compact, 12.5px, the tone's soft fill.
+        alert: { slots: { root: "rounded-lg p-2.5 gap-2", title: "text-[12.5px] leading-4 font-semibold", description: "text-xs leading-4", icon: "size-4" } },
         modal: { slots: { content: "rounded-xl ring-(--line)" } },
       },
       // The theme is written from the brand's tokens in app.css; nothing is generated here.

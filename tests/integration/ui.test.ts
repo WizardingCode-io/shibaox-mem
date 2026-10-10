@@ -318,6 +318,48 @@ describe("wizardingcode-mem ui: the API", () => {
     ).toBe(404);
   });
 
+  test("a memory's source carries enough of its prompt to show what it was, past a long preamble", async () => {
+    const s = await start();
+    const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    const sessionId = db
+      .query<{ id: number }, [number]>(
+        "INSERT INTO sessions (agent, agent_session_id, project_id, cwd, started_at, last_seen_at) VALUES ('claude-code', 'z', ?, '/p', 1, 1) RETURNING id",
+      )
+      .get(projectId)?.id as number;
+    const prompt = `<agent-message from="a1">\n[Subagent hand-back] ${"preamble ".repeat(60)}\n\nThe stock is fixed.\n</agent-message>`;
+    const turnId = db
+      .query<{ id: number }, [number, number, string]>(
+        "INSERT INTO turns (session_id, project_id, seq, state, prompt, started_at) VALUES (?, ?, 1, 'done', ?, 5) RETURNING id",
+      )
+      .get(sessionId, projectId, prompt)?.id as number;
+    db.run("UPDATE memories SET source_turn_id = ? WHERE id = 1", [turnId]);
+    db.close();
+    const memory = (await (await api(s, "/api/memories/1")).json()) as {
+      source: { prompt: string };
+    };
+    expect(memory.source.prompt).toContain("The stock is fixed.");
+  });
+
+  test("the turns list carries enough of a prompt to name it: a task's summary comes after long ids", async () => {
+    const s = await start();
+    const db = openDb({ dataDir, busyTimeoutMs: 2000 });
+    const sessionId = db
+      .query<{ id: number }, [number]>(
+        "INSERT INTO sessions (agent, agent_session_id, project_id, cwd, started_at, last_seen_at) VALUES ('claude-code', 'y', ?, '/p', 1, 1) RETURNING id",
+      )
+      .get(projectId)?.id as number;
+    const prompt = `<task-notification>\n<task-id>ab2bf5ed009ca26c3</task-id>\n<tool-use-id>toolu_0131KH9Yici5qKkHMDvtys9u</tool-use-id>\n<output-file>/private/tmp/${"x".repeat(160)}/tasks/ab2bf5ed009ca26c3.output</output-file>\n<status>completed</status>\n<summary>Background command "Run the suite" completed (exit code 0)</summary>\n</task-notification>`;
+    db.run(
+      "INSERT INTO turns (session_id, project_id, seq, state, prompt, started_at) VALUES (?, ?, 1, 'skipped', ?, 5)",
+      [sessionId, projectId, prompt],
+    );
+    db.close();
+    const turns = (await (await api(s, `/api/turns?project=${projectId}`)).json()) as {
+      prompt: string;
+    }[];
+    expect(turns[0]?.prompt).toContain("<summary>Background command");
+  });
+
   test("a turn in full, with the memories that came from it; the memory points back at its turn", async () => {
     const s = await start();
     const db = openDb({ dataDir, busyTimeoutMs: 2000 });

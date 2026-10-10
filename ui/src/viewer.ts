@@ -1,6 +1,6 @@
 // The viewer's state, shared by every component: one project, one list, one selection.
 import { useDark } from "@vueuse/core";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { api, type Kind, type MemoryDetail, type MemoryItem, type Project, type TurnItem } from "./api";
 
 export type Tab = "memories" | "turns" | "overview" | "settings";
@@ -22,6 +22,8 @@ const state = reactive({
   items: [] as MemoryItem[],
   total: 0,
   turns: [] as TurnItem[],
+  /** The turn whose trace is open in the Turns view. */
+  turnId: null as number | null,
   /** The ids in the order the list shows them (grouped by kind or not), for ↑ and ↓. */
   order: [] as number[],
   selected: null as number | null,
@@ -38,7 +40,10 @@ export async function loadOverview(): Promise<void> {
   state.storeDir = overview.storeDir;
   state.projects = overview.projects;
   if (state.projectId === null && overview.projects.length > 0) {
-    await selectProject(overview.projects[0]!.id);
+    // ?project=<id> opens that project (a link from elsewhere); otherwise the most recent.
+    const asked = Number(new URLSearchParams(location.search).get("project"));
+    const chosen = overview.projects.find((p) => p.id === asked) ?? overview.projects[0]!;
+    await selectProject(chosen.id);
   }
 }
 
@@ -53,7 +58,7 @@ export async function selectProject(id: number): Promise<void> {
 export async function reload(): Promise<void> {
   if (state.projectId === null) return;
   if (state.tab === "memories") await loadList();
-  else if (state.tab === "turns") state.turns = await api.turns(state.projectId);
+  else if (state.tab === "turns") state.turns = await api.turns(state.projectId, 200);
 }
 
 export async function loadList(offset = 0): Promise<void> {
@@ -142,3 +147,26 @@ export function startHeartbeat(): () => void {
 }
 
 export { state };
+
+// The projects sidebar can be folded away; the browser remembers the choice (a per-viewer
+// convenience, so a blocked or empty storage simply means "open").
+const SIDEBAR_KEY = "wizardingcode-mem.sidebar";
+function readSidebar(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+const sidebarOpenRef = ref(readSidebar());
+export const sidebarOpen = computed<boolean>({
+  get: () => sidebarOpenRef.value,
+  set: (open) => {
+    sidebarOpenRef.value = open;
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed");
+    } catch {
+      // Storage blocked: the choice lasts for this page only.
+    }
+  },
+});

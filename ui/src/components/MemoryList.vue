@@ -1,49 +1,90 @@
 <script setup lang="ts">
-// The memories as Sales OS's grouped list: a toolbar row (40px), a column header (28px),
-// then one card per kind with its pill and count, rows of 32px. Group: none shows the
-// list in its own order (relevance when searching), in one card.
-import { computed, reactive, ref, watchEffect } from "vue";
+// Memories as Sales OS's Pipeline list: a 40px toolbar, a 28px column header aligned with
+// the rows, one card per group (28px header: chevron, stage pill, count, meta), 32px rows
+// on a grid with an 8px column gap. With the detail dock open, the narrow column set.
+import { computed, nextTick, reactive, ref, watch, watchEffect } from "vue";
 import { KINDS, type Kind, type MemoryItem } from "../api";
-import { day, KIND_TONE } from "../format";
-import { loadList, PAGE, project, select, state, type Status } from "../viewer";
+import { day, IMPORTANCE_LABEL, KIND_TONE } from "../format";
+import { loadList, PAGE, project, select, state } from "../viewer";
 import Empty from "./Empty.vue";
 import Importance from "./Importance.vue";
-import Pill from "./Pill.vue";
 
-const grouped = ref(true);
+const props = defineProps<{ docked: boolean }>();
+// Search within this project: a field that opens in the toolbar (⌘K searches everywhere).
+const searching = ref(Boolean(state.q));
+const q = ref(state.q);
+const field = ref<HTMLInputElement | null>(null);
+let timer: ReturnType<typeof setTimeout> | undefined;
+watch(q, (value) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    state.q = value.trim();
+    void loadList();
+  }, 150);
+});
+async function toggleSearch() {
+  searching.value = !searching.value;
+  if (!searching.value) q.value = "";
+  else {
+    await nextTick();
+    field.value?.focus();
+  }
+}
+
+type GroupBy = "kind" | "importance" | "none";
+const groupBy = ref<GroupBy>("kind");
+const GROUP_LABEL: Record<GroupBy, string> = { kind: "Kind", importance: "Importance", none: "None" };
 const collapsed = reactive<Record<string, boolean>>({});
-const groups = computed<{ kind: Kind | null; items: MemoryItem[] }[]>(() => {
-  if (!grouped.value || state.q) return [{ kind: null, items: state.items }];
-  return KINDS.map((kind) => ({ kind, items: state.items.filter((m) => m.kind === kind) })).filter((g) => g.items.length > 0);
+
+interface Group {
+  key: string;
+  label: string;
+  tone: { bg: string; fg: string } | null;
+  items: MemoryItem[];
+  stale: number;
+}
+const IMPORTANCE_TONE: Record<number, { bg: string; fg: string }> = {
+  5: { bg: "var(--danger-soft)", fg: "var(--danger)" },
+  4: { bg: "var(--warn-soft)", fg: "var(--warn)" },
+  3: { bg: "var(--blue-soft)", fg: "var(--blue-text)" },
+  2: { bg: "var(--paper-sunken)", fg: "var(--ink-muted)" },
+  1: { bg: "var(--paper-sunken)", fg: "var(--ink-muted)" },
+};
+const groups = computed<Group[]>(() => {
+  const make = (key: string, label: string, tone: Group["tone"], items: MemoryItem[]): Group => ({
+    key,
+    label,
+    tone,
+    items,
+    stale: items.filter((m) => m.stale).length,
+  });
+  if (groupBy.value === "none" || state.q) return [make("all", "", null, state.items)];
+  if (groupBy.value === "importance") {
+    return [5, 4, 3, 2, 1]
+      .map((n) => make(`i${n}`, IMPORTANCE_LABEL[n] as string, IMPORTANCE_TONE[n] ?? null, state.items.filter((m) => m.importance === n)))
+      .filter((g) => g.items.length > 0);
+  }
+  return KINDS.map((k) => make(k, k, KIND_TONE[k], state.items.filter((m) => m.kind === k))).filter((g) => g.items.length > 0);
 });
 watchEffect(() => {
-  state.order = groups.value.flatMap((g) => (g.kind && collapsed[g.kind] ? [] : g.items.map((m) => m.id)));
+  state.order = groups.value.flatMap((g) => (collapsed[g.key] ? [] : g.items.map((m) => m.id)));
 });
-const filtered = computed(() => Boolean(state.q || state.kind || state.minImportance > 1));
 
-const statusItems = [
-  { label: "Active", value: "active" },
-  { label: "Archived", value: "archived" },
-  { label: "Superseded", value: "superseded" },
-  { label: "All", value: "all" },
-];
-const importanceItems = [
-  { label: "Any importance", value: 1 },
-  { label: "Useful and up", value: 3 },
-  { label: "Important and up", value: 4 },
-  { label: "Critical only", value: 5 },
-];
-const status = computed({
-  get: () => state.status,
-  set: (s: Status) => {
-    state.status = s;
+const COLS_WIDE = "grid-template-columns: minmax(0, 1fr) 92px 168px 92px 40px;";
+const COLS_DOCK = "grid-template-columns: minmax(0, 1fr) 92px 84px;";
+const cols = computed(() => (props.docked ? COLS_DOCK : COLS_WIDE));
+
+const important = computed({
+  get: () => state.minImportance >= 4,
+  set: (on: boolean) => {
+    state.minImportance = on ? 4 : 1;
     void loadList();
   },
 });
-const minImportance = computed({
-  get: () => state.minImportance,
-  set: (v: number) => {
-    state.minImportance = v;
+const archived = computed({
+  get: () => state.status === "archived",
+  set: (on: boolean) => {
+    state.status = on ? "archived" : "active";
     void loadList();
   },
 });
@@ -51,95 +92,109 @@ function setKind(kind: Kind | null) {
   state.kind = kind;
   void loadList();
 }
-// Five columns when the list has room; with the detail dock open, the title keeps it.
-const COLS = "grid-cols-[minmax(0,1fr)_96px_92px] @3xl:grid-cols-[minmax(0,1fr)_104px_minmax(0,200px)_104px_44px]";
-const kindItems = [{ label: "All kinds", value: "" }, ...KINDS.map((k) => ({ label: k, value: k }))];
-const kindModel = computed({
-  get: () => state.kind ?? "",
-  set: (v: string) => setKind((v || null) as Kind | null),
-});
-const pill = "flex h-6 flex-none items-center rounded-full px-2.5 text-xs whitespace-nowrap";
+const kindMenu = computed(() => [
+  [{ label: "All kinds", type: "checkbox" as const, checked: state.kind === null, onUpdateChecked: () => setKind(null) }],
+  KINDS.map((k) => ({ label: k, type: "checkbox" as const, checked: state.kind === k, onUpdateChecked: () => setKind(state.kind === k ? null : k) })),
+]);
+const groupMenu = computed(() => [
+  (["kind", "importance", "none"] as GroupBy[]).map((g) => ({
+    label: GROUP_LABEL[g],
+    type: "checkbox" as const,
+    checked: groupBy.value === g,
+    onUpdateChecked: () => {
+      groupBy.value = g;
+    },
+  })),
+]);
+const filtered = computed(() => Boolean(state.q || state.kind || state.minImportance > 1 || state.status !== "active"));
 </script>
 
 <template>
-  <!-- Row 3 of the page header, 40px: grouping and filters on the left, scope on the right. -->
-  <div class="flex h-10 flex-none items-center gap-2 overflow-hidden px-4">
-    <button type="button" :class="[pill, 'gap-1 bg-(--paper-sunken) text-(--ink)']" :aria-pressed="grouped" @click="grouped = !grouped">
-      <UIcon name="i-lucide-layers" class="size-3.5" />Group: {{ grouped && !state.q ? "Kind" : "None" }}
-    </button>
-    <span class="mx-1 h-4 w-px flex-none bg-(--line)" />
-    <USelectMenu v-model="kindModel" :items="kindItems" value-key="value" :search-input="false" size="sm" class="w-32 flex-none @3xl:hidden" aria-label="Kind" />
-    <button type="button" :class="[pill, 'hidden @3xl:flex', state.kind === null ? 'bg-(--ink) font-semibold text-(--paper)' : 'border border-(--line) text-(--ink-muted) hover:text-(--ink)']" :aria-pressed="state.kind === null" @click="setKind(null)">All</button>
-    <button
-      v-for="k in KINDS"
-      :key="k"
-      type="button"
-      :class="[pill, 'hidden @3xl:flex', state.kind === k ? 'bg-(--ink) font-semibold text-(--paper)' : 'border border-(--line) text-(--ink-muted) hover:text-(--ink)']"
-      :aria-pressed="state.kind === k"
-      @click="setKind(k)"
-    >{{ k }}</button>
+  <!-- Toolbar row, 40px: grouping and toggles left; filter, search right. -->
+  <div class="flex h-10 flex-none items-center gap-2 px-4">
+    <UDropdownMenu :items="groupMenu" :content="{ align: 'start' }">
+      <button type="button" class="wz-pill group"><UIcon name="i-lucide-rows-3" class="size-3.5" />Group: {{ state.q ? "None" : GROUP_LABEL[groupBy] }}</button>
+    </UDropdownMenu>
+    <button type="button" class="wz-pill" :aria-pressed="important" @click="important = !important">Important and up</button>
+    <button type="button" class="wz-pill" :aria-pressed="archived" @click="archived = !archived">Archived<template v-if="project?.archived"> · {{ project.archived.toLocaleString() }}</template></button>
+    <button v-if="state.kind" type="button" class="wz-pill" aria-pressed="true" :title="`Only ${state.kind}; click to show every kind`" @click="setKind(null)">{{ state.kind }}<UIcon name="i-lucide-x" class="size-3" /></button>
     <div class="flex-1" />
-    <USelectMenu v-model="minImportance" :items="importanceItems" value-key="value" :search-input="false" size="sm" class="w-36 flex-none" aria-label="Importance" />
-    <USelectMenu v-model="status" :items="statusItems" value-key="value" :search-input="false" size="sm" class="w-28 flex-none" aria-label="Status" />
+    <UDropdownMenu :items="kindMenu" :content="{ align: 'end' }">
+      <button type="button" class="wz-icon-btn" aria-label="Filter by kind"><UIcon name="i-lucide-list-filter" class="size-[15px]" /></button>
+    </UDropdownMenu>
+    <label v-if="searching" class="flex h-7 w-56 items-center gap-1.5 rounded-lg border border-(--btn-secondary-line) bg-(--paper-raised) px-2">
+      <UIcon name="i-lucide-search" class="size-3.5 flex-none text-(--ink-muted)" />
+      <input ref="field" v-model="q" type="search" placeholder="Search this project" aria-label="Search this project" class="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] outline-none focus-visible:outline-none" @keydown.esc.stop="toggleSearch">
+    </label>
+    <button type="button" class="wz-icon-btn" :aria-pressed="searching" aria-label="Search this project" @click="toggleSearch"><UIcon :name="searching ? 'i-lucide-x' : 'i-lucide-search'" class="size-[15px]" /></button>
   </div>
 
   <template v-if="state.items.length">
-    <div role="row" class="grid h-7 flex-none items-center border-b border-(--line) px-7" :class="COLS">
-      <span v-for="h in ['Memory', 'Importance', 'Files', 'Updated', 'Reads']" :key="h" role="columnheader" class="truncate font-mono text-[10px] leading-[14px] tracking-[.05em] text-(--ink-muted) uppercase" :class="{ 'pl-5': h === 'Memory', 'text-right': h === 'Reads', 'hidden @3xl:block': h === 'Files' || h === 'Reads' }">{{ h }}</span>
+    <div role="row" class="grid h-7 flex-none items-center gap-x-2 border-b border-(--line) px-7" :style="cols">
+      <span role="columnheader" class="wz-hcell pl-5">Memory</span>
+      <span role="columnheader" class="wz-hcell">Importance</span>
+      <template v-if="!docked">
+        <span role="columnheader" class="wz-hcell">Files</span>
+        <span role="columnheader" class="wz-hcell">Updated</span>
+        <span role="columnheader" class="wz-hcell text-right">Reads</span>
+      </template>
+      <span v-else role="columnheader" class="wz-hcell">Updated</span>
     </div>
-    <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-auto px-4 pt-1 pb-4" role="rowgroup">
-      <section v-for="g in groups" :key="g.kind ?? 'all'" class="flex flex-none flex-col overflow-hidden rounded-xl bg-(--surface) shadow-[0_0_0_1px_var(--line)]" :aria-label="g.kind ?? 'Memories'">
-        <div v-if="g.kind" class="flex h-7 flex-none items-center gap-2 pr-2 pl-1">
-          <button type="button" class="flex size-5 items-center justify-center rounded text-(--ink-muted)" :aria-expanded="!collapsed[g.kind]" :aria-label="`Show or hide ${g.kind}`" @click="collapsed[g.kind] = !collapsed[g.kind]">
-            <UIcon name="i-lucide-chevron-down" class="size-3.5 motion-safe:transition-transform motion-safe:duration-150" :class="{ '-rotate-90': collapsed[g.kind] }" />
+    <div role="rowgroup" class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-1">
+      <section v-for="g in groups" :key="g.key" class="wz-group" :aria-label="g.label || 'Memories'">
+        <div v-if="g.tone" class="wz-group-head">
+          <button type="button" class="wz-icon-btn sm" :aria-expanded="!collapsed[g.key]" :aria-label="`Show or hide ${g.label}`" @click="collapsed[g.key] = !collapsed[g.key]">
+            <UIcon name="i-lucide-chevron-down" class="size-3.5 transition-transform duration-[160ms] ease-out" :class="{ '-rotate-90': collapsed[g.key] }" />
           </button>
-          <Pill :tone="KIND_TONE[g.kind]" :label="g.kind" />
-          <span class="font-mono text-xs text-(--ink-muted)">{{ g.items.length }}</span>
+          <span class="wz-stage" :style="{ background: g.tone.bg, color: g.tone.fg }">{{ g.label }}</span>
+          <span class="wz-mono text-(--ink-muted)">{{ g.items.length }}</span>
+          <span v-if="g.stale" class="wz-mono text-(--line-strong)">· {{ g.stale }} stale</span>
         </div>
-        <template v-if="!g.kind || !collapsed[g.kind]">
-          <button
-            v-for="m in g.items"
-            :key="m.id"
-            :data-id="m.id"
-            type="button"
-            role="row"
-            class="relative grid h-8 w-full items-center border-t border-(--paper-sunken) px-3 text-left first:border-t-0 focus-visible:z-10"
-            :class="[COLS, m.id === state.selected ? 'bg-(--violet-soft)' : 'hover:bg-(--surface-hover)', g.kind ? 'first:border-t' : '']"
-            :aria-selected="m.id === state.selected"
-            @click="select(m.id)"
-          >
-            <span v-if="m.id === state.selected" aria-hidden="true" class="absolute inset-y-0 left-0 w-0.5 bg-(--primary)" />
-            <span role="cell" class="flex min-w-0 items-center gap-2">
-              <span aria-hidden="true" class="size-3 flex-none rounded-full border-2" :style="{ borderColor: KIND_TONE[m.kind].fg }" :title="m.kind" />
-              <span class="truncate text-[13px] leading-[18px]" :class="{ 'text-(--ink-muted) line-through': m.status === 'superseded' }">{{ m.title }}</span>
-              <Pill v-if="m.status === 'archived'" :tone="{ bg: 'var(--paper-sunken)', fg: 'var(--ink-muted)' }" label="archived" />
-              <Pill v-if="m.stale" :tone="{ bg: 'var(--warn-soft)', fg: 'var(--warn)' }" label="stale" />
-            </span>
-            <span role="cell"><Importance :value="m.importance" /></span>
-            <span role="cell" class="hidden truncate font-mono text-xs text-(--ink-muted) @3xl:block" :title="m.files.join('\n')">{{ m.files[0] ?? "—" }}<template v-if="m.files.length > 1"> +{{ m.files.length - 1 }}</template></span>
-            <span role="cell" class="font-mono text-xs text-(--ink-muted)">{{ day(m.updatedAt) }}</span>
-            <span role="cell" class="hidden text-right font-mono text-xs text-(--ink-muted) @3xl:block">{{ m.useCount || "—" }}</span>
-          </button>
-        </template>
+        <div class="wz-collapse" :style="{ gridTemplateRows: collapsed[g.key] ? '0fr' : '1fr' }">
+          <div :style="{ visibility: collapsed[g.key] ? 'hidden' : 'visible' }">
+            <button
+              v-for="m in g.items"
+              :key="m.id"
+              :data-id="m.id"
+              type="button"
+              role="row"
+              class="wz-row"
+              :class="{ 'border-t-0': !g.tone && m === g.items[0] }"
+              :style="cols"
+              :aria-selected="m.id === state.selected"
+              @click="select(m.id)"
+            >
+              <span role="cell" class="flex min-w-0 items-center gap-2">
+                <span class="wz-ring" :style="{ color: KIND_TONE[m.kind].fg }" role="img" :aria-label="m.kind" />
+                <span class="min-w-0 flex-initial truncate text-[13px] leading-[18px]" :class="m.status === 'superseded' ? 'text-(--ink-muted) line-through' : 'text-(--ink)'">{{ m.title }}</span>
+                <span v-if="m.stale" class="wz-status square flex-none" :style="{ background: 'var(--warn-soft)', color: 'var(--warn)' }">Stale</span>
+                <span v-if="m.status === 'archived'" class="wz-status flex-none" :style="{ background: 'var(--paper-sunken)', color: 'var(--ink-muted)' }">Archived</span>
+              </span>
+              <span role="cell" class="flex min-w-0 items-center"><Importance :value="m.importance" /></span>
+              <template v-if="!docked">
+                <span role="cell" class="wz-mono text-(--ink-muted)" :title="m.files.join('\n')">{{ m.files[0]?.split('/').pop() ?? "—" }}<template v-if="m.files.length > 1"> +{{ m.files.length - 1 }}</template></span>
+                <span role="cell" class="wz-mono text-(--ink-muted)">{{ day(m.updatedAt) }}</span>
+                <span role="cell" class="wz-mono text-right text-(--ink-muted)">{{ m.useCount || "—" }}</span>
+              </template>
+              <span v-else role="cell" class="wz-mono text-(--ink-muted)">{{ day(m.updatedAt) }}</span>
+            </button>
+          </div>
+        </div>
       </section>
-      <button
-        v-if="state.items.length < state.total"
-        type="button"
-        class="flex h-7 flex-none items-center gap-2 rounded-lg px-3 text-xs text-(--ink-muted) hover:bg-(--surface-hover)"
-        :disabled="state.loading"
-        @click="loadList(state.items.length)"
-      >
-        <UIcon name="i-lucide-chevrons-down" class="size-3.5" />Show {{ Math.min(PAGE, state.total - state.items.length) }} more of {{ state.total.toLocaleString() }}
-      </button>
-      <p class="m-0 flex-none px-1 pt-1 text-xs text-(--ink-muted)">
-        {{ state.total.toLocaleString() }} {{ state.total === 1 ? "memory" : "memories" }}<template v-if="state.q"> matching “{{ state.q }}”</template> in {{ project?.name }} ·
-        <kbd class="font-mono text-[10.5px]">↑</kbd> <kbd class="font-mono text-[10.5px]">↓</kbd> to move, <kbd class="font-mono text-[10.5px]">esc</kbd> to close
-      </p>
+      <div class="flex h-8 flex-none items-center gap-2 px-1 text-xs text-(--ink-muted)">
+        <span class="font-mono">1–{{ state.items.length.toLocaleString("en-GB") }} of {{ state.total.toLocaleString("en-GB") }}</span>
+        <span v-if="state.q">· matching “{{ state.q }}”</span>
+        <span class="flex-1" />
+        <button v-if="state.items.length < state.total" type="button" class="wz-link" :disabled="state.loading" @click="loadList(state.items.length)">Load {{ Math.min(PAGE, state.total - state.items.length) }} more</button>
+      </div>
     </div>
   </template>
-  <div v-else-if="state.loading" class="flex flex-col gap-2 px-4 pt-2">
-    <div v-for="n in 6" :key="n" class="skeleton h-8" />
+  <div v-else-if="state.loading" class="flex flex-col gap-2 px-4 pt-1">
+    <div v-for="n in 3" :key="n" class="wz-group">
+      <div class="wz-group-head"><span class="skeleton h-5 w-28" /></div>
+      <div v-for="r in 3" :key="r" class="flex h-8 items-center gap-3 border-t border-(--row-line) px-3"><span class="skeleton h-3 flex-1" /><span class="skeleton h-3 w-16" /></div>
+    </div>
   </div>
-  <Empty v-else-if="filtered" icon="i-lucide-search-x" title="No memories match" text="Try fewer words, another kind, or a lower importance." />
+  <Empty v-else-if="filtered" icon="i-lucide-search-x" title="No memories match" text="Try fewer words, another kind, or turn a filter off." />
   <Empty v-else icon="i-lucide-sticky-note" title="Nothing remembered yet" text="Start a session in any of your agents. What is worth keeping shows up here." />
 </template>

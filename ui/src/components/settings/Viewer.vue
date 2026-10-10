@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// The viewer: whether it opens with a session, and the theme as Settings' segmented control.
 import { computed } from "vue";
 import { fromEnvironment, saveSettings, valueOf } from "../../settings";
 import { theme } from "../../viewer";
@@ -13,19 +14,20 @@ const autoOpen = computed({
     }
   },
 });
-const dark = computed({
-  get: () => theme.value === "dark",
-  set: (on: boolean) => {
-    theme.value = on ? "dark" : "light";
-  },
-});
 </script>
 
 <template>
-  <Card title="Viewer" description="This page: when it opens and how it looks.">
+  <Card id="viewer" title="Viewer" description="When this page opens and how it looks">
     <div class="flex flex-col gap-4">
       <USwitch v-model="autoOpen" :disabled="fromEnvironment('WIZARDINGCODE_MEM_UI_AUTO_OPEN')" label="Open the viewer when a session starts" description="Any agent, any project. A viewer already open is reused; no second tab." />
-      <USwitch v-model="dark" label="Dark theme" description="Remembered by this browser; the theme follows the system until you choose." />
+      <div class="flex items-center gap-3">
+        <span class="wz-label">Theme</span>
+        <div class="wz-segmented" role="group" aria-label="Theme">
+          <button type="button" :aria-pressed="theme === 'light'" @click="theme = 'light'">Light</button>
+          <button type="button" :aria-pressed="theme === 'dark'" @click="theme = 'dark'">Dark</button>
+        </div>
+        <span class="text-xs text-(--ink-muted)">Remembered by this browser</span>
+      </div>
     </div>
   </Card>
 </template>

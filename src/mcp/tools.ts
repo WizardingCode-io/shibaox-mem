@@ -19,7 +19,8 @@ import { inProject, searchTerms } from "../util/words.ts";
 export interface ToolContext {
   db: Db;
   judge: Judge;
-  projectId: number;
+  /** null: every project (Claude Desktop's chat, which has no project folder). */
+  projectId: number | null;
   /** The project's working tree: file paths are stored relative to it. */
   root: string;
   branch: string | null;
@@ -46,44 +47,64 @@ export function searchMemories(
   const limit = Math.min(MAX_LIMIT, Math.max(1, Math.trunc(args.limit ?? DEFAULT_LIMIT)));
   const kind = args.kind ?? null;
 
-  let rows: MemoryRow[];
+  let rows: (MemoryRow & { projectId: number })[];
   if (args.query.trim() === "") {
     rows = db
-      .query<MemoryRow, [number, string | null, string | null, number]>(
-        `SELECT ${MEMORY_COLUMNS} FROM memories m
-          WHERE m.project_id = ? AND m.status = 'active' AND (? IS NULL OR m.kind = ?)
+      .query<
+        MemoryRow & { projectId: number },
+        [number | null, number | null, string | null, string | null, number]
+      >(
+        `SELECT ${MEMORY_COLUMNS}, m.project_id AS projectId FROM memories m
+          WHERE (? IS NULL OR m.project_id = ?) AND m.status = 'active' AND (? IS NULL OR m.kind = ?)
           ORDER BY m.importance DESC, m.updated_at DESC LIMIT ?`,
       )
-      .all(projectId, kind, kind, SEARCH_POOL)
+      .all(projectId, projectId, kind, kind, SEARCH_POOL)
       .sort((a, b) => prior(b, context) - prior(a, context) || b.id - a.id);
   } else {
     const match = explicitMatch(args.query);
     if (match === null) return "No memories match.";
     const found = db
-      .query<MemoryRow & { bm25: number }, [string, number, string | null, string | null, number]>(
-        `SELECT ${MEMORY_COLUMNS}, bm25(memories_fts, 4.0, 1.0, 2.0, 0.0) AS bm25
+      .query<
+        MemoryRow & { projectId: number; bm25: number },
+        [string, number | null, number | null, string | null, string | null, number]
+      >(
+        `SELECT ${MEMORY_COLUMNS}, m.project_id AS projectId, bm25(memories_fts, 4.0, 1.0, 2.0, 0.0) AS bm25
            FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
-          WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'
+          WHERE memories_fts MATCH ? AND (? IS NULL OR m.project_id = ?) AND m.status = 'active'
             AND (? IS NULL OR m.kind = ?)
           ORDER BY bm25 LIMIT ?`,
       )
-      .all(inProject(match, projectId), projectId, kind, kind, SEARCH_POOL);
+      .all(
+        projectId === null ? `{title body terms} : (${match})` : inProject(match, projectId),
+        projectId,
+        projectId,
+        kind,
+        kind,
+        SEARCH_POOL,
+      );
     const byText = ranks(found, (row) => -row.bm25);
     const byPrior = ranks(found, (row) => prior(row, context));
-    const fused = (row: MemoryRow & { bm25: number }) =>
+    const fused = (row: MemoryRow & { projectId: number; bm25: number }) =>
       1 / (RRF_K + (byText.get(row) ?? 0)) + 1 / (RRF_K + (byPrior.get(row) ?? 0));
     rows = found.sort((a, b) => fused(b) - fused(a) || b.id - a.id);
   }
 
   if (rows.length === 0) return "No memories match.";
   const shown = rows.slice(0, limit);
-  recordReads(
-    db,
-    projectId,
-    shown.map((row) => row.id),
-    context.now,
-  );
-  return shown.map((row) => renderHeading(toNote(db, row))).join("\n");
+  if (projectId !== null) {
+    recordReads(
+      db,
+      projectId,
+      shown.map((row) => row.id),
+      context.now,
+    );
+    return shown.map((row) => renderHeading(toNote(db, row))).join("\n");
+  }
+  // Across projects, each heading says whose it is.
+  const names = projectNames(db);
+  return shown
+    .map((row) => `[${names.get(row.projectId) ?? "?"}] ${renderHeading(toNote(db, row))}`)
+    .join("\n");
 }
 
 /**
@@ -111,15 +132,19 @@ function recordReads(db: Db, projectId: number, ids: number[], now: number): voi
 export function getMemories(context: ToolContext, args: { ids: number[] }): string {
   const { db, projectId, now } = context;
   const ids = [...new Set(args.ids)].slice(0, MAX_IDS);
-  const find = db.query<MemoryRow & { supersededBy: number | null }, [number, number]>(
-    `SELECT ${MEMORY_COLUMNS}, m.superseded_by AS supersededBy
-       FROM memories m WHERE m.id = ? AND m.project_id = ?`,
+  const find = db.query<
+    MemoryRow & { supersededBy: number | null; projectId: number },
+    [number, number | null, number | null]
+  >(
+    `SELECT ${MEMORY_COLUMNS}, m.superseded_by AS supersededBy, m.project_id AS projectId
+       FROM memories m WHERE m.id = ? AND (? IS NULL OR m.project_id = ?)`,
   );
+  const names = projectId === null ? projectNames(db) : null;
 
   const parts: string[] = [];
   const missing: number[] = [];
   for (const id of ids) {
-    const row = find.get(id, projectId);
+    const row = find.get(id, projectId, projectId);
     if (row === null) {
       missing.push(id);
       continue;
@@ -128,18 +153,23 @@ export function getMemories(context: ToolContext, args: { ids: number[] }): stri
       now,
       id,
     ]);
-    const note = renderNote(toNote(db, row));
+    const note =
+      (names ? `[${names.get(row.projectId) ?? "?"}] ` : "") + renderNote(toNote(db, row));
     parts.push(row.supersededBy === null ? note : `${note}\n  (replaced by #${row.supersededBy})`);
   }
   if (missing.length > 0) {
-    parts.push(`Not found in this project: ${missing.map((id) => `#${id}`).join(", ")}`);
+    parts.push(
+      `Not found${projectId === null ? "" : " in this project"}: ${missing.map((id) => `#${id}`).join(", ")}`,
+    );
   }
-  recordReads(
-    db,
-    projectId,
-    ids.filter((id) => !missing.includes(id)),
-    now,
-  );
+  if (projectId !== null) {
+    recordReads(
+      db,
+      projectId,
+      ids.filter((id) => !missing.includes(id)),
+      now,
+    );
+  }
   return parts.join("\n");
 }
 
@@ -167,6 +197,16 @@ function projectPaths(root: string, files: string[]): string[] {
   return [...paths].slice(0, MAX_FILES);
 }
 
+/** Every project's name, by id. */
+export function projectNames(db: Db): Map<number, string> {
+  return new Map(
+    db
+      .query<{ id: number; name: string }, []>("SELECT id, name FROM projects")
+      .all()
+      .map((p) => [p.id, p.name]),
+  );
+}
+
 function realpath(path: string): string {
   try {
     return realpathSync(path);
@@ -184,6 +224,7 @@ export async function saveMemory(
   args: { text: string; kind: MemoryKind; files?: string[]; importance?: number },
 ): Promise<string> {
   const { db, projectId, now } = context;
+  if (projectId === null) throw new Error("saveMemory needs a project");
   const text = redact(args.text.replace(/\s+/g, " ").trim());
   if (text === "") return "Nothing to save: the text is empty.";
 

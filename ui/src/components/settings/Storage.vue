@@ -58,18 +58,19 @@ async function move() {
 </script>
 
 <template>
-  <Card title="Storage" description="Where the memories are kept. The binary, the settings and the logs stay in the data directory; the database can live on another disk.">
+  <Card id="storage" title="Storage" description="Where the database lives. The binary, settings and logs stay in the data directory.">
     <div v-if="info" class="flex flex-col gap-4">
-      <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
-        <span class="text-(--ink-muted)">Data directory</span>
-        <span class="font-mono text-xs [overflow-wrap:anywhere]">{{ info.dataDir }}</span>
-        <span class="text-(--ink-muted)">Database</span>
-        <span class="font-mono text-xs [overflow-wrap:anywhere]">{{ moved ? info.storeDir : "same directory" }} <span class="font-sans text-(--ink-muted)">· {{ mb(info.dbBytes) }}</span></span>
-      </div>
+      <!-- readouts, then the move -->
+      <dl class="wz-kv">
+        <dt>Data directory</dt>
+        <dd class="font-mono !text-xs">{{ info.dataDir }}</dd>
+        <dt>Database</dt>
+        <dd><span v-if="moved" class="font-mono text-xs">{{ info.storeDir }}</span><span v-else>In the data directory</span> <span class="text-xs text-(--ink-muted)">· {{ mb(info.dbBytes) }}</span></dd>
+      </dl>
       <UAlert v-if="info.recentSessions > 0" color="warning" variant="soft" icon="i-lucide-clock" title="Sessions are active" :description="`${info.recentSessions} session${info.recentSessions === 1 ? '' : 's'} in the last five minutes. Moving is safest between sessions: writers wait while the copy is taken, and a hook that waits too long gives up that one event.`" />
-      <UFormField label="Move the database to" hint="An absolute path on a disk attached to this machine. The folder is created if needed; the old file is kept, renamed.">
+      <UFormField label="Move the database to" help="An absolute path on a disk attached to this machine. The folder is created if needed; the old file is kept, renamed.">
         <div class="flex gap-2">
-          <UInput v-model="path" placeholder="/Volumes/External/wizardingcode-mem" class="flex-1 font-mono" @keydown.enter="check" @input="report = null" />
+          <UInput v-model="path" placeholder="/Volumes/External/wizardingcode-mem" class="w-full max-w-[440px]" :ui="{ base: 'font-mono text-xs' }" @keydown.enter="check" @input="report = null" />
           <UButton color="neutral" variant="outline" label="Check" :disabled="!path.trim()" :loading="checking" @click="check" />
         </div>
       </UFormField>
@@ -81,6 +82,7 @@ async function move() {
         </div>
       </template>
     </div>
+    <p v-if="!info" class="m-0 text-[13px] text-(--ink-muted)">Loading…</p>
     <UModal v-model:open="confirming" title="Move the database?" :description="`Every process will use ${report?.path} from now on. The current file stays where it is, renamed, in case you need it.`">
       <template #footer>
         <div class="flex w-full justify-end gap-2">

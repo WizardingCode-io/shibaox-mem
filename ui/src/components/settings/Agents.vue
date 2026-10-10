@@ -1,41 +1,31 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { api, type Check } from "../../api";
+// The agents on this machine, as Settings' Integrations table: the agent's tile and name,
+// a status pill (a word and a dot whose shape changes), how it is installed.
+import type { Check } from "../../api";
+import { AGENT_TILE } from "../../format";
 import Card from "./Card.vue";
+import { CHECK_STATUS } from "./status";
 
-const checks = ref<Check[] | null>(null);
-const failed = ref("");
-const COLOR: Record<Check["status"], "success" | "warning" | "error" | "neutral"> = {
-  ok: "success",
-  warn: "warning",
-  fail: "error",
-  skip: "neutral",
-};
-
-async function load() {
-  failed.value = "";
-  try {
-    checks.value = await api.doctor();
-  } catch (error) {
-    failed.value = error instanceof Error ? error.message : String(error);
-  }
-}
-onMounted(load);
+defineProps<{ checks: Check[]; loaded: boolean }>();
+const emit = defineEmits<{ refresh: [] }>();
+const ID: Record<string, string> = { "Claude Code": "claude-code", "Claude Desktop": "claude-desktop", Codex: "codex", Cursor: "cursor", "Gemini CLI": "gemini", OpenCode: "opencode" };
+const COLS = "grid-template-columns: 196px 104px minmax(0, 1fr);";
 </script>
 
 <template>
-  <Card title="Agents and installation" description="What wizardingcode-mem doctor sees: every agent, the database, the hooks' speed.">
+  <Card id="agents" title="Agents" :description="loaded ? `${checks.filter((c) => c.status === 'ok').length} of ${checks.length} have wizardingcode-mem · each installs it natively` : 'Each agent installs wizardingcode-mem natively'" flush>
     <template #aside>
-      <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-refresh-cw" aria-label="Check again" @click="load" />
+      <UTooltip text="Check again"><button type="button" class="wz-icon-btn" aria-label="Check again" @click="emit('refresh')"><UIcon name="i-lucide-refresh-cw" class="size-[15px]" /></button></UTooltip>
     </template>
-    <p v-if="failed" class="m-0 text-[13px] text-(--danger)">{{ failed }}</p>
-    <div v-else-if="checks" class="flex flex-col divide-y divide-(--line)">
-      <div v-for="c in checks" :key="c.name" class="grid grid-cols-[72px_150px_minmax(0,1fr)] items-start gap-3 py-2 text-[13px]">
-        <UBadge :color="COLOR[c.status]" variant="soft" size="sm" :label="c.status" class="justify-self-start uppercase" />
-        <span class="font-medium">{{ c.name }}</span>
-        <span class="text-(--ink-muted) [overflow-wrap:anywhere]">{{ c.detail }}</span>
-      </div>
+    <div class="wz-table-head" :style="COLS"><span>Agent</span><span>Status</span><span>Installed as</span></div>
+    <div v-for="c in checks" :key="c.name" class="grid min-h-10 items-center gap-x-2 border-t border-(--row-line) px-3 py-1.5" :style="COLS">
+      <span class="flex min-w-0 items-center gap-2">
+        <span aria-hidden="true" class="wz-tile" :style="{ background: AGENT_TILE[ID[c.name] ?? '']?.bg ?? '#D9D4CD' }">{{ AGENT_TILE[ID[c.name] ?? ""]?.letter ?? c.name.charAt(0) }}</span>
+        <span class="wz-name">{{ c.name }}</span>
+      </span>
+      <span><span class="wz-status" :class="CHECK_STATUS[c.status].shape" :style="{ background: CHECK_STATUS[c.status].bg, color: CHECK_STATUS[c.status].fg }">{{ c.status === "ok" ? "Installed" : c.status === "skip" ? "Not here" : CHECK_STATUS[c.status].label }}</span></span>
+      <span class="min-w-0 text-xs leading-4 text-(--ink-muted) [overflow-wrap:anywhere]">{{ c.detail }}</span>
     </div>
-    <p v-else class="m-0 text-[13px] text-(--ink-muted)">Checking…</p>
+    <p v-if="!loaded" class="m-0 border-t border-(--row-line) p-3 text-[13px] text-(--ink-muted)">Checking…</p>
   </Card>
 </template>

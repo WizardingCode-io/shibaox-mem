@@ -9,7 +9,7 @@
 
 <p align="center">
   <strong>Memory for coding agents.</strong><br>
-  What one session learns, the next one is told — in Claude Code, Codex, Gemini CLI, OpenCode and Cursor, from the same memory.
+  What one session learns, the next one is told — in Claude Code, Claude Desktop, Codex, Gemini CLI, OpenCode and Cursor, from the same memory.
 </p>
 
 <p align="center">
@@ -64,6 +64,20 @@ wizardingcode-mem is installed from inside your agent, the way that agent instal
 claude plugin marketplace add WizardingCode-io/wizardingcode-plugins
 claude plugin install wizardingcode-mem@wizardingcode-plugins
 ```
+
+</td></tr>
+<tr><td><strong>Claude Desktop</strong></td><td>
+
+So that a design conversation in the app and the coding session in the repository share one memory:
+
+1. In Claude Desktop, open **Customize → Plugins → Add marketplace**, enter `WizardingCode-io/wizardingcode-plugins` and add **wizardingcode-mem**. Cowork tasks then capture and recall as Claude Code does, and the plugin follows your account to Claude Code.
+2. For the chat, which runs no plugin hooks or local servers, register the memory server once:
+
+```sh
+wizardingcode-mem install claude-desktop
+```
+
+In the chat the memory spans every project: Claude searches across them, says which project each note is from, and names the project when it saves. Quit and reopen Claude Desktop afterwards.
 
 </td></tr>
 <tr><td><strong>Codex</strong></td><td>
@@ -241,6 +255,8 @@ The importer can only map claude-mem's types onto ours and give every memory of 
 | Agent | Installed as | Captures | Injects | Status |
 |---|---|---|---|---|
 | Claude Code | plugin, from the marketplace | hooks + transcript | session start, every prompt | in daily use |
+| Claude Desktop, Cowork | plugin, from the marketplace in the app | hooks | session start, every prompt | from the documentation; not yet run |
+| Claude Desktop, chat | MCP server in its config, across every project | `memory_save` | `memory_search` when Claude asks | verified with the tools; not yet in the app |
 | Codex | plugin, from the marketplace | hooks + rollout | session start, every prompt | verified up to the prompt; turn end as documented |
 | Gemini CLI | extension, from the release | hooks | session start, every prompt | verified at session start; turns as documented |
 | OpenCode | npm plugin | the plugin API | the system prompt | verified up to the prompt |

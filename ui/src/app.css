@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+@import "./wz.css";
 
 /* WizardingCode's fonts, served by the binary. */
 @font-face { font-family: "Unbounded"; font-weight: 200 900; font-display: swap; src: url("/assets/unbounded-variable.woff2") format("woff2"); }
@@ -37,7 +38,7 @@
   --ui-primary: var(--primary);
   --ui-text-dimmed: var(--line-strong); --ui-text-muted: var(--ink-muted); --ui-text-toned: #3A3632; --ui-text: var(--ink); --ui-text-highlighted: var(--ink); --ui-text-inverted: var(--paper);
   --ui-bg: var(--bg); --ui-bg-muted: var(--surface-sunken); --ui-bg-elevated: var(--surface); --ui-bg-accented: var(--surface-hover); --ui-bg-inverted: var(--ink);
-  --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--line-strong); --ui-border-inverted: var(--ink);
+  --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--btn-secondary-line); --ui-border-inverted: var(--ink);
   --ui-success: var(--ok); --ui-info: var(--blue-text); --ui-warning: var(--warn); --ui-error: var(--danger);
 }
 /* Dark: the app's own dark theme (Sales OS theme-dark.css), not the marketing site's. */
@@ -78,7 +79,7 @@
 html, body, #app { height: 100%; margin: 0; }
 /* The compact scale (Sales OS DENSITY.md): body 13/18, meta 12/16, mono labels 10.5/14. */
 body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 13px; line-height: 18px; -webkit-font-smoothing: antialiased; }
-:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
+@layer base { :focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; } }
 /* Unbounded is wide: short phrases only, tracked in. */
 .font-display { font-family: var(--font-display); letter-spacing: -0.03em; }
 /* The machine's voice: labels in mono capitals. */

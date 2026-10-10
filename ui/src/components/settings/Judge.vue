@@ -9,7 +9,8 @@ const key = computed(() => {
   return s !== null && "secret" in s ? s : null;
 });
 const enabled = computed({
-  get: () => valueOf("WIZARDINGCODE_MEM_TYPESAFE") !== "off",
+  // Without a key TypeSafe cannot judge, whatever the setting says: shown off.
+  get: () => Boolean(key.value?.set) && valueOf("WIZARDINGCODE_MEM_TYPESAFE") !== "off",
   set: async (on: boolean) => {
     if (await saveSettings({ WIZARDINGCODE_MEM_TYPESAFE: on ? "on" : "off" })) {
       toast.add({ title: on ? "TypeSafe on" : "TypeSafe off", description: on ? "TypeSafe judges first; the heuristic judge stands in when it cannot." : "The heuristic judge works alone; the key is kept.", color: "success" });
@@ -34,24 +35,25 @@ async function removeKey() {
 </script>
 
 <template>
-  <Card title="Judge" description="What decides whether a turn is worth keeping, and as what. The heuristic judge always runs locally; with a TypeSafe key, TypeSafe answers first.">
+  <Card id="judge" title="Judge" description="Decides whether a turn is worth keeping, and as what. The heuristic judge always runs locally.">
     <template #aside>
-      <UBadge v-if="key?.set && enabled" color="success" variant="soft" size="sm" label="TypeSafe" />
-      <UBadge v-else color="neutral" variant="soft" size="sm" label="Heuristic" />
+      <span class="wz-status" :style="key?.set && enabled ? { background: 'var(--ok-soft)', color: 'var(--ok)' } : { background: 'var(--paper-sunken)', color: 'var(--ink-muted)' }">{{ key?.set && enabled ? "TypeSafe" : "Heuristic only" }}</span>
     </template>
     <div class="flex flex-col gap-4">
-      <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
-        <span class="text-(--ink-muted)">Key</span>
-        <span v-if="key?.set" class="flex flex-wrap items-center gap-2">
+      <dl class="wz-kv">
+        <dt>Judging now</dt>
+        <dd>{{ key?.set && enabled ? "TypeSafe first, the heuristic judge when it cannot" : "The heuristic judge, on this machine" }}</dd>
+        <dt>TypeSafe key</dt>
+        <dd v-if="key?.set" class="flex flex-wrap items-center gap-2">
           <span class="font-mono text-xs">…{{ key.fingerprint?.slice(-8) }}</span>
-          <span class="text-(--ink-muted)">{{ SOURCE_LABEL[key.source] }}</span>
-          <UButton v-if="!keyLocked" color="neutral" variant="link" size="xs" label="Remove" :loading="settingsState.saving" @click="removeKey" />
-        </span>
-        <span v-else class="text-(--ink-muted)">none — the heuristic judge works alone</span>
-      </div>
-      <UFormField label="New key" :hint="keyLocked ? 'Set by TYPESAFE_API_KEY in the environment; the file cannot override it.' : 'Pasted once, kept in the settings file, never shown again.'" :error="settingsState.errors.TYPESAFE_API_KEY">
+          <span class="text-xs text-(--ink-muted)">{{ SOURCE_LABEL[key.source] }}</span>
+          <button v-if="!keyLocked" type="button" class="wz-link" @click="removeKey">Remove</button>
+        </dd>
+        <dd v-else class="text-(--ink-muted)">None</dd>
+      </dl>
+      <UFormField :label="key?.set ? 'Replace the key' : 'Add a key'" :help="keyLocked ? 'Set by TYPESAFE_API_KEY in the environment; the file cannot override it.' : 'Pasted once, kept in the settings file, never shown again.'" :error="settingsState.errors.TYPESAFE_API_KEY">
         <div class="flex gap-2">
-          <UInput v-model="draft" type="password" autocomplete="off" placeholder="typesafe-…" class="flex-1" :disabled="keyLocked" @keydown.enter="saveKey" />
+          <UInput v-model="draft" type="password" autocomplete="off" placeholder="typesafe-…" class="w-full max-w-[360px]" :disabled="keyLocked" @keydown.enter="saveKey" />
           <UButton color="primary" label="Save" :disabled="keyLocked || !draft.trim()" :loading="settingsState.saving" @click="saveKey" />
         </div>
       </UFormField>
