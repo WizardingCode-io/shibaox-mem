@@ -47,20 +47,24 @@ async function run(dryRun: boolean) {
 
 <template>
   <Card id="retention" title="Retention" description="How long turns that became nothing are kept. Memories are never deleted.">
-    <div class="flex flex-col gap-4">
-      <UFormField label="Keep turns for" :hint="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS') ? 'Set by the environment.' : '7 to 3650 days.'" :error="settingsState.errors.WIZARDINGCODE_MEM_RETENTION_DAYS">
+    <div class="flex flex-col">
+      <UFormField label="Keep turns for" :help="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS') ? 'Set by the environment.' : '7 to 3650 days.'" :error="settingsState.errors.WIZARDINGCODE_MEM_RETENTION_DAYS">
         <div class="flex items-center gap-2">
-          <UInput v-model="days" type="number" min="7" max="3650" class="w-28" :disabled="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS')" @keydown.enter="saveDays" />
+          <UInput v-model="days" type="number" min="7" max="3650" class="w-24" :disabled="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS')" @keydown.enter="saveDays" />
           <span class="text-[13px] text-(--ink-muted)">days</span>
           <UButton color="primary" label="Save" :disabled="!changed" :loading="settingsState.saving" @click="saveDays" />
         </div>
       </UFormField>
-      <div class="flex flex-col gap-2">
+      <div class="wz-block flex flex-col gap-2">
+        <div class="flex flex-col">
+          <span class="text-[13px] font-semibold">Compact now</span>
+          <span class="text-xs text-(--ink-muted)">Removes turns past the retention period. Preview first; memories stay.</span>
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <UButton color="neutral" variant="outline" icon="i-lucide-scan-search" label="Preview compact" :loading="busy && preview === null" @click="run(true)" />
           <UButton v-if="preview" color="primary" icon="i-lucide-broom" label="Run compact now" :loading="busy" @click="run(false)" />
         </div>
-        <p v-if="preview" class="m-0 text-[13px] leading-5 text-(--ink-muted)">
+        <p v-if="preview" class="m-0 text-xs leading-4 text-(--ink-muted)">
           Would remove {{ summary(preview) }}; the database takes {{ mb(preview.bytesBefore) }} now. Memories stay.
         </p>
       </div>

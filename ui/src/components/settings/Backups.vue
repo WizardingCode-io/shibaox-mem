@@ -132,33 +132,33 @@ async function restore() {
       <span v-if="view?.target" class="wz-status" :class="view.due ? 'square' : ''" :style="view.due ? { background: 'var(--warn-soft)', color: 'var(--warn)' } : { background: 'var(--ok-soft)', color: 'var(--ok)' }">{{ view.due ? "Due" : "Up to date" }}</span>
     </template>
     <div class="flex flex-col gap-4">
-      <UFormField label="Back up to" :hint="locked ? 'Set by the environment.' : undefined" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
-        <USelectMenu v-model="kind" :items="kindItems" value-key="value" :search-input="false" class="w-full sm:w-96" :disabled="locked" />
+      <UFormField label="Back up to" :help="locked ? 'Set by the environment.' : undefined" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
+        <USelectMenu v-model="kind" :items="kindItems" value-key="value" :search-input="false" class="w-full max-w-[360px]" :disabled="locked" />
       </UFormField>
       <template v-if="kind !== 'none'">
-        <UFormField :label="kind === 's3' ? 'Bucket' : 'Folder'" :hint="kind === 's3' ? 's3://bucket/prefix' : 'An absolute path; created if needed.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
-          <UInput v-model="to" class="w-full font-mono" :placeholder="kind === 's3' ? 's3://my-bucket/wizardingcode-mem' : '/Volumes/NAS/backups/wizardingcode-mem'" :disabled="locked" />
+        <UFormField :label="kind === 's3' ? 'Bucket' : 'Folder'" :help="kind === 's3' ? 's3://bucket/prefix' : 'An absolute path; created if needed.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
+          <UInput v-model="to" class="w-full max-w-[440px]" :ui="{ base: 'font-mono text-xs' }" :placeholder="kind === 's3' ? 's3://my-bucket/wizardingcode-mem' : '/Volumes/NAS/backups/wizardingcode-mem'" :disabled="locked" />
         </UFormField>
         <div v-if="kind === 's3'" class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Endpoint" hint="Empty for AWS." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT">
-            <UInput v-model="endpoint" class="w-full font-mono" placeholder="https://<account>.r2.cloudflarestorage.com" />
+          <UFormField label="Endpoint" help="Empty for AWS." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT">
+            <UInput v-model="endpoint" class="w-full" :ui="{ base: 'font-mono text-xs' }" placeholder="https://<account>.r2.cloudflarestorage.com" />
           </UFormField>
           <UFormField label="Region" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_REGION">
-            <UInput v-model="region" class="w-full font-mono" placeholder="auto" />
+            <UInput v-model="region" class="w-full" :ui="{ base: 'font-mono text-xs' }" placeholder="auto" />
           </UFormField>
           <UFormField label="Access key" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY">
-            <UInput v-model="accessKey" class="w-full font-mono" autocomplete="off" />
+            <UInput v-model="accessKey" class="w-full" :ui="{ base: 'font-mono text-xs' }" autocomplete="off" />
           </UFormField>
-          <UFormField label="Secret key" :hint="secretSet ? 'Set; paste a new one to replace it.' : 'Kept in the settings file, never shown.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY">
-            <UInput v-model="secretKey" type="password" class="w-full font-mono" autocomplete="off" :placeholder="secretSet ? '••••••••' : ''" />
+          <UFormField label="Secret key" :help="secretSet ? 'Set; paste a new one to replace it.' : 'Kept in the settings file, never shown.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY">
+            <UInput v-model="secretKey" type="password" class="w-full" :ui="{ base: 'font-mono text-xs' }" autocomplete="off" :placeholder="secretSet ? '••••••••' : ''" />
           </UFormField>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Every" hint="Hours between copies; 0 means only when you ask." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS">
-            <div class="flex items-center gap-2"><UInput v-model="every" type="number" min="0" max="720" class="w-28" /><span class="text-[13px] text-(--ink-muted)">hours</span></div>
+          <UFormField label="Every" help="Hours between copies; 0 means only when you ask." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS">
+            <div class="flex items-center gap-2"><UInput v-model="every" type="number" min="0" max="720" class="w-24" /><span class="text-[13px] text-(--ink-muted)">hours</span></div>
           </UFormField>
-          <UFormField label="Keep" hint="Older copies are removed." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_KEEP">
-            <div class="flex items-center gap-2"><UInput v-model="keep" type="number" min="1" max="1000" class="w-28" /><span class="text-[13px] text-(--ink-muted)">copies</span></div>
+          <UFormField label="Keep" help="Older copies are removed." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_KEEP">
+            <div class="flex items-center gap-2"><UInput v-model="keep" type="number" min="1" max="1000" class="w-24" /><span class="text-[13px] text-(--ink-muted)">copies</span></div>
           </UFormField>
         </div>
       </template>
@@ -171,16 +171,18 @@ async function restore() {
       </div>
 
       <template v-if="view?.target">
-        <div class="text-[13px] text-(--ink-muted)">
+        <div class="wz-block text-xs text-(--ink-muted)">
           <template v-if="view.last">Last copy {{ ago(view.last.at) }} ({{ when(view.last.at) }}) · {{ mb(view.last.bytes) }} · {{ view.last.label }}</template>
           <template v-else>No copy yet.</template>
         </div>
         <UAlert v-if="view.error" color="error" variant="soft" icon="i-lucide-triangle-alert" title="The target could not be listed" :description="view.error" />
-        <div v-else-if="view.entries.length" class="flex flex-col divide-y divide-(--line)">
-          <div v-for="e in view.entries" :key="e.name" class="grid grid-cols-[minmax(0,1fr)_80px_auto] items-center gap-3 py-1.5 text-[13px]">
-            <span class="truncate font-mono text-xs" :title="e.name">{{ when(e.at) }} · v{{ e.version }}</span>
-            <span class="text-right tabular-nums text-(--ink-muted)">{{ mb(e.bytes) }}</span>
-            <UButton color="neutral" variant="ghost" size="xs" icon="i-lucide-history" label="Restore…" @click="restoring = e.name" />
+        <div v-else-if="view.entries.length" class="wz-table">
+          <div class="wz-table-head" style="grid-template-columns: minmax(0, 1fr) 56px 80px 88px"><span>Copy</span><span>Schema</span><span class="text-right">Size</span><span /></div>
+          <div v-for="e in view.entries" :key="e.name" class="grid h-8 items-center gap-x-2 border-t border-(--row-line) px-3" style="grid-template-columns: minmax(0, 1fr) 56px 80px 88px">
+            <span class="wz-mono" :title="e.name">{{ when(e.at) }}</span>
+            <span class="wz-mono text-(--ink-muted)">v{{ e.version }}</span>
+            <span class="wz-mono text-right text-(--ink-muted)">{{ mb(e.bytes) }}</span>
+            <button type="button" class="wz-link justify-self-end" @click="restoring = e.name">Restore…</button>
           </div>
         </div>
       </template>

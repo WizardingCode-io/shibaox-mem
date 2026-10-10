@@ -66,6 +66,8 @@ export default defineConfig({
           },
         },
         slideover: { slots: { content: "bg-(--surface)" } },
+        // Banners, as STATES.md draws them: compact, 12.5px, the tone's soft fill.
+        alert: { slots: { root: "rounded-lg p-2.5 gap-2", title: "text-[12.5px] leading-4 font-semibold", description: "text-xs leading-4", icon: "size-4" } },
         modal: { slots: { content: "rounded-xl ring-(--line)" } },
       },
       // The theme is written from the brand's tokens in app.css; nothing is generated here.

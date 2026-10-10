@@ -121,3 +121,10 @@
 .wz-md table { border-collapse: separate; border-spacing: 0; width: 100%; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 12px; line-height: 16px; }
 .wz-md th { font-family: var(--font-mono); font-size: 10px; line-height: 14px; letter-spacing: .05em; text-transform: uppercase; font-weight: 400; color: var(--ink-muted); text-align: left; background: var(--head-bg); padding: 7px 10px; }
 .wz-md td { padding: 7px 10px; border-top: 1px solid var(--row-line); vertical-align: top; }
+
+/* Readouts in settings (label, value), DealDetail's rhythm: 32px rows, a 140px label. */
+.wz-kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); column-gap: 16px; margin: 0; }
+.wz-kv dt { font-size: 12.5px; line-height: 16px; color: var(--ink-muted); padding: 8px 0; }
+.wz-kv dd { margin: 0; font-size: 13px; line-height: 16px; padding: 8px 0; min-width: 0; overflow-wrap: anywhere; }
+/* A block of settings inside a card, and the line that separates two of them. */
+.wz-block { border-top: 1px solid var(--row-line); margin-top: 16px; padding-top: 16px; }

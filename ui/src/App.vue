@@ -125,8 +125,9 @@ onMounted(async () => {
       <TopBar @palette="palette = true" />
       <div class="flex min-h-0 flex-1">
         <Rail :tab="state.tab" @go="tab = $event" />
-        <!-- The projects panel folds to nothing (240ms) and keeps its width while it moves. -->
-        <div class="flex-none overflow-hidden transition-[width] duration-[240ms] ease-out motion-reduce:transition-none" :class="sidebarOpen ? 'w-[216px]' : 'w-0'" :inert="!sidebarOpen">
+        <!-- The projects panel folds to nothing (240ms) and keeps its width while it moves. Settings are the
+             machine's, not a project's: the panel steps aside there and comes back as it was. -->
+        <div class="flex-none overflow-hidden transition-[width] duration-[240ms] ease-out motion-reduce:transition-none" :class="sidebarOpen && state.tab !== 'settings' ? 'w-[216px]' : 'w-0'" :inert="!sidebarOpen || state.tab === 'settings'">
           <Sidebar class="h-full" />
         </div>
         <main class="flex min-h-0 min-w-0 flex-1 flex-col">

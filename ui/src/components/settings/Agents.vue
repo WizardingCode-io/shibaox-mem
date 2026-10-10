@@ -1,44 +1,31 @@
 <script setup lang="ts">
-// What `doctor` sees, as Settings' Integrations table: a status pill (word and a dot whose
-// shape changes), the check, what it found.
-import { onMounted, ref } from "vue";
-import { api, type Check } from "../../api";
+// The agents on this machine, as Settings' Integrations table: the agent's tile and name,
+// a status pill (a word and a dot whose shape changes), how it is installed.
+import type { Check } from "../../api";
+import { AGENT_TILE } from "../../format";
 import Card from "./Card.vue";
+import { CHECK_STATUS } from "./status";
 
-const checks = ref<Check[] | null>(null);
-const failed = ref("");
-const STATUS: Record<Check["status"], { label: string; bg: string; fg: string; shape: string }> = {
-  ok: { label: "OK", bg: "var(--ok-soft)", fg: "var(--ok)", shape: "" },
-  warn: { label: "Warning", bg: "var(--warn-soft)", fg: "var(--warn)", shape: "square" },
-  fail: { label: "Failing", bg: "var(--danger-soft)", fg: "var(--danger)", shape: "diamond" },
-  skip: { label: "Not here", bg: "var(--paper-sunken)", fg: "var(--ink-muted)", shape: "" },
-};
-async function load() {
-  failed.value = "";
-  try {
-    checks.value = await api.doctor();
-  } catch (error) {
-    failed.value = error instanceof Error ? error.message : String(error);
-  }
-}
-onMounted(load);
-const COLS = "grid-template-columns: 172px 92px minmax(0, 1fr);";
+defineProps<{ checks: Check[]; loaded: boolean }>();
+const emit = defineEmits<{ refresh: [] }>();
+const ID: Record<string, string> = { "Claude Code": "claude-code", Codex: "codex", Cursor: "cursor", "Gemini CLI": "gemini", OpenCode: "opencode" };
+const COLS = "grid-template-columns: 196px 104px minmax(0, 1fr);";
 </script>
 
 <template>
-  <Card id="agents" title="Agents and installation" :description="checks ? `${checks.filter((c) => c.status === 'ok').length} of ${checks.length} checks pass · what wizardingcode-mem doctor sees` : 'What wizardingcode-mem doctor sees'" flush>
+  <Card id="agents" title="Agents" :description="loaded ? `${checks.filter((c) => c.status === 'ok').length} of ${checks.length} have wizardingcode-mem · each installs it natively` : 'Each agent installs wizardingcode-mem natively'" flush>
     <template #aside>
-      <button type="button" class="wz-icon-btn" aria-label="Check again" @click="load"><UIcon name="i-lucide-refresh-cw" class="size-[15px]" /></button>
+      <UTooltip text="Check again"><button type="button" class="wz-icon-btn" aria-label="Check again" @click="emit('refresh')"><UIcon name="i-lucide-refresh-cw" class="size-[15px]" /></button></UTooltip>
     </template>
-    <p v-if="failed" class="m-0 p-4 text-[13px] text-(--danger)">{{ failed }}</p>
-    <template v-else-if="checks">
-      <div class="wz-table-head" :style="COLS"><span>Check</span><span>Status</span><span>Found</span></div>
-      <div v-for="c in checks" :key="c.name" class="grid min-h-8 items-center gap-x-2 border-t border-(--row-line) px-3 py-1.5" :style="COLS">
+    <div class="wz-table-head" :style="COLS"><span>Agent</span><span>Status</span><span>Installed as</span></div>
+    <div v-for="c in checks" :key="c.name" class="grid min-h-10 items-center gap-x-2 border-t border-(--row-line) px-3 py-1.5" :style="COLS">
+      <span class="flex min-w-0 items-center gap-2">
+        <span aria-hidden="true" class="wz-tile" :style="{ background: AGENT_TILE[ID[c.name] ?? '']?.bg ?? '#D9D4CD' }">{{ AGENT_TILE[ID[c.name] ?? ""]?.letter ?? c.name.charAt(0) }}</span>
         <span class="wz-name">{{ c.name }}</span>
-        <span><span class="wz-status" :class="STATUS[c.status].shape" :style="{ background: STATUS[c.status].bg, color: STATUS[c.status].fg }">{{ STATUS[c.status].label }}</span></span>
-        <span class="min-w-0 text-xs leading-4 text-(--ink-muted) [overflow-wrap:anywhere]">{{ c.detail }}</span>
-      </div>
-    </template>
-    <p v-else class="m-0 p-4 text-[13px] text-(--ink-muted)">Checking…</p>
+      </span>
+      <span><span class="wz-status" :class="CHECK_STATUS[c.status].shape" :style="{ background: CHECK_STATUS[c.status].bg, color: CHECK_STATUS[c.status].fg }">{{ c.status === "ok" ? "Installed" : c.status === "skip" ? "Not here" : CHECK_STATUS[c.status].label }}</span></span>
+      <span class="min-w-0 text-xs leading-4 text-(--ink-muted) [overflow-wrap:anywhere]">{{ c.detail }}</span>
+    </div>
+    <p v-if="!loaded" class="m-0 border-t border-(--row-line) p-3 text-[13px] text-(--ink-muted)">Checking…</p>
   </Card>
 </template>
