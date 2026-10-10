@@ -289,7 +289,7 @@ export interface TurnItem {
 export function recentTurns(db: Db, projectId: number, limit = 50): TurnItem[] {
   return db
     .query<Omit<TurnItem, "memoryIds"> & { memoryIds: string | null }, [number, number]>(
-      `SELECT t.id, s.agent, t.state, t.completeness, substr(t.prompt, 1, 800) AS prompt,
+      `SELECT t.id, s.agent, t.state, t.completeness, substr(t.prompt, 1, 1500) AS prompt,
               t.started_at AS startedAt, t.ended_at AS endedAt, t.last_error AS lastError,
               (SELECT group_concat(m.id) FROM memories m WHERE m.source_turn_id = t.id) AS memoryIds
          FROM turns t JOIN sessions s ON s.id = t.session_id

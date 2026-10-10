@@ -71,6 +71,9 @@ export interface PromptLine {
   kind: "prompt" | "task" | "subagent";
 }
 const squash = (text: string) => text.replace(/\s+/g, " ").trim();
+/** A one-line title from Markdown: no emphasis markers, list bullets or heading hashes. */
+const plainLine = (text: string) =>
+  squash(text.replace(/^\s*(?:[-*+]|#{1,6}|\d+\.)\s+/gm, "").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/\*\*|__/g, ""));
 export function describePrompt(prompt: string): PromptLine {
   const text = prompt.trim();
   if (text.startsWith("<task-notification>")) {
@@ -82,7 +85,7 @@ export function describePrompt(prompt: string): PromptLine {
     // The harness's preamble is one paragraph; the report starts after the first blank line.
     const body = text.replace(/^<agent-message[^>]*>/, "").replace(/<\/agent-message>\s*$/, "");
     const report = /\n\s*\n([\s\S]*)/.exec(body)?.[1] ?? "";
-    const title = squash(report).slice(0, 160);
+    const title = plainLine(report).slice(0, 160).replace(/\s+\S*$/, (tail) => (report.length > 160 ? "…" : tail));
     return { title: title || "Subagent report", sub: title ? "Subagent report" : "", kind: "subagent" };
   }
   const images = (text.match(/\[Image #\d+\]/g) ?? []).length;

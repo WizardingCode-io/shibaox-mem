@@ -58,7 +58,7 @@ export async function selectProject(id: number): Promise<void> {
 export async function reload(): Promise<void> {
   if (state.projectId === null) return;
   if (state.tab === "memories") await loadList();
-  else if (state.tab === "turns") state.turns = await api.turns(state.projectId);
+  else if (state.tab === "turns") state.turns = await api.turns(state.projectId, 200);
 }
 
 export async function loadList(offset = 0): Promise<void> {
