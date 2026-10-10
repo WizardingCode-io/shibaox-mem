@@ -94,7 +94,9 @@
 /* The detail dialog shows what the panel clips: long code blocks and clamped text in full. */
 .wz-wide .wz-scroll { max-height: 60vh; }
 .wz-wide .wz-clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
-.wz-wide .wz-title { font-size: 18px; line-height: 24px; }
+/* In the dialog the title is the page's: Unbounded, as DealDetail's. */
+.wz-wide .wz-title { font-family: var(--font-display); font-size: 22px; line-height: 30px; font-weight: 700; letter-spacing: -0.03em; }
+.wz-wide .wz-md { font-size: 14px; line-height: 22px; max-width: 880px; }
 
 /* Markdown, in the app's type scale: 13/18 text, 15 and 14 semibold headings, mono code on
    the console, tables like the app's tables, quotes with a violet bar. */
