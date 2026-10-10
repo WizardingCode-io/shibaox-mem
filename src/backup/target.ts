@@ -25,7 +25,9 @@ export interface BackupTarget {
   remove(name: string): Promise<void>;
 }
 
-const NAME = /^wizardingcode-mem-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z-v(\d+)\.db\.gz$/;
+// shibaox-mem-: copies made until 0.3.0, which a restore must still find.
+const NAME =
+  /^(?:wizardingcode|shibaox)-mem-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z-v(\d+)\.db\.gz$/;
 
 /** Our naming: UTC time first, so that sorting by name is sorting by age. */
 export function backupName(now: number, version: number): string {

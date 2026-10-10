@@ -261,16 +261,23 @@ export function installHooksFile(spec: HostSpec, context: InstallContext): Insta
   // Otherwise the MCP server is registered through the host's own command: its config
   // file holds unrelated state and is rewritten by the application itself.
   context.run(spec.mcpRemove);
+  context.run(legacyMcpRemove(spec));
   const mcp = context.run(mcpCommand).ok ? "registered" : "manual";
   return { settingsPath, changed, mcp, mcpCommand, notes: spec.notes };
 }
+
+/** The host's command that removes the server under the name it had until 0.3.0. */
+const legacyMcpRemove = (spec: HostSpec): string[] =>
+  spec.mcpRemove.map((word) => (word === MCP_NAME ? LEGACY_MCP_NAME : word));
 
 /** Adds our server to a host's `mcpServers` file, keeping every other entry. */
 function writeMcpServer(path: string, binaryPath: string): void {
   const file = resolved(path);
   const previous = existsSync(file) ? readFileSync(file, "utf8") : null;
   const config = parseSettings(path, previous);
-  const servers = isObject(config.mcpServers) ? config.mcpServers : {};
+  const { [LEGACY_MCP_NAME]: _legacy, ...servers } = isObject(config.mcpServers)
+    ? config.mcpServers
+    : {};
   const next = serialise(
     { ...config, mcpServers: { ...servers, [MCP_NAME]: { command: binaryPath, args: ["mcp"] } } },
     previous,
@@ -291,8 +298,13 @@ function removeMcpServer(path: string): void {
   } catch {
     return;
   }
-  if (!isObject(config.mcpServers) || !(MCP_NAME in config.mcpServers)) return;
-  const { [MCP_NAME]: _ours, ...servers } = config.mcpServers;
+  if (
+    !isObject(config.mcpServers) ||
+    !(MCP_NAME in config.mcpServers || LEGACY_MCP_NAME in config.mcpServers)
+  ) {
+    return;
+  }
+  const { [MCP_NAME]: _ours, [LEGACY_MCP_NAME]: _legacy, ...servers } = config.mcpServers;
   const next: Json = { ...config, mcpServers: servers };
   if (Object.keys(servers).length === 0) delete next.mcpServers;
   if (Object.keys(next).length === 0) rmSync(file);
@@ -330,7 +342,10 @@ export function uninstallHooksFile(spec: HostSpec, context: InstallContext): Uni
   }
 
   if (spec.mcpFile !== undefined) removeMcpServer(spec.mcpFile(context));
-  else context.run(spec.mcpRemove);
+  else {
+    context.run(spec.mcpRemove);
+    context.run(legacyMcpRemove(spec));
+  }
   if (receipt?.backupPath) rmSync(receipt.backupPath, { force: true });
   rmSync(receiptPath(dataDir, spec.agent, settingsPath), { force: true });
   return { settingsPath, settings: outcome };
@@ -367,5 +382,11 @@ export function inspectHooksFile(
 }
 
 export const MCP_NAME = "wizardingcode-mem";
+/** The name until 0.3.0. An install takes its place; nothing installs it any more. */
+export const LEGACY_MCP_NAME = "shibaox-mem";
+
+/** A binary of ours, under this name or the one it had until 0.3.0. */
+export const isOurBinaryName = (name: string): boolean =>
+  name.startsWith(MCP_NAME) || name.startsWith(LEGACY_MCP_NAME);
 export const HOOK_TIMEOUT_SECONDS = 5;
 export type { Json as HookEntry };

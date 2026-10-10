@@ -22,5 +22,8 @@ export function doctorContext(dataDir: string, now = Date.now()): DoctorContext 
     opencodePluginPath: opencodePluginPath(),
     which: (command) => Bun.which(command),
     now,
+    legacyVariables: Object.keys(process.env)
+      .filter((name) => name.startsWith("SHIBAOX_") && process.env[name] !== "")
+      .sort(),
   };
 }

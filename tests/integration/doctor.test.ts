@@ -478,3 +478,30 @@ describe("doctor: backups", () => {
     expect(good.stdout).toMatch(/ok {2}\s+backups: last copy 10 min ago/);
   });
 });
+
+describe("wizardingcode-mem doctor, after shibaox-mem", () => {
+  test("a shibaox-mem plugin still enabled is a warning that says how to remove it", async () => {
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": true } }),
+    );
+    const result = await cli("doctor");
+    expect(line(result.stdout, "shibaox-mem")).toStartWith("warn");
+    expect(line(result.stdout, "shibaox-mem")).toContain(
+      "claude plugin uninstall shibaox-mem@shibaox-plugins",
+    );
+  });
+
+  test("old variables still work, and are pointed out", async () => {
+    const result = await cliWith({ SHIBAOX_MEM_RETENTION_DAYS: "30" }, "doctor");
+    expect(line(result.stdout, "shibaox-mem")).toStartWith("warn");
+    expect(line(result.stdout, "shibaox-mem")).toContain(
+      "SHIBAOX_MEM_RETENTION_DAYS → WIZARDINGCODE_MEM_RETENTION_DAYS",
+    );
+  });
+
+  test("nothing of it left: no line at all", async () => {
+    const result = await cli("doctor");
+    expect(result.stdout).not.toContain("shibaox");
+  });
+});

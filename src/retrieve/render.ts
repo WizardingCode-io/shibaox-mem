@@ -25,7 +25,8 @@ const MAX_FILES_SHOWN = 3;
 export const day = (epochMs: number) => new Date(epochMs).toISOString().slice(0, 10);
 const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
-const OWN_TAG = /<(\s*\/?\s*wizardingcode-mem-notes\s*)>/gi;
+// shibaox-mem-notes: the wrapper's name until 0.3.0, still in older sessions' transcripts.
+const OWN_TAG = /<(\s*\/?\s*(?:wizardingcode|shibaox)-mem-notes\s*)>/gi;
 /**
  * Stored text is shown inside our wrapper and must not be able to close or reopen it:
  * our own tag, wherever it appears in that text, loses its angle brackets.
@@ -81,7 +82,7 @@ export function renderBrief(last: LastTurn | null, notes: Note[]): string {
   return lines.join("\n");
 }
 
-const NOTES_BLOCK = /<wizardingcode-mem-notes>[\s\S]*?<\/wizardingcode-mem-notes>/g;
+const NOTES_BLOCK = /<(wizardingcode|shibaox)-mem-notes>[\s\S]*?<\/\1-mem-notes>/g;
 // A note heading, or one of the brief's own lines, with or without list and quote marks.
 const NOTE_LINE =
   /^\s*(?:[-*>]\s*)*(?:#\d+ \[[a-z]+ · \d{4}-\d{2}-\d{2}|(?:Asked|Outcome): |Where things stood \(|Known about this project:|Notes saved from earlier sessions in this project\.)/;

@@ -6,6 +6,7 @@ import {
   type InstallResult,
   inspectHooksFile,
   installHooksFile,
+  isOurBinaryName,
   MCP_NAME,
   type UninstallResult,
   uninstallHooksFile,
@@ -37,7 +38,7 @@ export const CLAUDE_CODE: HostSpec = {
       return false;
     }
     return (
-      basename(hook.command).startsWith("wizardingcode-mem") &&
+      isOurBinaryName(basename(hook.command)) &&
       hook.args[0] === "hook" &&
       hook.args[1] === "claude-code"
     );

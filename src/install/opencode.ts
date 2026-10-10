@@ -24,6 +24,16 @@ export function opencodePluginPath(env: Record<string, string | undefined> = pro
 
 const isOurs = (text: string) => text.includes(PLUGIN_MARKER);
 
+/** The plugin file of shibaox-mem, this product's name until 0.3.0, recognised by its marker. */
+function removeLegacyPlugin(pluginPath: string): void {
+  const legacy = join(dirname(pluginPath), "shibaox-mem.ts");
+  try {
+    if (readFileSync(legacy, "utf8").includes("@shibaox-mem-plugin")) rmSync(legacy);
+  } catch {
+    // Not there.
+  }
+}
+
 export function installOpenCode(options: {
   pluginPath: string;
   binaryPath: string;
@@ -34,6 +44,7 @@ export function installOpenCode(options: {
   if (previous !== null && !isOurs(previous)) {
     throw new Error(`${pluginPath} exists and was not written by wizardingcode-mem; move it first`);
   }
+  removeLegacyPlugin(pluginPath);
   if (previous === next) return { pluginPath, changed: false };
   mkdirSync(dirname(pluginPath), { recursive: true });
   const temp = `${pluginPath}.wizardingcode-mem-new`;

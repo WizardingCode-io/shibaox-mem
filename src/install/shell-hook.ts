@@ -1,5 +1,6 @@
 import { basename } from "node:path";
 import type { AgentId, HookEvent } from "../core/types.ts";
+import { isOurBinaryName } from "./hooks-file.ts";
 
 // Hosts whose hook `command` is one shell string: the binary path is quoted so that it
 // stays one word, and entries of ours are recognised by that exact shape.
@@ -25,5 +26,5 @@ export function ourShellHookBinary(entry: unknown, agent: AgentId): string | nul
   const match = OURS.exec(command);
   if (match === null || match[2] !== agent) return null;
   const binary = unquote(match[1] ?? "");
-  return basename(binary).startsWith("wizardingcode-mem") ? binary : null;
+  return isOurBinaryName(basename(binary)) ? binary : null;
 }
