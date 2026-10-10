@@ -3,7 +3,8 @@
 // section labels (11.5px semibold, #9A938B), 28px rows with a 16px letter tile.
 // Projects with activity in the last week come first, then everything else by name.
 import { computed } from "vue";
-import { compact, hue, shortPath } from "../format";
+import { compact, hue } from "../format";
+import { siteLink } from "../site";
 import { selectProject, state } from "../viewer";
 
 const WEEK = 7 * 24 * 3600 * 1000;
@@ -44,6 +45,8 @@ const row = (on: boolean) => [
         </button>
       </div>
     </div>
-    <p class="m-0 truncate px-2 font-mono text-[10.5px] leading-[14px] text-[#9A938B]" :title="state.dataDir">{{ shortPath(state.dataDir) }}</p>
+    <a :href="siteLink('sidebar')" target="_blank" rel="noopener noreferrer" class="flex h-6 flex-none items-center gap-1.5 rounded-md px-2 text-[11.5px] text-[#9A938B] hover:text-[#F4F1EC]" :title="`wizardingcode-mem ${state.version} · data in ${state.dataDir}`">
+      <span class="truncate">by WizardingCode</span><UIcon name="i-lucide-arrow-up-right" class="size-3 flex-none" />
+    </a>
   </nav>
 </template>

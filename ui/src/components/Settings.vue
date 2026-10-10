@@ -4,6 +4,7 @@
 import { onMounted, ref } from "vue";
 import { shortPath } from "../format";
 import { loadSettings, settingsState } from "../settings";
+import About from "./settings/About.vue";
 import Agents from "./settings/Agents.vue";
 import Backups from "./settings/Backups.vue";
 import Judge from "./settings/Judge.vue";
@@ -23,6 +24,7 @@ const NAV = [
   { id: "storage", label: "Storage", icon: "i-lucide-hard-drive" },
   { id: "backups", label: "Backups", icon: "i-lucide-archive" },
   { id: "team", label: "Collaborative mode", icon: "i-lucide-users" },
+  { id: "about", label: "About", icon: "i-lucide-info" },
 ];
 const current = ref("judge");
 function go(id: string) {
@@ -60,6 +62,7 @@ function go(id: string) {
         <Storage />
         <Backups />
         <Team />
+        <About />
       </template>
     </div>
   </div>

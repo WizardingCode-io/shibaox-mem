@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from "vue";
 import { api } from "./api";
 import MemoryDetail from "./components/MemoryDetail.vue";
 import MemoryList from "./components/MemoryList.vue";
@@ -39,6 +39,11 @@ const sheet = computed({
   set: (open: boolean) => { if (!open) closeDetail(); },
 });
 const palette = ref(false);
+// The tab names the project first: the favicon already says whose app it is.
+watchEffect(() => {
+  document.title = project.value ? `${project.value.name} · wizardingcode-mem` : "wizardingcode-mem";
+});
+
 function openTurn(id: number) {
   state.turnId = id;
   tab.value = "turns";
