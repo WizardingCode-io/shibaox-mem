@@ -16,12 +16,12 @@ import { TARGETS } from "../../scripts/build.ts";
 const ROOT = new URL("../../", import.meta.url).pathname;
 const os = process.platform === "darwin" ? "darwin" : "linux";
 const arch = process.arch === "arm64" ? "arm64" : "x64";
-const FILE = `shibaox-mem-${os}-${arch}`;
+const FILE = `wizardingcode-mem-${os}-${arch}`;
 
 let base: string;
 let server: ReturnType<typeof Bun.serve> | undefined;
 beforeEach(() => {
-  base = mkdtempSync(join(tmpdir(), "shibaox-mem-packaging-"));
+  base = mkdtempSync(join(tmpdir(), "wizardingcode-mem-packaging-"));
 });
 afterEach(async () => {
   await server?.stop(true);
@@ -42,29 +42,29 @@ describe("the Gemini CLI extension, as released", () => {
     expect(packed.stderr.toString()).toBe("");
     expect(packed.exitCode).toBe(0);
     for (const name of ["darwin.arm64", "darwin.x64", "linux.x64", "linux.arm64", "win32.x64"]) {
-      expect(existsSync(join(dist, `${name}.shibaox-mem.tar.gz`))).toBe(true);
+      expect(existsSync(join(dist, `${name}.wizardingcode-mem.tar.gz`))).toBe(true);
     }
 
     const out = join(base, "unpacked");
     mkdirSync(out);
     expect(
-      sh("tar", "-xzf", join(dist, "darwin.arm64.shibaox-mem.tar.gz"), "-C", out).exitCode,
+      sh("tar", "-xzf", join(dist, "darwin.arm64.wizardingcode-mem.tar.gz"), "-C", out).exitCode,
     ).toBe(0);
     const manifest = JSON.parse(readFileSync(join(out, "gemini-extension.json"), "utf8")) as {
       name: string;
       version: string;
     };
-    expect(manifest).toMatchObject({ name: "shibaox-mem", version: pkg.version });
+    expect(manifest).toMatchObject({ name: "wizardingcode-mem", version: pkg.version });
     expect(existsSync(join(out, "hooks", "hooks.json"))).toBe(true);
-    expect(readFileSync(join(out, "bin", "shibaox-mem"), "utf8")).toBe(
-      "binary for shibaox-mem-darwin-arm64",
+    expect(readFileSync(join(out, "bin", "wizardingcode-mem"), "utf8")).toBe(
+      "binary for wizardingcode-mem-darwin-arm64",
     );
-    expect(statSync(join(out, "bin", "shibaox-mem")).mode & 0o111).not.toBe(0);
+    expect(statSync(join(out, "bin", "wizardingcode-mem")).mode & 0o111).not.toBe(0);
 
     const win = join(base, "win");
     mkdirSync(win);
-    sh("tar", "-xzf", join(dist, "win32.x64.shibaox-mem.tar.gz"), "-C", win);
-    expect(existsSync(join(win, "bin", "shibaox-mem.exe"))).toBe(true);
+    sh("tar", "-xzf", join(dist, "win32.x64.wizardingcode-mem.tar.gz"), "-C", win);
+    expect(existsSync(join(win, "bin", "wizardingcode-mem.exe"))).toBe(true);
   });
 
   test("a missing binary stops the packaging", () => {
@@ -103,7 +103,7 @@ describe("the OpenCode npm plugin", () => {
     const script = `
       const mod = await import(${JSON.stringify(join(ROOT, "plugins/opencode/index.js"))});
       const exported = Object.keys(mod);
-      const hooks = await mod.ShibaoxMem({ directory: "/Users/dev/project", client: {} });
+      const hooks = await mod.WizardingCodeMem({ directory: "/Users/dev/project", client: {} });
       let system = [];
       if (hooks["chat.message"]) {
         await hooks["chat.message"]({ sessionID: "s1" }, { message: { id: "m1", role: "user" }, parts: [{ type: "text", text: "why?" }] });
@@ -117,10 +117,10 @@ describe("the OpenCode npm plugin", () => {
       env: {
         ...process.env,
         HOME: base,
-        SHIBAOX_HOME: join(base, ".shibaox"),
-        SHIBAOX_MEM_DATA_DIR: "",
+        WIZARDINGCODE_HOME: join(base, ".wizardingcode"),
+        WIZARDINGCODE_MEM_DATA_DIR: "",
         XDG_CONFIG_HOME: join(base, ".config"),
-        SHIBAOX_MEM_RELEASE_BASE: release(),
+        WIZARDINGCODE_MEM_RELEASE_BASE: release(),
         ...extraEnv,
       },
       stdout: "pipe",
@@ -138,8 +138,8 @@ describe("the OpenCode npm plugin", () => {
   test("exports one plugin and nothing else, fetches the binary on first load, and speaks through it", async () => {
     const loaded = await load();
     // OpenCode calls every export as a plugin: there must be exactly one.
-    expect(loaded.exported).toEqual(["ShibaoxMem"]);
-    expect(existsSync(join(base, ".shibaox", "mem", "bin", "shibaox-mem"))).toBe(true);
+    expect(loaded.exported).toEqual(["WizardingCodeMem"]);
+    expect(existsSync(join(base, ".wizardingcode", "mem", "bin", "wizardingcode-mem"))).toBe(true);
     expect(loaded.hooks).toContain("chat.message");
     expect(loaded.hooks).toContain("event");
     expect(loaded.system).toEqual(["notes for prompt\n"]);
@@ -148,8 +148,8 @@ describe("the OpenCode npm plugin", () => {
   test("stands down when the plugin file of the direct install is there", async () => {
     mkdirSync(join(base, ".config", "opencode", "plugins"), { recursive: true });
     writeFileSync(
-      join(base, ".config", "opencode", "plugins", "shibaox-mem.ts"),
-      "// @shibaox-mem-plugin\nexport const ShibaoxMem = async () => ({});\n",
+      join(base, ".config", "opencode", "plugins", "wizardingcode-mem.ts"),
+      "// @wizardingcode-mem-plugin\nexport const WizardingCodeMem = async () => ({});\n",
     );
     expect((await load()).hooks).toEqual([]);
   });
@@ -165,7 +165,7 @@ describe("the OpenCode npm plugin", () => {
       dependencies: Record<string, string>;
     };
     expect(manifest).toMatchObject({
-      name: "shibaox-mem-opencode",
+      name: "wizardingcode-mem-opencode",
       main: "./index.js",
       type: "module",
     });

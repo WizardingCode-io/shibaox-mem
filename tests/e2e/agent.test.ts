@@ -19,7 +19,7 @@ let dataDir: string;
 let project: string;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-e2e-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-e2e-")));
   dataDir = join(base, "data");
   project = join(base, "project");
   mkdirSync(project);
@@ -29,9 +29,9 @@ afterEach(() => {
 });
 
 const env = () => ({
-  SHIBAOX_MEM_DATA_DIR: dataDir,
-  SHIBAOX_MEM_DISTILL: "off",
-  SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+  WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+  WIZARDINGCODE_MEM_DISTILL: "off",
+  WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
 });
 
 /** One agent session against the binary. Each call is one hook invocation. */
@@ -209,9 +209,9 @@ describe("the compiled binary, driven as an agent drives it", () => {
           last_assistant_message: POOL_FIX,
         }),
         env: {
-          SHIBAOX_MEM_DATA_DIR: dataDir,
-          SHIBAOX_MEM_DISTILL: "",
-          SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+          WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+          WIZARDINGCODE_MEM_DISTILL: "",
+          WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
         },
       });
       expect(detached.exitCode).toBe(0);
@@ -249,12 +249,12 @@ describe("the compiled binary's viewer", () => {
         if (done) break;
         banner += new TextDecoder().decode(value);
       }
-      const url = /shibaox-mem ui: (\S+)/.exec(banner)?.[1];
+      const url = /wizardingcode-mem ui: (\S+)/.exec(banner)?.[1];
       if (url === undefined) throw new Error(`no URL in: ${banner}`);
       const token = new URL(url).searchParams.get("token") ?? "";
       const page = await fetch(url);
       expect(page.status).toBe(200);
-      expect(await page.text()).toContain("<title>shibaox-mem</title>");
+      expect(await page.text()).toContain("<title>wizardingcode-mem</title>");
       const font = await fetch(
         `${new URL(url).origin}/assets/geist-sans-latin-400-normal.woff2?token=${token}`,
       );

@@ -130,7 +130,7 @@ function backups(context: DoctorContext, db: Db | null): Check {
     return {
       name,
       status: "warn",
-      detail: `none yet; ${everyHours > 0 ? "the next turn's end makes one" : "run shibaox-mem backup"} (${to})`,
+      detail: `none yet; ${everyHours > 0 ? "the next turn's end makes one" : "run wizardingcode-mem backup"} (${to})`,
     };
   }
   const age = context.now - last.at;
@@ -177,7 +177,8 @@ function queue(db: Db | null, now: number): Check {
   const overdue = count("state = 'pending' AND started_at < ?", now - HOUR_MS);
   const problems: string[] = [];
   if (failed > 0) problems.push(`${failed} failed (see ${"`"}last_error${"`"} in the turns table)`);
-  if (overdue > 0) problems.push(`${overdue} waiting for over an hour; run: shibaox-mem distill`);
+  if (overdue > 0)
+    problems.push(`${overdue} waiting for over an hour; run: wizardingcode-mem distill`);
   return problems.length > 0
     ? { name, status: "warn", detail: problems.join("; ") }
     : { name, status: "ok", detail: waiting === 0 ? "nothing queued" : `${waiting} waiting` };
@@ -194,15 +195,15 @@ function hookSpeed(db: Db | null): Check {
     : { name, status: "ok", detail };
 }
 
-/** How each agent installs shibaox-mem itself; what `doctor` suggests when it is missing. */
+/** How each agent installs wizardingcode-mem itself; what `doctor` suggests when it is missing. */
 const NATIVE_INSTALL: Record<string, string> = {
   "claude-code":
-    "run: claude plugin marketplace add WizardingCode-io/shibaox-plugins && claude plugin install shibaox-mem@shibaox-plugins",
+    "run: claude plugin marketplace add WizardingCode-io/wizardingcode-plugins && claude plugin install wizardingcode-mem@wizardingcode-plugins",
   codex:
-    "run: codex plugin marketplace add WizardingCode-io/shibaox-plugins && codex plugin add shibaox-mem@shibaox-plugins",
-  gemini: "run: gemini extensions install https://github.com/WizardingCode-io/shibaox-mem",
-  cursor: "run: shibaox-mem install cursor",
-  opencode: "run: opencode plugin shibaox-mem-opencode --global",
+    "run: codex plugin marketplace add WizardingCode-io/wizardingcode-plugins && codex plugin add wizardingcode-mem@wizardingcode-plugins",
+  gemini: "run: gemini extensions install https://github.com/WizardingCode-io/wizardingcode-mem",
+  cursor: "run: wizardingcode-mem install cursor",
+  opencode: "run: opencode plugin wizardingcode-mem-opencode --global",
 };
 
 const readText = (path: string): string | null => {
@@ -214,7 +215,7 @@ const readText = (path: string): string | null => {
 };
 
 /**
- * Whether the agent has shibaox-mem as its own plugin or extension, and how to say so.
+ * Whether the agent has wizardingcode-mem as its own plugin or extension, and how to say so.
  * Read from where each agent records what it has installed and enabled.
  */
 function nativeInstall(agent: string, context: DoctorContext): string | null {
@@ -225,15 +226,14 @@ function nativeInstall(agent: string, context: DoctorContext): string | null {
           enabledPlugins?: Record<string, unknown>;
         };
         const key = Object.entries(settings.enabledPlugins ?? {}).find(
-          ([name, enabled]) => name.startsWith("shibaox-mem@") && enabled === true,
+          ([name, enabled]) => name.startsWith("wizardingcode-mem@") && enabled === true,
         )?.[0];
         return key === undefined ? null : `installed as a plugin (${key})`;
       }
       case "codex": {
         const config = readText(join(dirname(context.codexHooksPath), "config.toml")) ?? "";
-        const section = /^\[plugins\."(shibaox-mem@[^"]+)"\]\s*\n((?:(?!\[)[^\n]*\n?)*)/m.exec(
-          config,
-        );
+        const section =
+          /^\[plugins\."(wizardingcode-mem@[^"]+)"\]\s*\n((?:(?!\[)[^\n]*\n?)*)/m.exec(config);
         if (section === null || !/^enabled\s*=\s*true/m.test(section[2] ?? "")) return null;
         return `installed as a plugin (${section[1]})`;
       }
@@ -242,7 +242,7 @@ function nativeInstall(agent: string, context: DoctorContext): string | null {
           join(
             dirname(context.geminiSettingsPath),
             "extensions",
-            "shibaox-mem",
+            "wizardingcode-mem",
             "gemini-extension.json",
           ),
         );
@@ -253,9 +253,9 @@ function nativeInstall(agent: string, context: DoctorContext): string | null {
       case "opencode": {
         const dir = dirname(dirname(context.opencodePluginPath));
         const listed = ["opencode.json", "opencode.jsonc"].some((file) =>
-          (readText(join(dir, file)) ?? "").includes('"shibaox-mem-opencode'),
+          (readText(join(dir, file)) ?? "").includes('"wizardingcode-mem-opencode'),
         );
-        return listed ? "installed as an npm plugin (shibaox-mem-opencode)" : null;
+        return listed ? "installed as an npm plugin (wizardingcode-mem-opencode)" : null;
       }
       default:
         return null;
@@ -287,7 +287,7 @@ function hooksHost(
   command: string | null,
   context: DoctorContext,
 ): Check {
-  const install = `run: shibaox-mem install ${spec.agent}`;
+  const install = `run: wizardingcode-mem install ${spec.agent}`;
   const absent = (): Check => withoutDirect(name, spec.agent, command, context);
   if (!existsSync(path)) return absent();
   let found: ReturnType<typeof inspectHooksFile>;
@@ -324,7 +324,7 @@ function hooksHost(
 
 function openCode(context: DoctorContext): Check {
   const name = "OpenCode";
-  const install = "run: shibaox-mem install opencode";
+  const install = "run: wizardingcode-mem install opencode";
   const path = context.opencodePluginPath;
   let source: string | null = null;
   try {

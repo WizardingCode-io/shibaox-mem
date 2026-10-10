@@ -3,7 +3,7 @@ import { formatStatus, statusReport } from "../../status/report.ts";
 import { type Db, openExisting } from "../../store/db.ts";
 import { resolvePaths } from "../../util/paths.ts";
 
-/** `shibaox-mem status [--json]`: what is stored for this project, and how shibaox-mem is behaving. */
+/** `wizardingcode-mem status [--json]`: what is stored for this project, and how wizardingcode-mem is behaving. */
 export function run(argv: string[]): number {
   const { dataDir, storeDir } = resolvePaths();
   let db: Db | null = null;
@@ -17,7 +17,7 @@ export function run(argv: string[]): number {
     return 0;
   } catch (error) {
     process.stderr.write(
-      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   } finally {

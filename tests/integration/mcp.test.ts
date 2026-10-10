@@ -21,7 +21,7 @@ let db: Db;
 let projectId: number;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-mcp-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-mcp-")));
   project = join(base, "project");
   dataDir = join(base, "data");
   mkdirSync(project);
@@ -268,12 +268,12 @@ describe("memory_save", () => {
   });
 });
 
-describe("shibaox-mem mcp", () => {
+describe("wizardingcode-mem mcp", () => {
   test("speaks MCP over stdio: three tools, and a save can be searched and fetched", async () => {
     const main = new URL("../../src/cli/main.ts", import.meta.url).pathname;
     const proc = Bun.spawn([process.execPath, main, "mcp"], {
       cwd: project,
-      env: { ...process.env, SHIBAOX_MEM_DATA_DIR: dataDir },
+      env: { ...process.env, WIZARDINGCODE_MEM_DATA_DIR: dataDir },
       stdin: "pipe",
       stdout: "pipe",
       stderr: "pipe",

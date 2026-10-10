@@ -12,7 +12,7 @@ import {
 } from "../../src/settings/settings.ts";
 
 const dir = (env = "") => {
-  const dataDir = mkdtempSync(join(tmpdir(), "shibaox-mem-settings-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-settings-"));
   if (env) writeFileSync(join(dataDir, "env"), env);
   return dataDir;
 };
@@ -40,17 +40,17 @@ describe("loadSettings", () => {
       dir(
         [
           "TYPESAFE_API_KEY=sk-file",
-          "SHIBAOX_MEM_TYPESAFE=off",
-          "SHIBAOX_MEM_RETENTION_DAYS=30",
-          "SHIBAOX_MEM_UI_AUTO_OPEN=off",
-          "SHIBAOX_MEM_STORE_DIR=/Volumes/Ext/mem",
-          "SHIBAOX_MEM_BACKUP_TO=s3://bucket/mem",
-          "SHIBAOX_MEM_BACKUP_EVERY_HOURS=6",
-          "SHIBAOX_MEM_BACKUP_KEEP=3",
-          "SHIBAOX_MEM_BACKUP_S3_ENDPOINT=https://example.r2.cloudflarestorage.com",
-          "SHIBAOX_MEM_BACKUP_S3_REGION=auto",
-          "SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY=AKIA",
-          "SHIBAOX_MEM_BACKUP_S3_SECRET_KEY=shh",
+          "WIZARDINGCODE_MEM_TYPESAFE=off",
+          "WIZARDINGCODE_MEM_RETENTION_DAYS=30",
+          "WIZARDINGCODE_MEM_UI_AUTO_OPEN=off",
+          "WIZARDINGCODE_MEM_STORE_DIR=/Volumes/Ext/mem",
+          "WIZARDINGCODE_MEM_BACKUP_TO=s3://bucket/mem",
+          "WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS=6",
+          "WIZARDINGCODE_MEM_BACKUP_KEEP=3",
+          "WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT=https://example.r2.cloudflarestorage.com",
+          "WIZARDINGCODE_MEM_BACKUP_S3_REGION=auto",
+          "WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY=AKIA",
+          "WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY=shh",
         ].join("\n"),
       ),
     );
@@ -75,12 +75,12 @@ describe("loadSettings", () => {
   });
 
   test("the environment wins over the file, and an empty variable is unset", () => {
-    const dataDir = dir("TYPESAFE_API_KEY=sk-file\nSHIBAOX_MEM_RETENTION_DAYS=30\n");
+    const dataDir = dir("TYPESAFE_API_KEY=sk-file\nWIZARDINGCODE_MEM_RETENTION_DAYS=30\n");
     const s = loadSettings(
       {
         TYPESAFE_API_KEY: "sk-env",
-        SHIBAOX_MEM_RETENTION_DAYS: "",
-        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+        WIZARDINGCODE_MEM_RETENTION_DAYS: "",
+        WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
       },
       dataDir,
     );
@@ -92,7 +92,7 @@ describe("loadSettings", () => {
   test("a value that makes no sense falls back to the default rather than breaking", () => {
     const s = loadSettings(
       {},
-      dir("SHIBAOX_MEM_RETENTION_DAYS=lots\nSHIBAOX_MEM_TYPESAFE=maybe\n"),
+      dir("WIZARDINGCODE_MEM_RETENTION_DAYS=lots\nWIZARDINGCODE_MEM_TYPESAFE=maybe\n"),
     );
     expect(s.retentionDays).toBe(90);
     expect(s.typesafe).toBe("on");
@@ -108,31 +108,31 @@ describe("validatePatch", () => {
   test("accepts good values and normalises them to strings", () => {
     const result = validatePatch({
       TYPESAFE_API_KEY: " sk-new ",
-      SHIBAOX_MEM_TYPESAFE: "off",
-      SHIBAOX_MEM_RETENTION_DAYS: 45,
-      SHIBAOX_MEM_UI_AUTO_OPEN: false,
-      SHIBAOX_MEM_BACKUP_TO: "s3://my-bucket/some/prefix",
-      SHIBAOX_MEM_BACKUP_EVERY_HOURS: "12",
-      SHIBAOX_MEM_BACKUP_KEEP: 5,
-      SHIBAOX_MEM_BACKUP_S3_ENDPOINT: "http://127.0.0.1:9000",
-      SHIBAOX_MEM_BACKUP_S3_REGION: "us-east-1",
-      SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY: "minio",
-      SHIBAOX_MEM_BACKUP_S3_SECRET_KEY: "minio123",
+      WIZARDINGCODE_MEM_TYPESAFE: "off",
+      WIZARDINGCODE_MEM_RETENTION_DAYS: 45,
+      WIZARDINGCODE_MEM_UI_AUTO_OPEN: false,
+      WIZARDINGCODE_MEM_BACKUP_TO: "s3://my-bucket/some/prefix",
+      WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "12",
+      WIZARDINGCODE_MEM_BACKUP_KEEP: 5,
+      WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT: "http://127.0.0.1:9000",
+      WIZARDINGCODE_MEM_BACKUP_S3_REGION: "us-east-1",
+      WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY: "minio",
+      WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY: "minio123",
     });
     expect(result).toEqual({
       ok: true,
       changes: {
         TYPESAFE_API_KEY: "sk-new",
-        SHIBAOX_MEM_TYPESAFE: "off",
-        SHIBAOX_MEM_RETENTION_DAYS: "45",
-        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
-        SHIBAOX_MEM_BACKUP_TO: "s3://my-bucket/some/prefix",
-        SHIBAOX_MEM_BACKUP_EVERY_HOURS: "12",
-        SHIBAOX_MEM_BACKUP_KEEP: "5",
-        SHIBAOX_MEM_BACKUP_S3_ENDPOINT: "http://127.0.0.1:9000",
-        SHIBAOX_MEM_BACKUP_S3_REGION: "us-east-1",
-        SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY: "minio",
-        SHIBAOX_MEM_BACKUP_S3_SECRET_KEY: "minio123",
+        WIZARDINGCODE_MEM_TYPESAFE: "off",
+        WIZARDINGCODE_MEM_RETENTION_DAYS: "45",
+        WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
+        WIZARDINGCODE_MEM_BACKUP_TO: "s3://my-bucket/some/prefix",
+        WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "12",
+        WIZARDINGCODE_MEM_BACKUP_KEEP: "5",
+        WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT: "http://127.0.0.1:9000",
+        WIZARDINGCODE_MEM_BACKUP_S3_REGION: "us-east-1",
+        WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY: "minio",
+        WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY: "minio123",
       },
     });
   });
@@ -147,41 +147,41 @@ describe("validatePatch", () => {
 
   test("rejects what it cannot use, one message per key, never echoing the value", () => {
     const errors = errorsOf({
-      SHIBAOX_MEM_RETENTION_DAYS: 0,
-      SHIBAOX_MEM_TYPESAFE: "maybe",
-      SHIBAOX_MEM_BACKUP_TO: "relative/path",
-      SHIBAOX_MEM_BACKUP_EVERY_HOURS: -1,
-      SHIBAOX_MEM_BACKUP_KEEP: "many",
-      SHIBAOX_MEM_BACKUP_S3_ENDPOINT: "ftp://nope",
+      WIZARDINGCODE_MEM_RETENTION_DAYS: 0,
+      WIZARDINGCODE_MEM_TYPESAFE: "maybe",
+      WIZARDINGCODE_MEM_BACKUP_TO: "relative/path",
+      WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: -1,
+      WIZARDINGCODE_MEM_BACKUP_KEEP: "many",
+      WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT: "ftp://nope",
       TYPESAFE_API_KEY: "",
       NOT_A_SETTING: "x",
     });
     expect(Object.keys(errors).sort()).toEqual([
       "NOT_A_SETTING",
-      "SHIBAOX_MEM_BACKUP_EVERY_HOURS",
-      "SHIBAOX_MEM_BACKUP_KEEP",
-      "SHIBAOX_MEM_BACKUP_S3_ENDPOINT",
-      "SHIBAOX_MEM_BACKUP_TO",
-      "SHIBAOX_MEM_RETENTION_DAYS",
-      "SHIBAOX_MEM_TYPESAFE",
       "TYPESAFE_API_KEY",
+      "WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS",
+      "WIZARDINGCODE_MEM_BACKUP_KEEP",
+      "WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT",
+      "WIZARDINGCODE_MEM_BACKUP_TO",
+      "WIZARDINGCODE_MEM_RETENTION_DAYS",
+      "WIZARDINGCODE_MEM_TYPESAFE",
     ]);
     for (const message of Object.values(errors)) {
       expect(message).not.toContain("maybe");
       expect(message).not.toContain("relative/path");
       expect(message).not.toContain("ftp://nope");
     }
-    expect(errorsOf({ SHIBAOX_MEM_RETENTION_DAYS: 99999 })).toHaveProperty(
-      "SHIBAOX_MEM_RETENTION_DAYS",
+    expect(errorsOf({ WIZARDINGCODE_MEM_RETENTION_DAYS: 99999 })).toHaveProperty(
+      "WIZARDINGCODE_MEM_RETENTION_DAYS",
     );
-    expect(errorsOf({ SHIBAOX_MEM_RETENTION_DAYS: "abc" })).toHaveProperty(
-      "SHIBAOX_MEM_RETENTION_DAYS",
+    expect(errorsOf({ WIZARDINGCODE_MEM_RETENTION_DAYS: "abc" })).toHaveProperty(
+      "WIZARDINGCODE_MEM_RETENTION_DAYS",
     );
   });
 
   test("the store directory is not set here: it moves with the store", () => {
-    expect(errorsOf({ SHIBAOX_MEM_STORE_DIR: "/somewhere" })).toHaveProperty(
-      "SHIBAOX_MEM_STORE_DIR",
+    expect(errorsOf({ WIZARDINGCODE_MEM_STORE_DIR: "/somewhere" })).toHaveProperty(
+      "WIZARDINGCODE_MEM_STORE_DIR",
     );
   });
 });
@@ -191,13 +191,13 @@ describe("saveSettings and publicSettings", () => {
     const dataDir = dir();
     saveSettings(dataDir, {
       TYPESAFE_API_KEY: "sk-secret-value",
-      SHIBAOX_MEM_RETENTION_DAYS: "30",
+      WIZARDINGCODE_MEM_RETENTION_DAYS: "30",
     });
     expect(readFileSync(join(dataDir, "env"), "utf8")).toContain(
       "TYPESAFE_API_KEY=sk-secret-value",
     );
 
-    const view = publicSettings({ SHIBAOX_MEM_UI_AUTO_OPEN: "off" }, dataDir);
+    const view = publicSettings({ WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off" }, dataDir);
     expect(JSON.stringify(view)).not.toContain("sk-secret-value");
     expect(view.TYPESAFE_API_KEY).toEqual({
       secret: true,
@@ -205,10 +205,10 @@ describe("saveSettings and publicSettings", () => {
       fingerprint: keyFingerprint("sk-secret-value"),
       source: "file",
     });
-    expect(view.SHIBAOX_MEM_RETENTION_DAYS).toEqual({ value: "30", source: "file" });
-    expect(view.SHIBAOX_MEM_UI_AUTO_OPEN).toEqual({ value: "off", source: "env" });
-    expect(view.SHIBAOX_MEM_TYPESAFE).toEqual({ value: "on", source: "default" });
-    expect(view.SHIBAOX_MEM_BACKUP_S3_SECRET_KEY).toEqual({
+    expect(view.WIZARDINGCODE_MEM_RETENTION_DAYS).toEqual({ value: "30", source: "file" });
+    expect(view.WIZARDINGCODE_MEM_UI_AUTO_OPEN).toEqual({ value: "off", source: "env" });
+    expect(view.WIZARDINGCODE_MEM_TYPESAFE).toEqual({ value: "on", source: "default" });
+    expect(view.WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY).toEqual({
       secret: true,
       set: false,
       fingerprint: null,

@@ -31,7 +31,7 @@ let folder: string;
 let db: Db;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-backup-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-backup-")));
   storeDir = join(base, "store");
   folder = join(base, "nas", "backups");
   mkdirSync(join(base, "project"));
@@ -77,7 +77,7 @@ const run = (now = NOW, keep = 10) =>
 
 describe("backupName", () => {
   test("sorts by time and carries the schema version", () => {
-    expect(backupName(NOW, 2)).toBe("shibaox-mem-20261006T103015Z-v2.db.gz");
+    expect(backupName(NOW, 2)).toBe("wizardingcode-mem-20261006T103015Z-v2.db.gz");
   });
 });
 
@@ -107,7 +107,7 @@ describe("runBackup to a folder", () => {
     writeFileSync(join(folder, "unrelated.db.gz"), "x");
     for (let i = 0; i < 4; i++) await run(NOW + i * HOUR, 2);
     const ours = readdirSync(folder)
-      .filter((n) => n.startsWith("shibaox-mem-"))
+      .filter((n) => n.startsWith("wizardingcode-mem-"))
       .sort();
     expect(ours).toEqual([backupName(NOW + 2 * HOUR, 2), backupName(NOW + 3 * HOUR, 2)]);
     expect(existsSync(join(folder, "unrelated.db.gz"))).toBe(true);
@@ -181,7 +181,7 @@ describe("restoreBackup", () => {
     for (const name of [
       garbage,
       backupName(NOW + HOUR, 99),
-      "shibaox-mem-20990101T000000Z-v2.db.gz",
+      "wizardingcode-mem-20990101T000000Z-v2.db.gz",
     ]) {
       const outcome = await restoreBackup({
         storeDir,

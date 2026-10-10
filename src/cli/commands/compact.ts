@@ -11,7 +11,7 @@ const size = (bytes: number) =>
     : `${Math.round(bytes / 1024)} KB`;
 
 /**
- * `shibaox-mem compact [--dry-run]`: removes old records no memory depends on and gives
+ * `wizardingcode-mem compact [--dry-run]`: removes old records no memory depends on and gives
  * the space back. Memories are never deleted here.
  */
 export function run(argv: string[]): number {
@@ -32,7 +32,7 @@ export function run(argv: string[]): number {
   } catch (error) {
     logError("compact", error);
     process.stderr.write(
-      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   } finally {

@@ -106,7 +106,7 @@ describe("codex render", () => {
 describe("codex transcript", () => {
   let dir: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "shibaox-mem-codex-"));
+    dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-codex-"));
   });
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });

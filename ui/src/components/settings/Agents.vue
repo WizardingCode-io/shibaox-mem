@@ -24,7 +24,7 @@ onMounted(load);
 </script>
 
 <template>
-  <Card title="Agents and installation" description="What shibaox-mem doctor sees: every agent, the database, the hooks' speed.">
+  <Card title="Agents and installation" description="What wizardingcode-mem doctor sees: every agent, the database, the hooks' speed.">
     <template #aside>
       <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-refresh-cw" aria-label="Check again" @click="load" />
     </template>

@@ -37,7 +37,7 @@ export const CLAUDE_CODE: HostSpec = {
       return false;
     }
     return (
-      basename(hook.command).startsWith("shibaox-mem") &&
+      basename(hook.command).startsWith("wizardingcode-mem") &&
       hook.args[0] === "hook" &&
       hook.args[1] === "claude-code"
     );

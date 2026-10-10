@@ -11,7 +11,7 @@ let dataDir: string;
 let project: string;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-distill-cli-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-distill-cli-")));
   dataDir = join(base, "data");
   project = join(base, "project");
   mkdirSync(project);
@@ -21,8 +21,8 @@ afterEach(() => {
 });
 
 const env = (distill: "off" | "detached") => ({
-  SHIBAOX_MEM_DATA_DIR: dataDir,
-  ...(distill === "off" ? { SHIBAOX_MEM_DISTILL: "off" } : { SHIBAOX_MEM_DISTILL: "" }),
+  WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+  ...(distill === "off" ? { WIZARDINGCODE_MEM_DISTILL: "off" } : { WIZARDINGCODE_MEM_DISTILL: "" }),
 });
 
 async function turn(n: number, distill: "off" | "detached" = "off"): Promise<void> {
@@ -62,7 +62,7 @@ function rows<T>(sql: string): T[] {
 }
 const count = (sql: string) => rows<{ n: number }>(`SELECT count(*) AS n FROM ${sql}`)[0]?.n;
 
-describe("shibaox-mem distill", () => {
+describe("wizardingcode-mem distill", () => {
   test("drains the queue and says what it did", async () => {
     await turn(1);
     const result = await runCliWith({ env: env("off") }, "distill");
@@ -123,7 +123,7 @@ describe("shibaox-mem distill", () => {
     db.close();
     const result = await runCliWith({ env: env("off") }, "distill");
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain("newer than this shibaox-mem supports");
+    expect(result.stderr).toContain("newer than this wizardingcode-mem supports");
     expect(result.stdout).toBe("");
   });
 });

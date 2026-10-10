@@ -1,27 +1,27 @@
 {
-  "name": "shibaox-mem",
-  "displayName": "shibaox-mem",
+  "name": "wizardingcode-mem",
+  "displayName": "wizardingcode-mem",
   "version": "0.3.0",
   "description": "Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
   "author": {
     "name": "WizardingCode",
     "url": "https://wizardingcode.io"
   },
-  "homepage": "https://github.com/WizardingCode-io/shibaox-mem",
-  "repository": "https://github.com/WizardingCode-io/shibaox-mem",
+  "homepage": "https://github.com/WizardingCode-io/wizardingcode-mem",
+  "repository": "https://github.com/WizardingCode-io/wizardingcode-mem",
   "license": "Apache-2.0",
   "keywords": [
     "memory",
     "context",
-    "shibaox",
+    "wizardingcode",
     "sqlite",
     "local-first"
   ],
   "mcpServers": {
-    "shibaox-mem": {
+    "wizardingcode-mem": {
       "command": "sh",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+        "${CLAUDE_PLUGIN_ROOT}/plugin/wizardingcode-mem.sh",
         "mcp"
       ]
     }

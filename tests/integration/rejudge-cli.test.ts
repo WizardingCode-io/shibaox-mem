@@ -14,7 +14,7 @@ let server: ReturnType<typeof Bun.serve> | undefined;
 const KEY = ["apikey_", "x".repeat(60)].join("");
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-rejudge-cli-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-rejudge-cli-")));
   dataDir = join(base, "data");
   const db = openDb({ dataDir, busyTimeoutMs: 2000 });
   const source = join(base, "claude-mem.db");
@@ -84,10 +84,10 @@ function rows<T>(sql: string): T[] {
   }
 }
 
-describe("shibaox-mem rejudge", () => {
+describe("wizardingcode-mem rejudge", () => {
   test("without a TypeSafe key it refuses, and says where the key goes", async () => {
     const result = await runCliWith(
-      { env: { SHIBAOX_MEM_DATA_DIR: dataDir, TYPESAFE_API_KEY: "" } },
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir, TYPESAFE_API_KEY: "" } },
       "rejudge",
     );
     expect(result.exitCode).toBe(64);
@@ -100,7 +100,7 @@ describe("shibaox-mem rejudge", () => {
   test("judges the imported memories again and reports what changed, with the cost", async () => {
     writeFileSync(join(dataDir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
     const result = await runCliWith(
-      { env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_TYPESAFE_URL: serve() } },
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir, WIZARDINGCODE_MEM_TYPESAFE_URL: serve() } },
       "rejudge",
     );
     expect(result).toEqual({
@@ -124,7 +124,7 @@ describe("shibaox-mem rejudge", () => {
   test("--limit judges only that many, and says how many are left", async () => {
     writeFileSync(join(dataDir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
     const result = await runCliWith(
-      { env: { SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_TYPESAFE_URL: serve() } },
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir, WIZARDINGCODE_MEM_TYPESAFE_URL: serve() } },
       "rejudge",
       "--limit",
       "1",
@@ -136,7 +136,7 @@ describe("shibaox-mem rejudge", () => {
 
   test("a bad --limit is a usage error", async () => {
     const result = await runCliWith(
-      { env: { SHIBAOX_MEM_DATA_DIR: dataDir } },
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
       "rejudge",
       "--limit",
       "many",

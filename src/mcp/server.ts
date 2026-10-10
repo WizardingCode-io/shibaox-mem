@@ -19,7 +19,7 @@ export async function runMcpServer(): Promise<void> {
     ...(isError ? { isError: true } : {}),
   });
 
-  const server = new McpServer({ name: "shibaox-mem", version: pkg.version });
+  const server = new McpServer({ name: "wizardingcode-mem", version: pkg.version });
   for (const name of TOOL_NAMES) {
     server.registerTool(
       name,
@@ -30,7 +30,7 @@ export async function runMcpServer(): Promise<void> {
         } catch (error) {
           logError(`mcp ${name}`, error);
           return answer(
-            `shibaox-mem: ${error instanceof Error ? error.message : String(error)}`,
+            `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}`,
             true,
           );
         }

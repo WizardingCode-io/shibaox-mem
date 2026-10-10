@@ -16,7 +16,7 @@ const shown = computed(() => {
   <nav class="flex min-h-0 flex-col gap-4 border-r border-(--line) bg-(--surface-sunken) px-3 py-4" aria-label="Projects">
     <div class="flex items-center gap-2.5 px-2">
       <span class="[&>svg]:size-6" v-html="mark" />
-      <span class="font-display text-lg font-bold whitespace-nowrap text-(--ink)">shibaox-mem</span>
+      <span class="font-display text-lg font-bold whitespace-nowrap text-(--ink)">wizardingcode-mem</span>
       <span class="ml-auto text-[11px] tabular-nums text-(--ink-muted)">v{{ state.version }}</span>
     </div>
     <UInput v-model="filter" icon="i-lucide-search" size="sm" placeholder="Filter projects" aria-label="Filter projects" />

@@ -18,7 +18,7 @@ let db: Db;
 let projectId: number;
 
 beforeEach(() => {
-  base = mkdtempSync(join(tmpdir(), "shibaox-mem-compact-"));
+  base = mkdtempSync(join(tmpdir(), "wizardingcode-mem-compact-"));
   dataDir = join(base, "data");
   db = openDb({ dataDir, busyTimeoutMs: 2000 });
   projectId = resolveProject(db, join(base, "p"), NOW).id;
@@ -153,12 +153,12 @@ describe("compact", () => {
   });
 });
 
-describe("shibaox-mem compact", () => {
+describe("wizardingcode-mem compact", () => {
   test("says what it removed and how much space it freed", async () => {
     const old = session("old", NOW - 200 * DAY);
     turn(old, 1, "done", NOW - 200 * DAY);
     db.close();
-    const result = await runCliWith({ env: { SHIBAOX_MEM_DATA_DIR: dataDir } }, "compact");
+    const result = await runCliWith({ env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } }, "compact");
     db = openDb({ dataDir, busyTimeoutMs: 2000 });
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe("");
@@ -171,7 +171,7 @@ describe("shibaox-mem compact", () => {
     turn(old, 1, "done", NOW - 200 * DAY);
     db.close();
     const result = await runCliWith(
-      { env: { SHIBAOX_MEM_DATA_DIR: dataDir } },
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
       "compact",
       "--dry-run",
     );
@@ -180,12 +180,12 @@ describe("shibaox-mem compact", () => {
     expect(count("turns")).toBe(1);
   });
 
-  test("honours SHIBAOX_MEM_RETENTION_DAYS from the settings file", async () => {
-    writeFileSync(join(dataDir, "env"), "SHIBAOX_MEM_RETENTION_DAYS=30\n");
+  test("honours WIZARDINGCODE_MEM_RETENTION_DAYS from the settings file", async () => {
+    writeFileSync(join(dataDir, "env"), "WIZARDINGCODE_MEM_RETENTION_DAYS=30\n");
     const recent = session("recent", Date.now() - 31 * DAY);
     turn(recent, 1, "done", Date.now() - 31 * DAY);
     db.close();
-    const result = await runCliWith({ env: { SHIBAOX_MEM_DATA_DIR: dataDir } }, "compact");
+    const result = await runCliWith({ env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } }, "compact");
     db = openDb({ dataDir, busyTimeoutMs: 2000 });
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toMatch(/^compact: 1 turn, 1 session/);

@@ -29,9 +29,9 @@ let target: string;
 let project: string;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-move-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-move-")));
   dataDir = join(base, "data");
-  target = join(base, "external", "shibaox-mem");
+  target = join(base, "external", "wizardingcode-mem");
   project = join(base, "project");
   mkdirSync(project);
   const db = openDb({ dataDir, busyTimeoutMs: 2000 });
@@ -74,7 +74,7 @@ describe("moveStore", () => {
     const outcome = await moveStore({ dataDir, from: dataDir, to: target, now: NOW });
     expect(outcome).toMatchObject({ ok: true, to: target });
     expect(memories(target)).toBe(3);
-    expect(readEnvFile(join(dataDir, "env")).SHIBAOX_MEM_STORE_DIR).toBe(target);
+    expect(readEnvFile(join(dataDir, "env")).WIZARDINGCODE_MEM_STORE_DIR).toBe(target);
     expect(existsSync(join(dataDir, DB_FILE))).toBe(false);
     const kept = readdirSync(dataDir).filter((name) => /\.moved-\d+$/.test(name));
     expect(kept).toHaveLength(1);
@@ -96,9 +96,9 @@ describe("moveStore", () => {
       {
         input: payload,
         env: {
-          SHIBAOX_MEM_DATA_DIR: dataDir,
-          SHIBAOX_MEM_DISTILL: "off",
-          SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+          WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+          WIZARDINGCODE_MEM_DISTILL: "off",
+          WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
         },
       },
       "hook",
@@ -163,7 +163,7 @@ describe("moveStore", () => {
 
 describe("inspectTarget", () => {
   test("knows a network share and a folder it can write to", () => {
-    const share = inspectTarget("\\\\nas\\share\\shibaox-mem");
+    const share = inspectTarget("\\\\nas\\share\\wizardingcode-mem");
     expect(share.network).toBe(true);
     expect(share.warnings.join(" ")).toMatch(/network/i);
 

@@ -12,7 +12,7 @@ let clock: number;
 let opened: string[];
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-ui-state-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-ui-state-")));
   dataDir = join(base, "data");
   clock = Date.UTC(2026, 9, 6, 9);
   opened = [];

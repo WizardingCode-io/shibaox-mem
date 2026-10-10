@@ -12,17 +12,17 @@ let dataDir: string;
 let commands: string[][];
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-codex-"));
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-install-codex-"));
   mkdirSync(join(home, ".codex"));
   hooksPath = join(home, ".codex", "hooks.json");
-  dataDir = join(home, ".shibaox", "mem");
+  dataDir = join(home, ".wizardingcode", "mem");
   commands = [];
 });
 afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
-const BIN = "/opt/shibaox-mem/bin/shibaox-mem";
+const BIN = "/opt/wizardingcode-mem/bin/wizardingcode-mem";
 const context = (binaryPath = BIN): InstallContext => ({
   settingsPath: hooksPath,
   dataDir,
@@ -53,9 +53,9 @@ describe("install codex", () => {
   });
 
   test("a binary path with a quote in it is still one shell word", () => {
-    installCodex(context("/Users/o'neil/.shibaox/mem/bin/shibaox-mem"));
+    installCodex(context("/Users/o'neil/.wizardingcode/mem/bin/wizardingcode-mem"));
     expect(hooks().hooks.Stop[0].hooks[0].command).toBe(
-      `'/Users/o'\\''neil/.shibaox/mem/bin/shibaox-mem' hook codex turn-end`,
+      `'/Users/o'\\''neil/.wizardingcode/mem/bin/wizardingcode-mem' hook codex turn-end`,
     );
   });
 
@@ -71,8 +71,8 @@ describe("install codex", () => {
   });
 
   test("installing twice changes nothing the second time; a new binary path replaces the old entries", () => {
-    installCodex(context("/old/place/shibaox-mem"));
-    expect(installCodex(context("/old/place/shibaox-mem")).changed).toBe(false);
+    installCodex(context("/old/place/wizardingcode-mem"));
+    expect(installCodex(context("/old/place/wizardingcode-mem")).changed).toBe(false);
     installCodex(context());
     expect(readFileSync(hooksPath, "utf8")).not.toContain("/old/place");
     expect(hooks().hooks.UserPromptSubmit).toEqual([ours("prompt")]);
@@ -81,12 +81,12 @@ describe("install codex", () => {
   test("registers the MCP server through Codex's own command", () => {
     const result = installCodex(context());
     expect(result.mcp).toBe("registered");
-    expect(commands).toContainEqual(["codex", "mcp", "add", "shibaox-mem", "--", BIN, "mcp"]);
+    expect(commands).toContainEqual(["codex", "mcp", "add", "wizardingcode-mem", "--", BIN, "mcp"]);
   });
 
   test("tells the user that Codex will ask them to approve the hooks", () => {
     expect(installCodex(context()).notes).toEqual([
-      "Codex asks you to approve new hooks the first time: run /hooks inside Codex and accept the shibaox-mem entries.",
+      "Codex asks you to approve new hooks the first time: run /hooks inside Codex and accept the wizardingcode-mem entries.",
     ]);
   });
 });
@@ -99,7 +99,7 @@ describe("uninstall codex", () => {
     const result = uninstallCodex(context());
     expect(result.settings).toBe("restored");
     expect(readFileSync(hooksPath, "utf8")).toBe(original);
-    expect(commands).toContainEqual(["codex", "mcp", "remove", "shibaox-mem"]);
+    expect(commands).toContainEqual(["codex", "mcp", "remove", "wizardingcode-mem"]);
   });
 
   test("removes the file it created, and recognises its own entries without a receipt", () => {
@@ -120,32 +120,32 @@ describe("codexContext", () => {
   });
 });
 
-describe("shibaox-mem install codex / uninstall codex", () => {
+describe("wizardingcode-mem install codex / uninstall codex", () => {
   // PATH is emptied so that the host's real command can never run from a test.
   const env = () => ({
     HOME: home,
     CODEX_HOME: join(home, ".codex"),
-    SHIBAOX_MEM_DATA_DIR: dataDir,
+    WIZARDINGCODE_MEM_DATA_DIR: dataDir,
     PATH: "/nonexistent",
   });
 
   test("installs with an explicit binary, says what the user still has to do, then uninstalls cleanly", async () => {
-    const binary = join(home, "shibaox-mem");
+    const binary = join(home, "wizardingcode-mem");
     writeFileSync(binary, "");
     const original = '{\n  "hooks": {}\n}\n';
     writeFileSync(hooksPath, original);
     const installed = await runCliWith({ env: env() }, "install", "codex", "--binary", binary);
     expect(installed.stderr).toBe("");
     expect(installed.exitCode).toBe(0);
-    expect(installed.stdout).toContain("Installed shibaox-mem for Codex.");
+    expect(installed.stdout).toContain("Installed wizardingcode-mem for Codex.");
     expect(installed.stdout).toContain(hooksPath);
-    expect(installed.stdout).toContain(`codex mcp add shibaox-mem -- ${binary} mcp`);
+    expect(installed.stdout).toContain(`codex mcp add wizardingcode-mem -- ${binary} mcp`);
     expect(installed.stdout).toContain("/hooks");
     expect(hooks().hooks.Stop[0].hooks[0].command).toBe(`'${binary}' hook codex turn-end`);
 
     const removed = await runCliWith({ env: env() }, "uninstall", "codex");
     expect(removed.exitCode).toBe(0);
-    expect(removed.stdout).toContain("Removed shibaox-mem from Codex.");
+    expect(removed.stdout).toContain("Removed wizardingcode-mem from Codex.");
     expect(readFileSync(hooksPath, "utf8")).toBe(original);
   });
 });

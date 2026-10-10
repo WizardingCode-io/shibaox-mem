@@ -5,17 +5,17 @@ import { fromEnvironment, saveSettings, settingsState, valueOf } from "../../set
 import Card from "./Card.vue";
 
 const toast = useToast();
-const days = ref(valueOf("SHIBAOX_MEM_RETENTION_DAYS") ?? "90");
+const days = ref(valueOf("WIZARDINGCODE_MEM_RETENTION_DAYS") ?? "90");
 watch(
-  () => valueOf("SHIBAOX_MEM_RETENTION_DAYS"),
+  () => valueOf("WIZARDINGCODE_MEM_RETENTION_DAYS"),
   (v) => {
     if (v !== null) days.value = v;
   },
 );
-const changed = computed(() => days.value !== (valueOf("SHIBAOX_MEM_RETENTION_DAYS") ?? "90"));
+const changed = computed(() => days.value !== (valueOf("WIZARDINGCODE_MEM_RETENTION_DAYS") ?? "90"));
 
 async function saveDays() {
-  if (await saveSettings({ SHIBAOX_MEM_RETENTION_DAYS: days.value })) {
+  if (await saveSettings({ WIZARDINGCODE_MEM_RETENTION_DAYS: days.value })) {
     toast.add({ title: "Retention saved", description: `Finished turns older than ${days.value} days that no memory came from are removed by compact.`, color: "success" });
   }
 }
@@ -48,9 +48,9 @@ async function run(dryRun: boolean) {
 <template>
   <Card title="Retention" description="How long finished turns are kept when no memory came from them. Memories are never deleted by compact.">
     <div class="flex flex-col gap-4">
-      <UFormField label="Keep turns for" :hint="fromEnvironment('SHIBAOX_MEM_RETENTION_DAYS') ? 'Set by the environment.' : '7 to 3650 days.'" :error="settingsState.errors.SHIBAOX_MEM_RETENTION_DAYS">
+      <UFormField label="Keep turns for" :hint="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS') ? 'Set by the environment.' : '7 to 3650 days.'" :error="settingsState.errors.WIZARDINGCODE_MEM_RETENTION_DAYS">
         <div class="flex items-center gap-2">
-          <UInput v-model="days" type="number" min="7" max="3650" class="w-28" :disabled="fromEnvironment('SHIBAOX_MEM_RETENTION_DAYS')" @keydown.enter="saveDays" />
+          <UInput v-model="days" type="number" min="7" max="3650" class="w-28" :disabled="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS')" @keydown.enter="saveDays" />
           <span class="text-[13px] text-(--ink-muted)">days</span>
           <UButton color="primary" label="Save" :disabled="!changed" :loading="settingsState.saving" @click="saveDays" />
         </div>

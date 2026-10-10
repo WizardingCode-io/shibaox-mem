@@ -69,7 +69,7 @@ async function move() {
       <UAlert v-if="info.recentSessions > 0" color="warning" variant="soft" icon="i-lucide-clock" title="Sessions are active" :description="`${info.recentSessions} session${info.recentSessions === 1 ? '' : 's'} in the last five minutes. Moving is safest between sessions: writers wait while the copy is taken, and a hook that waits too long gives up that one event.`" />
       <UFormField label="Move the database to" hint="An absolute path on a disk attached to this machine. The folder is created if needed; the old file is kept, renamed.">
         <div class="flex gap-2">
-          <UInput v-model="path" placeholder="/Volumes/External/shibaox-mem" class="flex-1 font-mono" @keydown.enter="check" @input="report = null" />
+          <UInput v-model="path" placeholder="/Volumes/External/wizardingcode-mem" class="flex-1 font-mono" @keydown.enter="check" @input="report = null" />
           <UButton color="neutral" variant="outline" label="Check" :disabled="!path.trim()" :loading="checking" @click="check" />
         </div>
       </UFormField>

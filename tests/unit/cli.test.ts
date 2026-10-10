@@ -12,7 +12,7 @@ describe("cli", () => {
   test("no arguments prints usage", async () => {
     const r = await runCli();
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain("Usage: shibaox-mem");
+    expect(r.stdout).toContain("Usage: wizardingcode-mem");
   });
 
   test("an unknown command fails, but never with exit code 2", async () => {

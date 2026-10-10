@@ -6,7 +6,7 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 
 // The viewer: Vue 3, Tailwind 4 and Nuxt UI, built into one HTML file that the binary
 // embeds and serves. In development, `bun run ui:dev` proxies /api and /assets to a
-// running `shibaox-mem ui`.
+// running `wizardingcode-mem ui`.
 
 const root = fileURLToPath(new URL("./", import.meta.url));
 
@@ -38,8 +38,8 @@ export default defineConfig({
     // `changeOrigin`: the viewer's server checks the Host header, so the proxied request
     // must carry the server's own host, not localhost:5180.
     proxy: {
-      "/api": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
-      "/assets": { target: process.env.SHIBAOX_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
+      "/api": { target: process.env.WIZARDINGCODE_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
+      "/assets": { target: process.env.WIZARDINGCODE_MEM_UI ?? "http://127.0.0.1:7777", changeOrigin: true },
     },
   },
 });

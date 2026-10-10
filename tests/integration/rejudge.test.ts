@@ -13,7 +13,7 @@ let db: Db;
 const NOW = Date.UTC(2026, 9, 5);
 
 beforeEach(() => {
-  base = mkdtempSync(join(tmpdir(), "shibaox-mem-rejudge-"));
+  base = mkdtempSync(join(tmpdir(), "wizardingcode-mem-rejudge-"));
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
   const source = join(base, "claude-mem.db");
   makeClaudeMemDb(source, [

@@ -25,5 +25,5 @@ export function ourShellHookBinary(entry: unknown, agent: AgentId): string | nul
   const match = OURS.exec(command);
   if (match === null || match[2] !== agent) return null;
   const binary = unquote(match[1] ?? "");
-  return basename(binary).startsWith("shibaox-mem") ? binary : null;
+  return basename(binary).startsWith("wizardingcode-mem") ? binary : null;
 }

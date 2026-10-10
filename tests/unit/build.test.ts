@@ -13,11 +13,11 @@ describe("build", () => {
 
   test("covers the five release platforms", () => {
     expect(TARGETS.map((target) => target.file).sort()).toEqual([
-      "shibaox-mem-darwin-arm64",
-      "shibaox-mem-darwin-x64",
-      "shibaox-mem-linux-arm64",
-      "shibaox-mem-linux-x64",
-      "shibaox-mem-windows-x64.exe",
+      "wizardingcode-mem-darwin-arm64",
+      "wizardingcode-mem-darwin-x64",
+      "wizardingcode-mem-linux-arm64",
+      "wizardingcode-mem-linux-x64",
+      "wizardingcode-mem-windows-x64.exe",
     ]);
   });
 

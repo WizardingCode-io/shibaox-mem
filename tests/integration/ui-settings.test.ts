@@ -18,7 +18,7 @@ let dataDir: string;
 let server: UiServer | undefined;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-ui-settings-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-ui-settings-")));
   dataDir = join(base, "data");
   const project = join(base, "shop");
   mkdirSync(project);
@@ -77,10 +77,10 @@ const api = (s: UiServer, path: string, init: RequestInit = {}) =>
 const count = (db: Db, table: string) =>
   db.query<{ n: number }, []>(`SELECT count(*) AS n FROM ${table}`).get()?.n ?? 0;
 
-describe("shibaox-mem ui: settings", () => {
+describe("wizardingcode-mem ui: settings", () => {
   test("GET shows every setting with its source and never the key itself", async () => {
     writeFileSync(join(dataDir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
-    const s = await start({ SHIBAOX_MEM_RETENTION_DAYS: "45" });
+    const s = await start({ WIZARDINGCODE_MEM_RETENTION_DAYS: "45" });
     const response = await api(s, "/api/settings");
     expect(response.status).toBe(200);
     const text = await response.text();
@@ -92,8 +92,11 @@ describe("shibaox-mem ui: settings", () => {
       fingerprint: keyFingerprint(KEY),
       source: "file",
     });
-    expect(body.settings.SHIBAOX_MEM_RETENTION_DAYS).toEqual({ value: "45", source: "env" });
-    expect(body.settings.SHIBAOX_MEM_UI_AUTO_OPEN).toEqual({ value: "on", source: "default" });
+    expect(body.settings.WIZARDINGCODE_MEM_RETENTION_DAYS).toEqual({ value: "45", source: "env" });
+    expect(body.settings.WIZARDINGCODE_MEM_UI_AUTO_OPEN).toEqual({
+      value: "on",
+      source: "default",
+    });
     expect(body.dataDir).toBe(dataDir);
   });
 
@@ -101,18 +104,18 @@ describe("shibaox-mem ui: settings", () => {
     const s = await start();
     const response = await api(s, "/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ TYPESAFE_API_KEY: KEY, SHIBAOX_MEM_RETENTION_DAYS: 30 }),
+      body: JSON.stringify({ TYPESAFE_API_KEY: KEY, WIZARDINGCODE_MEM_RETENTION_DAYS: 30 }),
     });
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(text).not.toContain(KEY);
     expect(JSON.parse(text).settings.TYPESAFE_API_KEY).toMatchObject({ set: true, source: "file" });
-    expect(JSON.parse(text).settings.SHIBAOX_MEM_RETENTION_DAYS).toEqual({
+    expect(JSON.parse(text).settings.WIZARDINGCODE_MEM_RETENTION_DAYS).toEqual({
       value: "30",
       source: "file",
     });
     expect(readFileSync(join(dataDir, "env"), "utf8")).toBe(
-      `TYPESAFE_API_KEY=${KEY}\nSHIBAOX_MEM_RETENTION_DAYS=30\n`,
+      `TYPESAFE_API_KEY=${KEY}\nWIZARDINGCODE_MEM_RETENTION_DAYS=30\n`,
     );
   });
 
@@ -131,18 +134,23 @@ describe("shibaox-mem ui: settings", () => {
   });
 
   test("a bad value is refused, key by key, and the file is left alone", async () => {
-    writeFileSync(join(dataDir, "env"), "SHIBAOX_MEM_RETENTION_DAYS=30\n");
+    writeFileSync(join(dataDir, "env"), "WIZARDINGCODE_MEM_RETENTION_DAYS=30\n");
     const s = await start();
     const response = await api(s, "/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ SHIBAOX_MEM_RETENTION_DAYS: 0, SHIBAOX_MEM_TYPESAFE: "off" }),
+      body: JSON.stringify({
+        WIZARDINGCODE_MEM_RETENTION_DAYS: 0,
+        WIZARDINGCODE_MEM_TYPESAFE: "off",
+      }),
     });
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
       error: "some settings could not be saved",
-      errors: { SHIBAOX_MEM_RETENTION_DAYS: expect.stringContaining("7") },
+      errors: { WIZARDINGCODE_MEM_RETENTION_DAYS: expect.stringContaining("7") },
     });
-    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe("SHIBAOX_MEM_RETENTION_DAYS=30\n");
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toBe(
+      "WIZARDINGCODE_MEM_RETENTION_DAYS=30\n",
+    );
     expect((await api(s, "/api/settings", { method: "PUT", body: "nope" })).status).toBe(400);
   });
 
@@ -180,7 +188,7 @@ describe("shibaox-mem ui: settings", () => {
   });
 });
 
-describe("shibaox-mem ui: storage", () => {
+describe("wizardingcode-mem ui: storage", () => {
   test("says where the data and the store are, and how big the database is", async () => {
     const s = await start();
     const body = (await (await api(s, "/api/storage")).json()) as Record<string, unknown>;
@@ -218,14 +226,16 @@ describe("shibaox-mem ui: storage", () => {
     };
     expect(overview.storeDir).toBe(target);
     expect(overview.projects).toHaveLength(1);
-    expect(readFileSync(join(dataDir, "env"), "utf8")).toContain(`SHIBAOX_MEM_STORE_DIR=${target}`);
+    expect(readFileSync(join(dataDir, "env"), "utf8")).toContain(
+      `WIZARDINGCODE_MEM_STORE_DIR=${target}`,
+    );
     // The viewer keeps working on the new store.
     const memories = await api(s, "/api/memories?project=1");
     expect(memories.status).toBe(200);
   });
 });
 
-describe("shibaox-mem ui: backups", () => {
+describe("wizardingcode-mem ui: backups", () => {
   test("without a target there is nothing to list, and nothing to run", async () => {
     const s = await start();
     expect(await (await api(s, "/api/backups")).json()).toEqual({
@@ -242,12 +252,12 @@ describe("shibaox-mem ui: backups", () => {
     const s = await start();
     await api(s, "/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ SHIBAOX_MEM_BACKUP_TO: folder }),
+      body: JSON.stringify({ WIZARDINGCODE_MEM_BACKUP_TO: folder }),
     });
     const made = await api(s, "/api/backups", { method: "POST", body: "{}" });
     expect(made.status).toBe(200);
     const { name } = (await made.json()) as { name: string };
-    expect(name).toMatch(/^shibaox-mem-.*\.db\.gz$/);
+    expect(name).toMatch(/^wizardingcode-mem-.*\.db\.gz$/);
 
     const listed = (await (await api(s, "/api/backups")).json()) as {
       target: { kind: string; label: string };

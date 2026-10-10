@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 
 import type { AgentId, HookEvent } from "../core/types.ts";
 
-// Installs shibaox-mem into a host's hooks file and removes it again. Claude Code and
+// Installs wizardingcode-mem into a host's hooks file and removes it again. Claude Code and
 // Codex share the file's shape (event → groups → hooks); a HostSpec says what differs.
 //
 // The file belongs to the user. It is backed up before it is touched, only entries
@@ -176,7 +176,7 @@ function serialise(settings: Json, previous: string | null): string {
 
 function writeAtomically(path: string, text: string): void {
   const mode = existsSync(path) ? statSync(path).mode & 0o777 : 0o600;
-  const temporary = `${path}.shibaox-mem-new`;
+  const temporary = `${path}.wizardingcode-mem-new`;
   writeFileSync(temporary, text, { mode });
   renameSync(temporary, path);
 }
@@ -366,6 +366,6 @@ export function inspectHooksFile(
   return { events, binaries: [...binaries] };
 }
 
-export const MCP_NAME = "shibaox-mem";
+export const MCP_NAME = "wizardingcode-mem";
 export const HOOK_TIMEOUT_SECONDS = 5;
 export type { Json as HookEntry };

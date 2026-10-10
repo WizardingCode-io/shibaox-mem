@@ -111,7 +111,7 @@ export async function restoreBackup(options: RestoreOptions): Promise<RestoreOut
     return {
       ok: false,
       reason: "unsound",
-      detail: `this copy was made by a newer shibaox-mem (schema ${parsed.version}); upgrade first`,
+      detail: `this copy was made by a newer wizardingcode-mem (schema ${parsed.version}); upgrade first`,
     };
   }
   const work = join(storeDir, WORK_DIR);
@@ -183,7 +183,7 @@ function inspect(path: string): string | null {
     const version =
       probe.query<{ user_version: number }, []>("PRAGMA user_version").get()?.user_version ?? 0;
     if (version > LATEST_VERSION)
-      return `schema version ${version} is newer than this shibaox-mem supports`;
+      return `schema version ${version} is newer than this wizardingcode-mem supports`;
     const table = probe
       .query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'memories'")
       .get();

@@ -146,7 +146,7 @@ onMounted(async () => {
         <div class="px-5 pt-3">
           <UTabs v-model="tab" :items="tabs" :content="false" variant="pill" size="sm" class="w-fit" />
         </div>
-        <div v-if="failed" class="m-5 rounded-lg border border-(--danger) bg-(--danger-soft) p-3 text-sm text-(--danger)">Could not reach shibaox-mem: {{ failed }}</div>
+        <div v-if="failed" class="m-5 rounded-lg border border-(--danger) bg-(--danger-soft) p-3 text-sm text-(--danger)">Could not reach wizardingcode-mem: {{ failed }}</div>
         <MemoryList v-else-if="state.tab === 'memories'" />
         <TurnsList v-else-if="state.tab === 'turns'" @open="turnId = $event" @open-memory="openMemory" />
         <Settings v-else-if="state.tab === 'settings'" />

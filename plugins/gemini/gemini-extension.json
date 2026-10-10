@@ -1,10 +1,10 @@
 {
-  "name": "shibaox-mem",
+  "name": "wizardingcode-mem",
   "version": "0.3.0",
   "description": "Persistent memory across sessions: what each session learns, the next one is told. One local binary, no daemon, no LLM in the loop; your plan is never spent on memory.",
   "mcpServers": {
-    "shibaox-mem": {
-      "command": "${extensionPath}${/}bin${/}shibaox-mem",
+    "wizardingcode-mem": {
+      "command": "${extensionPath}${/}bin${/}wizardingcode-mem",
       "args": [
         "mcp"
       ]

@@ -37,19 +37,19 @@ async function readStdin(): Promise<string | null> {
 }
 
 function spawnDistill(): void {
-  // SHIBAOX_MEM_DISTILL=off leaves queued turns for a later run, e.g. `shibaox-mem distill` by hand.
-  if (process.env.SHIBAOX_MEM_DISTILL !== "off") spawnDetached("distill");
+  // WIZARDINGCODE_MEM_DISTILL=off leaves queued turns for a later run, e.g. `wizardingcode-mem distill` by hand.
+  if (process.env.WIZARDINGCODE_MEM_DISTILL !== "off") spawnDetached("distill");
 }
 
 /**
  * Shows the viewer for a session that just began, unless no one would see it: a
  * non-interactive run (CI), a remote shell, a Linux box without a display, or the user
- * turned it off (SHIBAOX_MEM_UI_AUTO_OPEN=off). The work happens in `ui --auto`,
+ * turned it off (WIZARDINGCODE_MEM_UI_AUTO_OPEN=off). The work happens in `ui --auto`,
  * detached; this costs one small file read and one spawn.
  */
 function spawnViewer(): void {
   const env = process.env;
-  if (env.SHIBAOX_MEM_UI_AUTO_OPEN === "off") return;
+  if (env.WIZARDINGCODE_MEM_UI_AUTO_OPEN === "off") return;
   if (env.CI || env.SSH_CONNECTION || env.SSH_TTY) return;
   if (process.platform === "linux" && !env.DISPLAY && !env.WAYLAND_DISPLAY) return;
   if (!loadSettings(env, defaultDataDir()).uiAutoOpen) return;
@@ -57,7 +57,7 @@ function spawnViewer(): void {
 }
 
 /**
- * An agent runs this binary twice per event when shibaox-mem is installed in it both
+ * An agent runs this binary twice per event when wizardingcode-mem is installed in it both
  * directly (its own hooks file) and as a plugin. The plugin's run is the one that knows
  * what it is (it passes --via-plugin; Claude Code also sets CLAUDE_PLUGIN_ROOT), so it is
  * the one that stands down when the direct install is there.
@@ -102,7 +102,7 @@ async function standsDownAsPlugin(agent: string, flags: string[]): Promise<boole
 }
 
 /**
- * `shibaox-mem hook <agent> <event>`: reads the host's payload on stdin, may print context.
+ * `wizardingcode-mem hook <agent> <event>`: reads the host's payload on stdin, may print context.
  *
  * Fails open, always. The host must see a successful hook whatever happens here:
  * exit code 2 would block the user's action, and stray output would be read as context.

@@ -13,7 +13,7 @@ let dataDir: string;
 let project: string;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-tool-cli-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-tool-cli-")));
   dataDir = join(base, "data");
   project = join(base, "project");
   mkdirSync(project);
@@ -43,7 +43,7 @@ afterEach(() => {
 
 const tool = (name: string, args: unknown, ...flags: string[]) =>
   runCliWith(
-    { input: JSON.stringify(args), env: { SHIBAOX_MEM_DATA_DIR: dataDir } },
+    { input: JSON.stringify(args), env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
     "tool",
     name,
     "--project",
@@ -51,7 +51,7 @@ const tool = (name: string, args: unknown, ...flags: string[]) =>
     ...flags,
   );
 
-describe("shibaox-mem tool", () => {
+describe("wizardingcode-mem tool", () => {
   test("memory_search answers like the MCP tool, for the project given", async () => {
     const result = await tool("memory_search", { query: "limit" });
     expect(result.exitCode).toBe(0);
@@ -79,7 +79,7 @@ describe("shibaox-mem tool", () => {
   test("an unknown tool, or no --project, is a usage error", async () => {
     expect((await tool("memory_forget", {})).exitCode).toBe(64);
     const noProject = await runCliWith(
-      { input: "{}", env: { SHIBAOX_MEM_DATA_DIR: dataDir } },
+      { input: "{}", env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
       "tool",
       "memory_search",
     );

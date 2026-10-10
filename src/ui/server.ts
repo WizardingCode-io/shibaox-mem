@@ -115,9 +115,9 @@ async function jsonObject(request: Request): Promise<Record<string, unknown> | R
   return body as Record<string, unknown>;
 }
 
-/** Opens the page in the user's browser; `SHIBAOX_MEM_UI_BROWSER=none` keeps it closed. */
+/** Opens the page in the user's browser; `WIZARDINGCODE_MEM_UI_BROWSER=none` keeps it closed. */
 export function openBrowser(url: string): void {
-  if (process.env.SHIBAOX_MEM_UI_BROWSER === "none") return;
+  if (process.env.WIZARDINGCODE_MEM_UI_BROWSER === "none") return;
   const command =
     process.platform === "darwin"
       ? ["open", url]

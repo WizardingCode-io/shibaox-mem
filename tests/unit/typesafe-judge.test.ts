@@ -20,7 +20,7 @@ const KEY = ["apikey_", "test0000", "_", "x".repeat(40)].join("");
 describe("readTypeSafeKey", () => {
   let dir: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "shibaox-mem-key-"));
+    dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-key-"));
   });
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -307,7 +307,7 @@ describe("Breaker", () => {
   let dir: string;
   let db: Db;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "shibaox-mem-breaker-"));
+    dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-breaker-"));
     db = openDb({ dataDir: dir, busyTimeoutMs: 1000 });
   });
   afterEach(() => {
@@ -373,7 +373,7 @@ describe("withFallback", () => {
   let dir: string;
   let db: Db;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "shibaox-mem-fallback-"));
+    dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-fallback-"));
     db = openDb({ dataDir: dir, busyTimeoutMs: 1000 });
   });
   afterEach(() => {

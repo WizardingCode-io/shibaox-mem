@@ -10,7 +10,7 @@ const LABEL: Record<Check["status"], string> = {
 };
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** `shibaox-mem doctor`: checks the installation and says what to do about anything wrong. */
+/** `wizardingcode-mem doctor`: checks the installation and says what to do about anything wrong. */
 export function run(): number {
   const checks = runChecks(doctorContext(defaultDataDir()));
   const failures = checks.filter((check) => check.status === "fail").length;

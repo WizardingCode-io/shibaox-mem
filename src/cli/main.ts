@@ -24,9 +24,9 @@ const COMMANDS: Record<string, () => Promise<CommandModule>> = {
   __spike: () => import("./commands/spike.ts"),
 };
 
-const USAGE = `shibaox-mem ${pkg.version} — persistent memory for coding agents
+const USAGE = `wizardingcode-mem ${pkg.version} — persistent memory for coding agents
 
-Usage: shibaox-mem <command> [options]
+Usage: wizardingcode-mem <command> [options]
 
 Options:
   -v, --version   Print the version
@@ -45,7 +45,7 @@ async function main(argv: string[]): Promise<number> {
   }
   const load = COMMANDS[name];
   if (load === undefined) {
-    process.stderr.write(`shibaox-mem: unknown command "${name}"\n\n${USAGE}`);
+    process.stderr.write(`wizardingcode-mem: unknown command "${name}"\n\n${USAGE}`);
     return EXIT_USAGE;
   }
   const command = await load();
@@ -59,7 +59,7 @@ main(process.argv.slice(2)).then(
   },
   (error: unknown) => {
     process.stderr.write(
-      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     process.exitCode = 1;
   },

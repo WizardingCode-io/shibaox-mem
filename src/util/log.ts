@@ -22,7 +22,7 @@ export function logError(scope: string, error: unknown, dataDir: string = defaul
   try {
     const dir = join(dataDir, "logs");
     mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const file = join(dir, "shibaox-mem.log");
+    const file = join(dir, "wizardingcode-mem.log");
     if (existsSync(file) && statSync(file).size > LOG_MAX_BYTES) renameSync(file, `${file}.1`);
 
     const name = errorLabel(error);

@@ -13,14 +13,14 @@ import { join } from "node:path";
 import pkg from "../../package.json" with { type: "json" };
 import { generated } from "../../scripts/plugins.ts";
 
-// What every agent's plugin runs: plugin/shibaox-mem.sh and its copies. Driven the way an
+// What every agent's plugin runs: plugin/wizardingcode-mem.sh and its copies. Driven the way an
 // agent drives it, with a stand-in binary and a stand-in release to fetch it from.
 
 const ROOT = new URL("../../", import.meta.url).pathname;
-const SCRIPT = join(ROOT, "plugin", "shibaox-mem.sh");
+const SCRIPT = join(ROOT, "plugin", "wizardingcode-mem.sh");
 const os = process.platform === "darwin" ? "darwin" : "linux";
 const arch = process.arch === "arm64" ? "arm64" : "x64";
-const FILE = `shibaox-mem-${os}-${arch}`;
+const FILE = `wizardingcode-mem-${os}-${arch}`;
 const fake = (version: string) =>
   `#!/bin/sh\nif [ "$1" = "--version" ]; then echo ${version}; exit 0; fi\ncat > "$(dirname "$0")/stdin.txt"\necho "ran: $*"\n`;
 
@@ -29,7 +29,7 @@ let server: ReturnType<typeof Bun.serve> | undefined;
 let downloads = 0;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-plugin-"));
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-plugin-"));
   downloads = 0;
 });
 afterEach(async () => {
@@ -38,7 +38,7 @@ afterEach(async () => {
   rmSync(home, { recursive: true, force: true });
 });
 
-const binary = () => join(home, ".shibaox", "mem", "bin", "shibaox-mem");
+const binary = () => join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem");
 
 function release(version = pkg.version, checksum?: string): string {
   const body = fake(version);
@@ -62,7 +62,7 @@ function release(version = pkg.version, checksum?: string): string {
 }
 
 function place(version: string): void {
-  mkdirSync(join(home, ".shibaox", "mem", "bin"), { recursive: true });
+  mkdirSync(join(home, ".wizardingcode", "mem", "bin"), { recursive: true });
   writeFileSync(binary(), fake(version));
   chmodSync(binary(), 0o755);
 }
@@ -72,9 +72,9 @@ async function run(args: string[], base = "http://127.0.0.1:9/none") {
     env: {
       ...process.env,
       HOME: home,
-      SHIBAOX_HOME: join(home, ".shibaox"),
-      SHIBAOX_MEM_DATA_DIR: "",
-      SHIBAOX_MEM_RELEASE_BASE: base,
+      WIZARDINGCODE_HOME: join(home, ".wizardingcode"),
+      WIZARDINGCODE_MEM_DATA_DIR: "",
+      WIZARDINGCODE_MEM_RELEASE_BASE: base,
     },
     stdin: new TextEncoder().encode('{"session_id":"s","cwd":"/p"}'),
     stdout: "pipe",
@@ -153,7 +153,7 @@ describe("what the agents install", () => {
   });
 });
 
-describe("plugin/shibaox-mem.sh", () => {
+describe("plugin/wizardingcode-mem.sh", () => {
   test("with the binary in place, runs it for the agent and event, saying it came through a plugin", async () => {
     place(pkg.version);
     expect(await hook("codex", "prompt")).toEqual({
@@ -161,7 +161,7 @@ describe("plugin/shibaox-mem.sh", () => {
       stderr: "",
       exitCode: 0,
     });
-    expect(readFileSync(join(home, ".shibaox", "mem", "bin", "stdin.txt"), "utf8")).toBe(
+    expect(readFileSync(join(home, ".wizardingcode", "mem", "bin", "stdin.txt"), "utf8")).toBe(
       '{"session_id":"s","cwd":"/p"}',
     );
   });

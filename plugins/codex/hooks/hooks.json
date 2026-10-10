@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${PLUGIN_ROOT}/shibaox-mem.sh\" hook codex session-start",
+            "command": "sh \"${PLUGIN_ROOT}/wizardingcode-mem.sh\" hook codex session-start",
             "timeout": 90
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${PLUGIN_ROOT}/shibaox-mem.sh\" hook codex prompt",
+            "command": "sh \"${PLUGIN_ROOT}/wizardingcode-mem.sh\" hook codex prompt",
             "timeout": 5
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${PLUGIN_ROOT}/shibaox-mem.sh\" hook codex turn-end",
+            "command": "sh \"${PLUGIN_ROOT}/wizardingcode-mem.sh\" hook codex turn-end",
             "timeout": 5
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${PLUGIN_ROOT}/shibaox-mem.sh\" hook codex session-end",
+            "command": "sh \"${PLUGIN_ROOT}/wizardingcode-mem.sh\" hook codex session-end",
             "timeout": 5
           }
         ]

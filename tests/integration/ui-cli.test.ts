@@ -14,7 +14,7 @@ let server: UiServer | undefined;
 let opened: number;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-ui-cli-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-ui-cli-")));
   dataDir = join(base, "data");
   mkdirSync(dataDir, { recursive: true });
   opened = 0;
@@ -25,10 +25,14 @@ afterEach(async () => {
   rmSync(base, { recursive: true, force: true });
 });
 
-describe("shibaox-mem ui --auto", () => {
+describe("wizardingcode-mem ui --auto", () => {
   test("with a viewer already running, asks it to show itself and leaves, silently", async () => {
     server = await startUi({ dataDir, port: 0, open: false, openBrowser: () => void opened++ });
-    const result = await runCliWith({ env: { SHIBAOX_MEM_DATA_DIR: dataDir } }, "ui", "--auto");
+    const result = await runCliWith(
+      { env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
+      "ui",
+      "--auto",
+    );
     expect(result).toEqual({ exitCode: 0, stdout: "", stderr: "" });
     expect(opened).toBe(1);
     // The running viewer is still the one on record.
@@ -45,7 +49,11 @@ describe("shibaox-mem ui --auto", () => {
       JSON.stringify({ pid: 999_999, origin, token: "stale", startedAt: 0 }),
     );
     const proc = Bun.spawn([process.execPath, MAIN, "ui", "--auto"], {
-      env: { ...process.env, SHIBAOX_MEM_DATA_DIR: dataDir, SHIBAOX_MEM_UI_BROWSER: "none" },
+      env: {
+        ...process.env,
+        WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+        WIZARDINGCODE_MEM_UI_BROWSER: "none",
+      },
       stdin: "ignore",
       stdout: "pipe",
       stderr: "pipe",

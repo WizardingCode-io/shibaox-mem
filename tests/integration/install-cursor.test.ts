@@ -12,17 +12,17 @@ let mcpPath: string;
 let dataDir: string;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-cursor-"));
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-install-cursor-"));
   mkdirSync(join(home, ".cursor"));
   hooksPath = join(home, ".cursor", "hooks.json");
   mcpPath = join(home, ".cursor", "mcp.json");
-  dataDir = join(home, ".shibaox", "mem");
+  dataDir = join(home, ".wizardingcode", "mem");
 });
 afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
-const BIN = "/opt/shibaox-mem/bin/shibaox-mem";
+const BIN = "/opt/wizardingcode-mem/bin/wizardingcode-mem";
 const context = (binaryPath = BIN): InstallContext & { mcpPath: string } => ({
   settingsPath: hooksPath,
   mcpPath,
@@ -49,7 +49,7 @@ describe("install cursor", () => {
         sessionEnd: [ours("session-end")],
       },
     });
-    expect(mcp()).toEqual({ mcpServers: { "shibaox-mem": { command: BIN, args: ["mcp"] } } });
+    expect(mcp()).toEqual({ mcpServers: { "wizardingcode-mem": { command: BIN, args: ["mcp"] } } });
   });
 
   test("keeps the user's own hooks and MCP servers, and replaces an older binary of ours", () => {
@@ -66,13 +66,13 @@ describe("install cursor", () => {
       mcpPath,
       JSON.stringify({ mcpServers: { github: { url: "https://x" } } }, null, 2),
     );
-    installCursor(context("/old/shibaox-mem"));
+    installCursor(context("/old/wizardingcode-mem"));
     installCursor(context());
     expect(hooks().hooks.afterFileEdit).toEqual([theirs]);
     expect(hooks().hooks.sessionStart).toEqual([theirs, ours("session-start")]);
     expect(readFileSync(hooksPath, "utf8")).not.toContain("/old/");
     expect(mcp().mcpServers.github).toEqual({ url: "https://x" });
-    expect(mcp().mcpServers["shibaox-mem"].command).toBe(BIN);
+    expect(mcp().mcpServers["wizardingcode-mem"].command).toBe(BIN);
   });
 
   test("installing twice changes nothing the second time", () => {
@@ -112,16 +112,16 @@ describe("cursorContext", () => {
   });
 });
 
-describe("shibaox-mem install cursor / uninstall cursor", () => {
-  const env = () => ({ HOME: home, SHIBAOX_MEM_DATA_DIR: dataDir, PATH: "/nonexistent" });
+describe("wizardingcode-mem install cursor / uninstall cursor", () => {
+  const env = () => ({ HOME: home, WIZARDINGCODE_MEM_DATA_DIR: dataDir, PATH: "/nonexistent" });
 
   test("installs with an explicit binary, then uninstalls cleanly", async () => {
-    const binary = join(home, "shibaox-mem");
+    const binary = join(home, "wizardingcode-mem");
     writeFileSync(binary, "");
     const installed = await runCliWith({ env: env() }, "install", "cursor", "--binary", binary);
     expect(installed.stderr).toBe("");
     expect(installed.exitCode).toBe(0);
-    expect(installed.stdout).toContain("Installed shibaox-mem for Cursor.");
+    expect(installed.stdout).toContain("Installed wizardingcode-mem for Cursor.");
     expect(installed.stdout).toContain(hooksPath);
     expect(installed.stdout).toContain(`MCP:    registered in ${mcpPath}`);
     expect(hooks().hooks.afterAgentResponse[0].command).toBe(`'${binary}' hook cursor turn-end`);

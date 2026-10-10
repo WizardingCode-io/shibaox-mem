@@ -82,17 +82,17 @@ export type PublicSetting =
   | { secret: true; set: boolean; fingerprint: string | null; source: SettingSource };
 export type SettingKey =
   | "TYPESAFE_API_KEY"
-  | "SHIBAOX_MEM_TYPESAFE"
-  | "SHIBAOX_MEM_RETENTION_DAYS"
-  | "SHIBAOX_MEM_UI_AUTO_OPEN"
-  | "SHIBAOX_MEM_STORE_DIR"
-  | "SHIBAOX_MEM_BACKUP_TO"
-  | "SHIBAOX_MEM_BACKUP_EVERY_HOURS"
-  | "SHIBAOX_MEM_BACKUP_KEEP"
-  | "SHIBAOX_MEM_BACKUP_S3_ENDPOINT"
-  | "SHIBAOX_MEM_BACKUP_S3_REGION"
-  | "SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY"
-  | "SHIBAOX_MEM_BACKUP_S3_SECRET_KEY";
+  | "WIZARDINGCODE_MEM_TYPESAFE"
+  | "WIZARDINGCODE_MEM_RETENTION_DAYS"
+  | "WIZARDINGCODE_MEM_UI_AUTO_OPEN"
+  | "WIZARDINGCODE_MEM_STORE_DIR"
+  | "WIZARDINGCODE_MEM_BACKUP_TO"
+  | "WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS"
+  | "WIZARDINGCODE_MEM_BACKUP_KEEP"
+  | "WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT"
+  | "WIZARDINGCODE_MEM_BACKUP_S3_REGION"
+  | "WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY"
+  | "WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY";
 export type SettingsView = { dataDir: string; settings: Record<SettingKey, PublicSetting> };
 export type SettingsPatch = Partial<Record<SettingKey, string | number | boolean | null>>;
 export interface Check {

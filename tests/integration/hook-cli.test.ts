@@ -12,7 +12,7 @@ const payload = (name: string, agent = "claude-code") =>
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-hook-cli-"));
+  dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-hook-cli-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -23,9 +23,9 @@ const hook = (input: string, ...args: string[]) =>
     {
       input,
       env: {
-        SHIBAOX_MEM_DATA_DIR: dir,
-        SHIBAOX_MEM_DISTILL: "off",
-        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+        WIZARDINGCODE_MEM_DATA_DIR: dir,
+        WIZARDINGCODE_MEM_DISTILL: "off",
+        WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
       },
     },
     "hook",
@@ -45,7 +45,7 @@ function rows<T>(sql: string): T[] {
 
 const SILENT_SUCCESS = { exitCode: 0, stdout: "", stderr: "" };
 
-describe("shibaox-mem hook", () => {
+describe("wizardingcode-mem hook", () => {
   test("a prompt payload from Claude Code is stored, silently", async () => {
     expect(await hook(payload("user-prompt-submit"), "claude-code", "prompt")).toEqual(
       SILENT_SUCCESS,
@@ -120,7 +120,7 @@ describe("shibaox-mem hook", () => {
             hooks: [
               {
                 type: "command",
-                command: "/opt/shibaox-mem/bin/shibaox-mem",
+                command: "/opt/wizardingcode-mem/bin/wizardingcode-mem",
                 args: ["hook", "claude-code", "prompt"],
               },
             ],
@@ -134,11 +134,11 @@ describe("shibaox-mem hook", () => {
         {
           input,
           env: {
-            SHIBAOX_MEM_DATA_DIR: dir,
-            SHIBAOX_MEM_DISTILL: "off",
-            SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+            WIZARDINGCODE_MEM_DATA_DIR: dir,
+            WIZARDINGCODE_MEM_DISTILL: "off",
+            WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
             CLAUDE_CONFIG_DIR: config,
-            CLAUDE_PLUGIN_ROOT: "/plugins/shibaox-mem",
+            CLAUDE_PLUGIN_ROOT: "/plugins/wizardingcode-mem",
           },
         },
         "hook",
@@ -161,14 +161,19 @@ describe("shibaox-mem hook", () => {
   ] as const)(
     "%s: run through its plugin while the direct install is also there, it stands down",
     async (agent, homes, file, fixture) => {
-      const binary = join(dir, "shibaox-mem");
+      const binary = join(dir, "wizardingcode-mem");
       writeFileSync(binary, "");
       const env = Object.fromEntries(
         Object.entries(homes).map(([name, sub]) => [name, join(dir, sub)]),
       );
       const direct = await runCliWith(
         {
-          env: { ...env, HOME: dir, SHIBAOX_MEM_DATA_DIR: join(dir, "data"), PATH: "/nonexistent" },
+          env: {
+            ...env,
+            HOME: dir,
+            WIZARDINGCODE_MEM_DATA_DIR: join(dir, "data"),
+            PATH: "/nonexistent",
+          },
         },
         "install",
         agent,
@@ -184,9 +189,9 @@ describe("shibaox-mem hook", () => {
             env: {
               ...env,
               HOME: dir,
-              SHIBAOX_MEM_DATA_DIR: join(dir, "data"),
-              SHIBAOX_MEM_DISTILL: "off",
-              SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+              WIZARDINGCODE_MEM_DATA_DIR: join(dir, "data"),
+              WIZARDINGCODE_MEM_DISTILL: "off",
+              WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
             },
           },
           "hook",
@@ -258,7 +263,7 @@ describe("shibaox-mem hook", () => {
     expect(await hook(payload("user-prompt-submit"), "claude-code", "prompt")).toEqual(
       SILENT_SUCCESS,
     );
-    const log = readFileSync(join(dir, "logs", "shibaox-mem.log"), "utf8");
+    const log = readFileSync(join(dir, "logs", "wizardingcode-mem.log"), "utf8");
     expect(log.trim().split("\n")).toHaveLength(1);
     expect(log).toContain("hook claude-code prompt");
     expect(log).toContain("SchemaTooNewError");
@@ -279,7 +284,9 @@ describe("shibaox-mem hook", () => {
       db.run("ROLLBACK");
       db.close();
     }
-    expect(readFileSync(join(dir, "logs", "shibaox-mem.log"), "utf8")).toContain("SQLITE_BUSY");
+    expect(readFileSync(join(dir, "logs", "wizardingcode-mem.log"), "utf8")).toContain(
+      "SQLITE_BUSY",
+    );
   });
 
   test("an enormous, hostile prompt is handled quickly", async () => {
@@ -299,9 +306,9 @@ describe("shibaox-mem hook", () => {
     const proc = Bun.spawn([process.execPath, main, "hook", "claude-code", "prompt"], {
       env: {
         ...process.env,
-        SHIBAOX_MEM_DATA_DIR: dir,
-        SHIBAOX_MEM_DISTILL: "off",
-        SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+        WIZARDINGCODE_MEM_DATA_DIR: dir,
+        WIZARDINGCODE_MEM_DISTILL: "off",
+        WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
       },
       stdin: "pipe",
       stdout: "pipe",
@@ -323,9 +330,9 @@ describe("shibaox-mem hook", () => {
       {
         input: payload("user-prompt-submit"),
         env: {
-          SHIBAOX_MEM_DATA_DIR: file,
-          SHIBAOX_MEM_DISTILL: "off",
-          SHIBAOX_MEM_UI_AUTO_OPEN: "off",
+          WIZARDINGCODE_MEM_DATA_DIR: file,
+          WIZARDINGCODE_MEM_DISTILL: "off",
+          WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
         },
       },
       "hook",
@@ -342,9 +349,9 @@ describe("the viewer at session start, from the command line", () => {
       {
         input: payload("session-start.startup", "codex"),
         env: {
-          SHIBAOX_MEM_DATA_DIR: dir,
-          SHIBAOX_MEM_DISTILL: "off",
-          SHIBAOX_MEM_UI_AUTO_OPEN: "on",
+          WIZARDINGCODE_MEM_DATA_DIR: dir,
+          WIZARDINGCODE_MEM_DISTILL: "off",
+          WIZARDINGCODE_MEM_UI_AUTO_OPEN: "on",
           CI: "1",
         },
       },
@@ -362,11 +369,11 @@ describe("backups from the command line hooks", () => {
   test("a turn's end with a backup target due writes a copy there, and the hook stays silent", async () => {
     const nas = join(dir, "nas");
     const env = {
-      SHIBAOX_MEM_DATA_DIR: dir,
-      SHIBAOX_MEM_DISTILL: "off",
-      SHIBAOX_MEM_UI_AUTO_OPEN: "off",
-      SHIBAOX_MEM_BACKUP_TO: nas,
-      SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1",
+      WIZARDINGCODE_MEM_DATA_DIR: dir,
+      WIZARDINGCODE_MEM_DISTILL: "off",
+      WIZARDINGCODE_MEM_UI_AUTO_OPEN: "off",
+      WIZARDINGCODE_MEM_BACKUP_TO: nas,
+      WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "1",
     };
     expect(
       await runCliWith(
@@ -393,6 +400,6 @@ describe("backups from the command line hooks", () => {
       }
     }
     expect(copies).toHaveLength(1);
-    expect(copies[0]).toMatch(/^shibaox-mem-\d{8}T\d{6}Z-v\d+\.db\.gz$/);
+    expect(copies[0]).toMatch(/^wizardingcode-mem-\d{8}T\d{6}Z-v\d+\.db\.gz$/);
   }, 15_000);
 });

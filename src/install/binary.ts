@@ -8,7 +8,10 @@ import { join, resolve } from "node:path";
  */
 export function stageBinary(source: string, dataDir: string): string {
   const dir = join(dataDir, "bin");
-  const target = join(dir, process.platform === "win32" ? "shibaox-mem.exe" : "shibaox-mem");
+  const target = join(
+    dir,
+    process.platform === "win32" ? "wizardingcode-mem.exe" : "wizardingcode-mem",
+  );
   if (resolve(source) === resolve(target)) return target;
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const temporary = `${target}.new`;

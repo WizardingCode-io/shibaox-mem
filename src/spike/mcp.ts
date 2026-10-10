@@ -9,7 +9,7 @@ export async function mcpServer(): Promise<void> {
   const { StdioServerTransport } = await import("@modelcontextprotocol/server/stdio");
   const { z } = await import("zod");
 
-  const server = new McpServer({ name: "shibaox-mem-spike", version: "0.0.0" });
+  const server = new McpServer({ name: "wizardingcode-mem-spike", version: "0.0.0" });
   server.registerTool(
     "echo",
     { description: "Echo the text back", inputSchema: z.object({ text: z.string() }) },
@@ -71,11 +71,12 @@ export async function mcpSpike(): Promise<SpikeResult> {
     const init = await request(1, "initialize", {
       protocolVersion: "2025-06-18",
       capabilities: {},
-      clientInfo: { name: "shibaox-mem-spike-client", version: "0.0.0" },
+      clientInfo: { name: "wizardingcode-mem-spike-client", version: "0.0.0" },
     });
     protocolVersion = init.result?.protocolVersion;
     checks.initialize =
-      (init.result?.serverInfo as { name?: string } | undefined)?.name === "shibaox-mem-spike";
+      (init.result?.serverInfo as { name?: string } | undefined)?.name ===
+      "wizardingcode-mem-spike";
     send({ method: "notifications/initialized" });
 
     const list = await request(2, "tools/list", {});

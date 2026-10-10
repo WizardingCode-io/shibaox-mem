@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "shibaox-mem": {
+    "wizardingcode-mem": {
       "command": "sh",
       "args": [
-        "${CURSOR_PLUGIN_ROOT}/shibaox-mem.sh",
+        "${CURSOR_PLUGIN_ROOT}/wizardingcode-mem.sh",
         "mcp"
       ]
     }
