@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { api, type TurnDetail } from "../api";
-import { KIND_COLOR, TURN_COLOR, when } from "../format";
+import { KIND_COLOR, when } from "../format";
+import TurnState from "./TurnState.vue";
 
 const props = defineProps<{ turnId: number | null }>();
 const emit = defineEmits<{ close: []; openMemory: [id: number] }>();
@@ -30,17 +31,17 @@ watch(open, (o) => {
     <template #body>
       <div v-if="turn" class="flex flex-col gap-5">
         <div class="flex flex-wrap items-center gap-2">
-          <UBadge :color="TURN_COLOR[turn.state] ?? 'neutral'" variant="soft" :label="turn.state" />
+          <TurnState :state="turn.state" />
           <UBadge v-if="turn.completeness !== 'full'" color="neutral" variant="soft" :label="turn.completeness" />
           <span class="font-mono text-xs text-(--ink-muted)">#{{ turn.id }}</span>
         </div>
         <section class="flex flex-col gap-2">
           <div class="overline">Prompt</div>
-          <div class="rounded-lg border border-(--line) bg-(--surface-sunken) p-3 text-[13px] leading-5 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ turn.prompt }}</div>
+          <div class="rounded-xl border border-(--console-line) bg-(--console) p-3 text-[13px] leading-5 whitespace-pre-wrap text-(--console-ink) [overflow-wrap:anywhere]">{{ turn.prompt }}</div>
         </section>
         <section v-if="turn.finalText" class="flex flex-col gap-2">
           <div class="overline">Answer</div>
-          <div class="rounded-lg border border-(--line) bg-(--surface-sunken) p-3 text-[13px] leading-5 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ turn.finalText }}</div>
+          <div class="rounded-xl border border-(--console-line) bg-(--console) p-3 text-[13px] leading-5 whitespace-pre-wrap text-(--console-ink) [overflow-wrap:anywhere]">{{ turn.finalText }}</div>
         </section>
         <section class="flex flex-col gap-2">
           <div class="overline">Became</div>

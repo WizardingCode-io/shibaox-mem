@@ -128,7 +128,7 @@ onMounted(async () => {
       <Sidebar class="min-h-0" @settings="tab = 'settings'" />
       <main class="flex min-h-0 min-w-0 flex-col">
         <div class="grid grid-cols-[auto_minmax(220px,1fr)_auto_auto_auto] items-center gap-3 border-b border-(--line) px-5 pt-4 pb-3">
-          <h1 class="font-display m-0 max-w-[30vw] truncate text-[26px] leading-8 font-bold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
+          <h1 class="font-display m-0 max-w-[30vw] truncate text-[22px] leading-8 font-bold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
           <UInput ref="search" v-model="q" icon="i-lucide-search" placeholder="Search titles, bodies, file names" aria-label="Search memories" :ui="{ trailing: 'pe-1.5' }" :class="{ invisible: state.tab === 'settings' }">
             <template #trailing>
               <UButton v-if="q" color="neutral" variant="link" size="xs" icon="i-lucide-x" aria-label="Clear" @click="q = ''" />

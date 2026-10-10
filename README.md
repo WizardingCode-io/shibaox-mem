@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/shibaox-lockup-cream.svg">
-    <img src="docs/brand/shibaox-lockup-ink.svg" alt="wizardingcode" width="280">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/wizardingcode-lockup-reverse.svg">
+    <img src="docs/brand/wizardingcode-lockup.svg" alt="wizardingcode" width="280">
   </picture>
 </p>
 
@@ -13,11 +13,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/WizardingCode-io/wizardingcode-mem/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/WizardingCode-io/wizardingcode-mem?color=F2842B&labelColor=1C140E"></a>
-  <a href="https://github.com/WizardingCode-io/wizardingcode-mem/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/WizardingCode-io/wizardingcode-mem/ci.yml?branch=main&labelColor=1C140E"></a>
-  <a href="https://www.npmjs.com/package/wizardingcode-mem"><img alt="npm" src="https://img.shields.io/npm/v/wizardingcode-mem?color=F2842B&labelColor=1C140E"></a>
-  <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-F2842B?labelColor=1C140E"></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-1C140E?labelColor=1C140E">
+  <a href="https://github.com/WizardingCode-io/wizardingcode-mem/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/WizardingCode-io/wizardingcode-mem?color=6B35E0&labelColor=100E0D"></a>
+  <a href="https://github.com/WizardingCode-io/wizardingcode-mem/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/WizardingCode-io/wizardingcode-mem/ci.yml?branch=main&labelColor=100E0D"></a>
+  <a href="https://www.npmjs.com/package/wizardingcode-mem"><img alt="npm" src="https://img.shields.io/npm/v/wizardingcode-mem?color=6B35E0&labelColor=100E0D"></a>
+  <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-6B35E0?labelColor=100E0D"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-100E0D?labelColor=100E0D">
 </p>
 
 <p align="center">
@@ -264,10 +264,10 @@ Issues and pull requests are welcome. A change to how memories are captured, jud
 ---
 
 <p align="center">
-  <img src="docs/brand/shiba-full.svg" alt="Shiba, the shibaox mascot" width="120">
+  <img src="docs/brand/wizardingcode-mark.svg" alt="" width="48">
 </p>
 
 <p align="center">
-  A <strong>shibaox</strong> product by <a href="https://wizardingcode.io">WizardingCode</a> · Apache-2.0 · © 2026 WizardingCode<br>
+  A <a href="https://wizardingcode.io">WizardingCode</a> product · Apache-2.0 · © 2026 WizardingCode<br>
   <sub>Tools for the agents you already use. More on the way.</sub>
 </p>

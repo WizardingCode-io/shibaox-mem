@@ -21,14 +21,6 @@ export const KIND_COLOR: Record<Kind, "info" | "success" | "warning" | "primary"
   discovery: "neutral",
 };
 
-export const TURN_COLOR: Record<string, "success" | "error" | "info" | "neutral"> = {
-  done: "success",
-  failed: "error",
-  pending: "info",
-  processing: "info",
-  open: "info",
-  skipped: "neutral",
-};
 
 export const IMPORTANCE_LABEL = ["", "Trivial", "Minor", "Useful", "Important", "Critical"];
 

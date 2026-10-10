@@ -28,16 +28,15 @@ import {
   setMemoryStatus,
   updateMemory,
 } from "./api.ts";
-import bricolage from "./assets/bricolage-grotesque-latin-700-normal.woff2" with { type: "file" };
-import geistMono from "./assets/geist-mono-latin-400-normal.woff2" with { type: "file" };
-import geist400 from "./assets/geist-sans-latin-400-normal.woff2" with { type: "file" };
-import geist500 from "./assets/geist-sans-latin-500-normal.woff2" with { type: "file" };
+import instrumentSans from "./assets/instrument-sans-variable.woff2" with { type: "file" };
+import jetbrainsMono from "./assets/jetbrains-mono-variable.woff2" with { type: "file" };
+import unbounded from "./assets/unbounded-variable.woff2" with { type: "file" };
 import page from "./dist/index.html" with { type: "text" };
 
 // The viewer: a local page over the database. Loopback only, a token in the URL that
 // every request must carry, the Host header checked, and it stops itself when idle.
 // Nothing is loaded from the network: the app (built by Vite into src/ui/dist), the
-// fonts and the mascot travel in the binary.
+// fonts and the logo travel in the binary.
 
 export interface UiOptions {
   dataDir: string;
@@ -79,10 +78,9 @@ export interface UiServer {
 
 const DEFAULT_IDLE_MS = 30 * 60 * 1000;
 const FONTS: Record<string, string> = {
-  "bricolage-grotesque-latin-700-normal.woff2": bricolage,
-  "geist-sans-latin-400-normal.woff2": geist400,
-  "geist-sans-latin-500-normal.woff2": geist500,
-  "geist-mono-latin-400-normal.woff2": geistMono,
+  "unbounded-variable.woff2": unbounded,
+  "instrument-sans-variable.woff2": instrumentSans,
+  "jetbrains-mono-variable.woff2": jetbrainsMono,
 };
 
 const json = (body: unknown, status = 200) =>

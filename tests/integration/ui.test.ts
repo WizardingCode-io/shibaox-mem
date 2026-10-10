@@ -106,7 +106,7 @@ describe("wizardingcode-mem ui: the page", () => {
     // Built into one file: no script or stylesheet fetched from anywhere.
     expect(html).not.toMatch(/<script[^>]+src=/);
     expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/);
-    expect(html).toContain("--shiba:");
+    expect(html).toContain("--primary:");
   });
 
   test("without the token, nothing is served", async () => {
@@ -124,10 +124,16 @@ describe("wizardingcode-mem ui: the page", () => {
 
   test("the brand fonts are served from the binary, not from the network, and need no token", async () => {
     const s = await start();
-    const r = await fetch(`${s.origin}/assets/geist-sans-latin-400-normal.woff2`);
-    expect(r.status).toBe(200);
-    expect(r.headers.get("content-type")).toBe("font/woff2");
-    expect((await r.arrayBuffer()).byteLength).toBeGreaterThan(10_000);
+    for (const font of [
+      "unbounded-variable.woff2",
+      "instrument-sans-variable.woff2",
+      "jetbrains-mono-variable.woff2",
+    ]) {
+      const r = await fetch(`${s.origin}/assets/${font}`);
+      expect(r.status).toBe(200);
+      expect(r.headers.get("content-type")).toBe("font/woff2");
+      expect((await r.arrayBuffer()).byteLength).toBeGreaterThan(10_000);
+    }
     const html = await (await fetch(s.url)).text();
     expect(html).not.toMatch(/https?:\/\/fonts\./);
   });

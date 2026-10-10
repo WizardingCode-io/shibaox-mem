@@ -256,7 +256,7 @@ describe("the compiled binary's viewer", () => {
       expect(page.status).toBe(200);
       expect(await page.text()).toContain("<title>wizardingcode-mem</title>");
       const font = await fetch(
-        `${new URL(url).origin}/assets/geist-sans-latin-400-normal.woff2?token=${token}`,
+        `${new URL(url).origin}/assets/instrument-sans-variable.woff2?token=${token}`,
       );
       expect(font.status).toBe(200);
       expect((await font.arrayBuffer()).byteLength).toBeGreaterThan(10_000);

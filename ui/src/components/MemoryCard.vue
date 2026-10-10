@@ -12,7 +12,7 @@ defineEmits<{ select: [] }>();
     :data-id="memory.id"
     role="listitem"
     class="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 rounded-xl border bg-(--surface) px-4 py-3 text-left shadow-(--shadow-sm) transition-[background-color,border-color,box-shadow] duration-150 hover:bg-(--surface-hover) focus-visible:outline-none focus-visible:shadow-(--focus-ring)"
-    :class="selected ? 'border-(--shiba) shadow-[0_0_0_1px_var(--shiba)]' : 'border-(--line) hover:border-(--line-strong)'"
+    :class="selected ? 'border-(--primary) shadow-[0_0_0_1px_var(--primary)]' : 'border-(--line) hover:border-(--line-strong)'"
     @click="$emit('select')"
   >
     <span class="text-[15px] leading-[22px] font-medium text-(--ink) [overflow-wrap:anywhere]">{{ memory.title }}</span>
