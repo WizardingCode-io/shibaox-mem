@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ago, TURN_COLOR } from "../format";
+import { ago } from "../format";
 import { state } from "../viewer";
 import Empty from "./Empty.vue";
+import TurnState from "./TurnState.vue";
 
 defineEmits<{ open: [id: number]; openMemory: [id: number] }>();
 </script>
@@ -20,7 +21,7 @@ defineEmits<{ open: [id: number]; openMemory: [id: number] }>();
         class="grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-lg border border-(--line) bg-(--surface) px-4 py-2.5 text-left text-[13px] leading-5 transition-colors hover:bg-(--surface-hover) focus-visible:outline-none focus-visible:shadow-(--focus-ring)"
         @click="$emit('open', t.id)"
       >
-        <UBadge :color="TURN_COLOR[t.state] ?? 'neutral'" variant="soft" size="sm" :label="t.state" class="mt-px" />
+        <TurnState :state="t.state" class="-mt-0.5" />
         <span class="text-(--ink) [overflow-wrap:anywhere]">{{ t.prompt || "(no prompt)" }}</span>
         <span class="text-xs whitespace-nowrap text-(--ink-muted)">{{ t.agent }} · {{ ago(t.startedAt) }}</span>
         <span v-if="t.memoryIds.length" class="col-start-2 col-end-4 flex flex-wrap items-center gap-1.5 text-xs text-(--ink-muted)">
@@ -31,6 +32,6 @@ defineEmits<{ open: [id: number]; openMemory: [id: number] }>();
         <span v-else-if="t.completeness !== 'full'" class="col-start-2 col-end-4 text-xs text-(--ink-muted)">{{ t.completeness }}</span>
       </button>
     </template>
-    <Empty v-else mood="default" title="No turns yet" text="Every prompt and answer in this project lands here before it is distilled." />
+    <Empty v-else title="No turns yet" text="Every prompt and answer in this project lands here before it is distilled." />
   </div>
 </template>

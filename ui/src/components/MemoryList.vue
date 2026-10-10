@@ -60,7 +60,7 @@ const minImportance = computed({
         @click="loadList(state.items.length)"
       />
     </template>
-    <Empty v-else-if="filtered" mood="default" title="No memories match" text="Try fewer words, another kind, or a lower importance." />
-    <Empty v-else mood="sleeping" title="Nothing remembered yet" text="Start a session in any of your agents. What is worth keeping shows up here." />
+    <Empty v-else-if="filtered" title="No memories match" text="Try fewer words, another kind, or a lower importance." />
+    <Empty v-else title="Nothing remembered yet" text="Start a session in any of your agents. What is worth keeping shows up here." />
   </div>
 </template>

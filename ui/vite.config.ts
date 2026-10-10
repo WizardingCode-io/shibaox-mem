@@ -17,7 +17,11 @@ export default defineConfig({
     vue(),
     ui({
       router: false,
-      ui: { colors: { primary: "shiba", neutral: "stone" } },
+      ui: {
+        colors: { primary: "violet", neutral: "stone" },
+        // Labels speak in the machine's voice: mono, like the design system's Badge.
+        badge: { slots: { base: "font-mono tracking-[.02em]" } },
+      },
       // The theme is written from the brand's tokens in app.css; nothing is generated here.
       dts: false,
       // Every icon the app and Nuxt UI use travels inside the page: the viewer must work

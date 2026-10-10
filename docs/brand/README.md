@@ -1,3 +1,3 @@
 # Brand assets
 
-The shibaox lockup, mark and mascot (Shiba), as the README uses them. They identify the shibaox brand of WizardingCode and are not covered by the repository's Apache-2.0 licence for reuse on other products. The design system they come from lives with the brand.
+The WizardingCode lockup and "Overlap" mark, as the README uses them. They identify WizardingCode and are not covered by the repository's Apache-2.0 licence for reuse on other products. The brand book and design system they come from live with the brand.

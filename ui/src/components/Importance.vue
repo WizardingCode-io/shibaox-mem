@@ -14,7 +14,7 @@ defineProps<{ value: number }>();
       v-for="i in 5"
       :key="i"
       class="block size-1.5 rounded-full"
-      :style="{ background: i <= value ? 'var(--shiba)' : 'var(--line)' }"
+      :style="{ background: i <= value ? 'var(--violet)' : 'var(--line)' }"
     />
   </span>
 </template>
