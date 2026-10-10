@@ -1,6 +1,6 @@
 # ADR 0004 — Brand and name: shibaox-mem
 
-Date: 2026-10-05 · Status: accepted.
+Date: 2026-10-05 · Status: superseded by ADR 0011 (the shibaox brand is retired).
 
 ## Context
 
