@@ -95,14 +95,14 @@ Quit Claude Desktop (⌘Q) and open it again. In the chat the memory spans every
 
 </td></tr>
 
-<tr><td><strong>Codex</strong><br><sub>CLI</sub></td><td>
+<tr><td><strong>Codex</strong><br><sub>CLI, and Codex in the ChatGPT desktop app</sub></td><td>
 
 ```sh
 codex plugin marketplace add WizardingCode-io/wizardingcode-plugins
 codex plugin add wizardingcode-mem@wizardingcode-plugins
 ```
 
-Codex reviews a plugin's hooks before running them: open `/hooks` once and accept the wizardingcode-mem entries.
+Codex reviews a plugin's hooks before running them: open `/hooks` once and accept the wizardingcode-mem entries. The ChatGPT desktop app shares Codex's configuration (`~/.codex/config.toml`), so Codex there has the memory too, and **WizardingCode** shows as a source on its **Plugins** page.
 
 </td></tr>
 
@@ -111,6 +111,8 @@ Codex reviews a plugin's hooks before running them: open `/hooks` once and accep
 ```sh
 gemini extensions install https://github.com/WizardingCode-io/wizardingcode-mem
 ```
+
+It is also listed in the [Gemini CLI extensions gallery](https://geminicli.com/extensions/browse/).
 
 </td></tr>
 
@@ -230,7 +232,40 @@ A local page over your memories, in WizardingCode's app design:
 
 ## Settings
 
-Everything is in one file, `~/.wizardingcode/mem/env`, readable by you only, edited from the viewer's **Settings** tab or by hand. A variable set in the environment always wins over the file.
+Every setting can be changed from the viewer, with no file to edit and no command to type. Open the viewer (it opens by itself when a session starts, or run `wizardingcode-mem ui`) and choose the gear at the bottom left.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-judge-dark.png">
+    <img src="docs/images/settings-judge-light.png" alt="Settings, Judge page: paste a TypeSafe key and save it" width="820">
+  </picture>
+</p>
+
+One page at a time, in groups:
+
+| Page | What you do there |
+|---|---|
+| **Agents** | See which agents and apps have the memory, and what to do for the ones that do not |
+| **Health** | Check the database, the search and the hooks; anything wrong says how to fix it |
+| **Judge** | Paste a TypeSafe key (optional) and turn it on or off |
+| **Retention** | Choose how long old turns are kept, preview what a clean-up removes, run it |
+| **Storage** | Move the database to another disk, an external drive or a NAS |
+| **Backups** | Pick a folder or a bucket, how often and how many to keep; back up now or restore one |
+| **Viewer** | Whether the viewer opens when a session starts |
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-backups-dark.png">
+    <img src="docs/images/settings-backups-light.png" alt="Settings, Backups page: choose where backups go" width="820">
+  </picture>
+</p>
+
+Changes are saved to one file, `~/.wizardingcode/mem/env`, readable by you only.
+
+<details>
+<summary>The same settings, by hand</summary>
+
+Edit `~/.wizardingcode/mem/env` yourself, or set the variable in the environment, which always wins over the file.
 
 | Key | What it does | Default |
 |---|---|---|
@@ -244,7 +279,9 @@ Everything is in one file, `~/.wizardingcode/mem/env`, readable by you only, edi
 | `WIZARDINGCODE_MEM_BACKUP_KEEP` | How many backups to keep | `10` |
 | `WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT` · `_REGION` · `_ACCESS_KEY` · `_SECRET_KEY` | The bucket's credentials (AWS, R2, MinIO, B2) | — |
 
-The tab also shows what `doctor` sees for every agent, runs `compact` with a preview first, and holds two things no file can:
+</details>
+
+Two of the pages do more than a file could:
 
 - **Storage.** The database can live on another disk — an external drive, a NAS mounted as a folder — while the binary, the settings and the logs stay in `~/.wizardingcode/mem`, so the plugins never notice. Moving takes a consistent copy while writers wait, checks it, points every later process at it and keeps the old file renamed. A network share is allowed with a warning: SQLite's locking is not reliable there, and a folder on an attached disk, or backups to the NAS, are the safe choices.
 - **Backups.** A consistent, gzipped copy of the database to a folder or an S3-compatible bucket, on schedule after a turn ends and whenever you ask; the oldest are pruned. Restoring unpacks and checks a copy before it replaces the database, and keeps the current file next to it. Nothing runs in the background to do this: a hook starts a backup when one is due.
