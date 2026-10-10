@@ -1,6 +1,7 @@
 import { existsSync, readSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+import { doctorContext } from "../../doctor/context.ts";
 import { stageBinary } from "../../install/binary.ts";
 import { installClaudeCode } from "../../install/claude-code.ts";
 import { codexContext, installCodex } from "../../install/codex.ts";
@@ -9,6 +10,7 @@ import { cursorContext, installCursor } from "../../install/cursor.ts";
 import { AGENT_ORDER, detectAgents } from "../../install/detect.ts";
 import { geminiContext, installGemini } from "../../install/gemini.ts";
 import type { InstallResult } from "../../install/hooks-file.ts";
+import { findLegacyPlugins } from "../../install/legacy-plugins.ts";
 import { installOpenCode, opencodePluginPath } from "../../install/opencode.ts";
 import {
   describeImport,
@@ -35,7 +37,7 @@ const USAGE = `Usage: wizardingcode-mem install [<agent>] [--binary <path>] [--y
 
   <agent>             claude-code | codex | cursor | gemini | opencode; none installs for every agent found
   --binary <path>     The wizardingcode-mem binary the hooks will run (needed when running from source)
-  --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
+  --yes               Retire claude-mem and shibaox-mem without asking (disable or uninstall their plugins)
   --keep-claude-mem   Leave claude-mem installed and running
   --no-import         Do not import claude-mem's memories
 `;
@@ -80,6 +82,40 @@ function confirm(question: string): boolean {
   if (read === 0) return false;
   const answer = buffer.toString("utf8", 0, read).trim().toLowerCase();
   return answer === "" || answer === "y" || answer === "yes" || answer === "s" || answer === "sim";
+}
+
+/**
+ * The agent's shibaox-mem plugin (this product until 0.3.0) is uninstalled through the
+ * agent's own command, when it has one and the user agrees; otherwise, said what to do.
+ */
+function retireLegacy(agent: string, rest: string[]): string[] {
+  const lines: string[] = [];
+  for (const found of findLegacyPlugins(doctorContext(defaultDataDir()))) {
+    if (found.agent !== agent) continue;
+    const agreed =
+      found.command !== null &&
+      (rest.includes("--yes") ||
+        confirm(`${found.name} (this product's old name) is still installed. Uninstall it?`));
+    if (agreed && found.command !== null) {
+      let ok = false;
+      try {
+        ok =
+          Bun.spawnSync(found.command, { stdin: "ignore", stdout: "ignore", stderr: "ignore" })
+            .exitCode === 0;
+      } catch {
+        // The agent's command is not on PATH.
+      }
+      if (ok) {
+        lines.push(`  ${found.name}: uninstalled`);
+        continue;
+      }
+    }
+    lines.push(
+      `  ${found.name}: still installed. Two memories will inject into the same session until you run:`,
+      `    ${found.hint}`,
+    );
+  }
+  return lines;
 }
 
 /** `wizardingcode-mem install [<agent>] [options]` */
@@ -132,7 +168,7 @@ function installOne(agent: string, rest: string[]): number {
     return 1;
   }
 
-  const lines: string[] = [];
+  const lines: string[] = retireLegacy(agent, rest);
   try {
     if (agent === "codex") {
       process.stdout.write(
@@ -148,6 +184,7 @@ function installOne(agent: string, rest: string[]): number {
           `  plugin: ${result.pluginPath}${result.changed ? "" : " (already up to date)"}`,
           `  binary: ${binaryPath}`,
           "  tools:  memory_search, memory_get, memory_save (native, no MCP server needed)",
+          ...lines,
           "Start a new OpenCode session for it to take effect.",
           "",
         ].join("\n"),

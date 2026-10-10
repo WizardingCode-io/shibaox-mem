@@ -119,6 +119,13 @@ describe("install claude-code", () => {
     expect(settings().hooks.UserPromptSubmit).toEqual([ours("prompt")]);
   });
 
+  test("takes the place of a shibaox-mem install, the product's name until 0.3.0", () => {
+    installClaudeCode(context("/Users/me/.shibaox/mem/bin/shibaox-mem"));
+    installClaudeCode(context());
+    expect(readFileSync(settingsPath, "utf8")).not.toContain("shibaox");
+    expect(settings().hooks.UserPromptSubmit).toEqual([ours("prompt")]);
+  });
+
   test("keeps the file's own indentation", () => {
     writeFileSync(settingsPath, '{\n\t"model": "opus"\n}\n');
     installClaudeCode(context());
@@ -161,6 +168,7 @@ describe("install claude-code", () => {
     const result = installClaudeCode(context());
     expect(commands).toEqual([
       ["claude", "mcp", "remove", "--scope", "user", "wizardingcode-mem"],
+      ["claude", "mcp", "remove", "--scope", "user", "shibaox-mem"],
       ["claude", "mcp", "add", "--scope", "user", "wizardingcode-mem", "--", BIN, "mcp"],
     ]);
     expect(result.mcp).toBe("registered");
@@ -227,7 +235,10 @@ describe("uninstall claude-code", () => {
     writeFileSync(join(dataDir, "wizardingcode-mem.db"), "data");
     commands = [];
     uninstallClaudeCode(context());
-    expect(commands).toEqual([["claude", "mcp", "remove", "--scope", "user", "wizardingcode-mem"]]);
+    expect(commands).toEqual([
+      ["claude", "mcp", "remove", "--scope", "user", "wizardingcode-mem"],
+      ["claude", "mcp", "remove", "--scope", "user", "shibaox-mem"],
+    ]);
     expect(receipts()).toEqual([]);
     expect(readFileSync(join(dataDir, "wizardingcode-mem.db"), "utf8")).toBe("data");
   });
@@ -546,4 +557,58 @@ describe("wizardingcode-mem install / uninstall", () => {
     expect(result.exitCode).toBe(64);
     expect(result.stderr).toContain("claude-code");
   });
+});
+
+describe("wizardingcode-mem install, with the shibaox-mem plugin of 0.3.0 still enabled", () => {
+  let binary: string;
+  let calls: string;
+  const env = () => ({
+    HOME: home,
+    CLAUDE_CONFIG_DIR: join(home, ".claude"),
+    WIZARDINGCODE_MEM_DATA_DIR: dataDir,
+    WIZARDINGCODE_MEM_CLAUDE_MEM_DIR: join(home, ".claude-mem"),
+    PATH: join(home, "bin"),
+  });
+
+  beforeEach(() => {
+    binary = join(home, "wizardingcode-mem");
+    writeFileSync(binary, "");
+    calls = join(home, "calls.txt");
+    // A stand-in for Claude Code's CLI that records what it was asked to do.
+    mkdirSync(join(home, "bin"));
+    writeFileSync(join(home, "bin", "claude"), `#!/bin/sh\necho "$@" >> '${calls}'\n`, {
+      mode: 0o755,
+    });
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": true } }, null, 2),
+    );
+  });
+
+  test.skipIf(process.platform === "win32")(
+    "uninstalls it through Claude Code, when told to go ahead",
+    async () => {
+      const result = await runCliWith(
+        { env: env() },
+        "install",
+        "claude-code",
+        "--binary",
+        binary,
+        "--yes",
+      );
+      expect(result.exitCode).toBe(0);
+      expect(readFileSync(calls, "utf8")).toContain("plugin uninstall shibaox-mem@shibaox-plugins");
+      expect(result.stdout).toContain("shibaox-mem@shibaox-plugins: uninstalled");
+    },
+  );
+
+  test.skipIf(process.platform === "win32")(
+    "without a terminal and without --yes, only says what to run",
+    async () => {
+      const result = await runCliWith({ env: env() }, "install", "claude-code", "--binary", binary);
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(calls) ? readFileSync(calls, "utf8") : "").not.toContain("uninstall");
+      expect(result.stdout).toContain("claude plugin uninstall shibaox-mem@shibaox-plugins");
+    },
+  );
 });

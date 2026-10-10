@@ -7,6 +7,7 @@ import { CODEX } from "../install/codex.ts";
 import { CURSOR } from "../install/cursor.ts";
 import { GEMINI } from "../install/gemini.ts";
 import { type HostSpec, inspectHooksFile } from "../install/hooks-file.ts";
+import { findLegacyPlugins } from "../install/legacy-plugins.ts";
 import { PLUGIN_MARKER } from "../install/opencode-plugin.ts";
 import { Breaker } from "../judge/breaker.ts";
 import { keyFingerprint } from "../judge/key.ts";
@@ -35,6 +36,8 @@ export interface DoctorContext {
   /** Whether a host's command is on this machine; null when it is not. */
   which: (command: string) => string | null;
   now: number;
+  /** SHIBAOX_* variables set in the environment: the names until 0.3.0. */
+  legacyVariables?: string[];
 }
 
 // Folders that copy files behind SQLite's back, or cannot lock them properly.
@@ -387,6 +390,24 @@ function typeSafe(context: DoctorContext, db: Db | null): Check {
   return { name, status: "ok", detail: `configured (key …${fingerprint.slice(-6)})` };
 }
 
+/** What is left of shibaox-mem, this product's name until 0.3.0; null when nothing is. */
+function legacy(context: DoctorContext): Check | null {
+  const problems = findLegacyPlugins(context).map(
+    (found) => `${found.name} still enabled; ${found.hint}`,
+  );
+  const variables = context.legacyVariables ?? [];
+  if (variables.length > 0) {
+    problems.push(
+      `old variables, still honoured for now: ${variables
+        .map((name) => `${name} → WIZARDINGCODE_${name.slice("SHIBAOX_".length)}`)
+        .join(", ")}`,
+    );
+  }
+  return problems.length === 0
+    ? null
+    : { name: "shibaox-mem", status: "warn", detail: problems.join("; ") };
+}
+
 /** Looks, and changes nothing: no directory, database or setting is created or altered. */
 export function runChecks(context: DoctorContext): Check[] {
   const { check: databaseCheck, db } = database(context);
@@ -407,7 +428,8 @@ export function runChecks(context: DoctorContext): Check[] {
       hooksHost("Cursor", CURSOR, context.cursorHooksPath, "cursor", context),
       hooksHost("Gemini CLI", GEMINI, context.geminiSettingsPath, "gemini", context),
       openCode(context),
-    ];
+      legacy(context),
+    ].filter((check): check is Check => check !== null);
   } finally {
     db?.close();
   }

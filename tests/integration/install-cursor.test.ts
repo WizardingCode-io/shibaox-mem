@@ -75,6 +75,20 @@ describe("install cursor", () => {
     expect(mcp().mcpServers["wizardingcode-mem"].command).toBe(BIN);
   });
 
+  test("takes the place of a shibaox-mem install, hooks and MCP server alike", () => {
+    writeFileSync(
+      mcpPath,
+      JSON.stringify({
+        mcpServers: { "shibaox-mem": { command: "/x/shibaox-mem", args: ["mcp"] } },
+      }),
+    );
+    installCursor(context("/Users/me/.shibaox/mem/bin/shibaox-mem"));
+    installCursor(context());
+    expect(readFileSync(hooksPath, "utf8")).not.toContain("shibaox");
+    expect(hooks().hooks.sessionStart).toEqual([ours("session-start")]);
+    expect(Object.keys(mcp().mcpServers)).toEqual(["wizardingcode-mem"]);
+  });
+
   test("installing twice changes nothing the second time", () => {
     installCursor(context());
     const first = readFileSync(hooksPath, "utf8");

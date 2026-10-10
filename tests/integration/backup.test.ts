@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { backupName, lastBackup, restoreBackup, runBackup } from "../../src/backup/backup.ts";
 import { backupDue } from "../../src/backup/schedule.ts";
-import { folderTarget, parseS3Url } from "../../src/backup/target.ts";
+import { folderTarget, parseBackupName, parseS3Url } from "../../src/backup/target.ts";
 import { resolveProject } from "../../src/core/project.ts";
 import type { Redacted } from "../../src/core/redact.ts";
 import { DB_FILE, type Db, openDb } from "../../src/store/db.ts";
@@ -78,6 +78,13 @@ const run = (now = NOW, keep = 10) =>
 describe("backupName", () => {
   test("sorts by time and carries the schema version", () => {
     expect(backupName(NOW, 2)).toBe("wizardingcode-mem-20261006T103015Z-v2.db.gz");
+  });
+
+  test("still knows the copies made under the old name", () => {
+    expect(parseBackupName("shibaox-mem-20261006T103015Z-v2.db.gz")).toEqual({
+      at: NOW,
+      version: 2,
+    });
   });
 });
 

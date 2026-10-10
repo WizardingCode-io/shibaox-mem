@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import pkg from "../../package.json" with { type: "json" };
+import { applyLegacyEnv, migrateLegacyData } from "../util/legacy.ts";
 import { EXIT_USAGE } from "./exit.ts";
 
 export interface CommandModule {
@@ -47,6 +48,26 @@ async function main(argv: string[]): Promise<number> {
   if (load === undefined) {
     process.stderr.write(`wizardingcode-mem: unknown command "${name}"\n\n${USAGE}`);
     return EXIT_USAGE;
+  }
+  // A shibaox-mem install (0.3.0 and before) is taken over before anything reads the store.
+  applyLegacyEnv(process.env);
+  if (process.env.WIZARDINGCODE_MEM_MIGRATE !== "off") {
+    let migration: string;
+    try {
+      migration = migrateLegacyData();
+    } catch (error) {
+      migration = `failed: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    if (migration !== "none" && migration !== "migrated") {
+      // Hooks fail open; nothing may start an empty memory beside the one being moved.
+      if (name === "hook") return 0;
+      process.stderr.write(
+        migration === "busy"
+          ? "wizardingcode-mem: another process is moving the shibaox-mem data; try again in a moment\n"
+          : `wizardingcode-mem: could not take over the shibaox-mem data (${migration.slice(8)}); nothing was changed\n`,
+      );
+      return 1;
+    }
   }
   const command = await load();
   return await command.run(rest);
