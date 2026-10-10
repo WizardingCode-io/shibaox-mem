@@ -180,7 +180,7 @@ onMounted(async () => {
             <div class="flex min-h-0 min-w-0 flex-1 flex-col">
               <MemoryList :docked="isWide && state.detail !== null" @search="topBar?.focus()" />
             </div>
-            <MemoryDetail v-if="isWide && state.detail" class="w-80 flex-none border-l border-(--line) motion-safe:animate-[dock-in_240ms_ease-out]" @open-turn="openTurn" />
+            <MemoryDetail v-if="isWide && state.detail" @open-turn="openTurn" />
           </div>
           <TurnsView v-else-if="state.tab === 'turns'" @open-memory="openMemory" />
           <Settings v-else-if="state.tab === 'settings'" />
@@ -189,7 +189,7 @@ onMounted(async () => {
       </div>
     </div>
     <USlideover v-model:open="sheet" :ui="{ content: 'max-w-[320px]' }" title="Memory" :close="false">
-      <template #content><MemoryDetail class="h-full" @open-turn="openTurn" /></template>
+      <template #content><MemoryDetail class="h-full w-full border-l-0" @open-turn="openTurn" /></template>
     </USlideover>
     <Palette v-model:open="palette" @tab="tab = $event" />
   </UApp>

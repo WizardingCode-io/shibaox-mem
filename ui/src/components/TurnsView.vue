@@ -4,8 +4,10 @@
 // the dark trace panel (400px): stats strip, actions, a timeline of steps.
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { api, type TurnDetail, type TurnItem } from "../api";
-import { AGENT_TILE, clock, describePrompt, took, TURN_STATUS } from "../format";
+import { AGENT_TILE, clock, describePrompt, KIND_TONE, took, TURN_STATUS } from "../format";
 import { project, state } from "../viewer";
+import Dock from "./Dock.vue";
+import DockProps from "./DockProps.vue";
 import Empty from "./Empty.vue";
 
 const emit = defineEmits<{ openMemory: [id: number] }>();
@@ -45,6 +47,10 @@ const menu = <T extends string>(current: T | null, values: T[], label: (v: T) =>
 ];
 const agentMenu = computed(() => menu(filter.agent, agents.value, (v) => v, (v) => (filter.agent = v)));
 const stateMenu = computed(() => menu(filter.state, ["done", "skipped", "failed", "pending", "open", "processing"], (v) => status(v).label, (v) => (filter.state = v)));
+const PERIOD_LABEL = { today: "Today", week: "7 days", all: "All" } as const;
+const periodMenu = computed(() => [
+  (["today", "week", "all"] as const).map((p) => ({ label: PERIOD_LABEL[p], type: "checkbox" as const, checked: filter.period === p, onUpdateChecked: () => (filter.period = p) })),
+]);
 const sourceMenu = computed(() => menu(filter.source, ["prompt", "task", "subagent"] as Source[], (v) => SOURCE_LABEL[v], (v) => (filter.source = v)));
 
 // Sorting: one column at a time; a second click flips it.
@@ -108,9 +114,6 @@ const status = (s: string) => TURN_STATUS[s] ?? { label: s, tone: { bg: "var(--p
 const tile = (agent: string) => AGENT_TILE[agent] ?? { letter: agent.charAt(0), bg: "#D9D4CD" };
 const line = (t: TurnItem) => describePrompt(t.prompt);
 const traceLine = computed(() => (trace.value ? describePrompt(trace.value.prompt) : null));
-// On the console the states take the console's own hues (Sales OS: live aqua, run blue, warn sun, danger).
-const CONSOLE_FG: Record<string, string> = { done: "#2EE6C8", failed: "#FF6B85", open: "#7AA8FF", processing: "#7AA8FF", pending: "#FFC53D" };
-const KIND_CONSOLE: Record<string, string> = { decision: "#7AA8FF", fix: "#2EE6C8", gotcha: "#FFC53D", convention: "#B894FF", change: "#9A938B", discovery: "#FF6FD8" };
 const time = (ms: number) => new Date(ms).toLocaleTimeString("en-GB");
 const searchField = ref<HTMLInputElement | null>(null);
 async function openSearch() {
@@ -135,9 +138,7 @@ async function copyId() {
         <UDropdownMenu :items="stateMenu" :content="{ align: 'start' }"><button type="button" class="wz-pill" :aria-pressed="filter.state !== null">Status: <b class="font-semibold text-(--ink)">{{ filter.state ? status(filter.state).label : "Any" }}</b><UIcon name="i-lucide-chevron-down" class="size-3" /></button></UDropdownMenu>
         <UDropdownMenu :items="sourceMenu" :content="{ align: 'start' }"><button type="button" class="wz-pill" :aria-pressed="filter.source !== null">Source: <b class="font-semibold text-(--ink)">{{ filter.source ? SOURCE_LABEL[filter.source] : "Any" }}</b><UIcon name="i-lucide-chevron-down" class="size-3" /></button></UDropdownMenu>
         <button type="button" class="wz-pill" :aria-pressed="filter.became" @click="filter.became = !filter.became">Became a memory</button>
-        <div class="wz-segmented ml-1" role="group" aria-label="Period">
-          <button v-for="p in [{ k: 'today', l: 'Today' }, { k: 'week', l: '7 days' }, { k: 'all', l: 'All' }] as const" :key="p.k" type="button" :aria-pressed="filter.period === p.k" @click="filter.period = p.k">{{ p.l }}</button>
-        </div>
+        <UDropdownMenu :items="periodMenu" :content="{ align: 'start' }"><button type="button" class="wz-pill" :aria-pressed="filter.period !== 'all'">Period: <b class="font-semibold text-(--ink)">{{ PERIOD_LABEL[filter.period] }}</b><UIcon name="i-lucide-chevron-down" class="size-3" /></button></UDropdownMenu>
         <button v-if="filtered" type="button" class="wz-link ml-1" @click="clearFilters">Clear</button>
         <div class="flex-1" />
         <label v-if="searching" class="flex h-7 w-52 items-center gap-1.5 rounded-lg border border-(--btn-secondary-line) bg-(--paper-raised) px-2">
@@ -145,7 +146,7 @@ async function copyId() {
           <input ref="searchField" v-model="filter.text" type="search" placeholder="Search prompts" aria-label="Search prompts" class="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] outline-none focus-visible:outline-none" @keydown.esc="openSearch">
         </label>
         <button type="button" class="wz-icon-btn" :aria-pressed="searching" aria-label="Search prompts" @click="openSearch"><UIcon name="i-lucide-search" class="size-[15px]" /></button>
-        <UButton color="neutral" variant="outline" label="Export CSV" :disabled="!rows.length" @click="exportCsv" />
+        <UTooltip text="Export what is shown as CSV"><UButton color="neutral" variant="outline" icon="i-lucide-download" :label="trace ? undefined : 'Export CSV'" aria-label="Export CSV" :disabled="!rows.length" @click="exportCsv" /></UTooltip>
       </div>
       <div class="flex h-6 flex-none items-center gap-3 px-4 whitespace-nowrap">
         <span class="text-[13px] leading-[18px] font-semibold">{{ rows.length.toLocaleString("en-GB") }} {{ filtered ? `of ${state.turns.length.toLocaleString("en-GB")} ` : "recent " }}turns</span>
@@ -198,87 +199,72 @@ async function copyId() {
       <Empty v-else icon="i-lucide-history" title="No turns yet" text="Every prompt and answer in this project lands here before it is distilled." />
     </div>
 
-    <!-- The trace (Runs & evals): 400px, the console surface in both themes. -->
-    <aside v-if="trace && traceLine" class="wz-console flex w-[400px] flex-none flex-col gap-3 overflow-y-auto border-l border-(--console-line) p-4 motion-safe:animate-[dock-in_240ms_ease-out]" aria-label="Turn trace">
-      <div class="flex h-6 flex-none items-center gap-2">
-        <span class="wz-label">Trace · turn {{ trace.id }}</span>
-        <span class="wz-status wz-console-status" :class="status(trace.state).shape" :style="{ color: CONSOLE_FG[trace.state] ?? 'var(--console-muted)' }">{{ status(trace.state).label }}</span>
-        <span class="flex-1" />
-        <button type="button" aria-label="Copy the turn id" class="flex size-6 items-center justify-center rounded-md text-(--console-muted) hover:text-(--console-ink)" @click="copyId"><UIcon name="i-lucide-copy" class="size-3.5" /></button>
-        <button type="button" aria-label="Close the trace" class="flex size-6 items-center justify-center rounded-md text-(--console-muted) hover:text-(--console-ink)" @click="selected = null"><UIcon name="i-lucide-x" class="size-3.5" /></button>
-      </div>
-      <div class="flex min-w-0 flex-none items-center gap-2">
-        <span aria-hidden="true" class="wz-tile" :style="{ background: tile(trace.agent).bg }">{{ tile(trace.agent).letter }}</span>
-        <span class="min-w-0 truncate text-sm leading-5 font-semibold">{{ traceLine.title }}</span>
-      </div>
-      <div class="wz-console-box grid flex-none grid-cols-4 gap-2 px-2.5 py-2">
-        <div v-for="s in [
-          { k: 'Took', v: took(trace.startedAt, trace.endedAt) },
-          { k: 'Read', v: `${trace.filesRead.length} files` },
-          { k: 'Changed', v: `${trace.filesChanged.length} files` },
-          { k: 'Commands', v: String(trace.commands.length) },
-        ]" :key="s.k" class="flex min-w-0 flex-col">
-          <span class="wz-label">{{ s.k }}</span><span class="wz-mono text-(--console-ink)">{{ s.v }}</span>
+    <!-- The turn, in the same side panel as a memory. -->
+    <Dock v-if="trace && traceLine" type="Turn" icon="i-lucide-history" :id="trace.id" label="Turn" @close="selected = null">
+      <template #actions>
+        <UTooltip text="Copy the turn id"><button type="button" class="wz-icon-btn" aria-label="Copy the turn id" @click="copyId"><UIcon name="i-lucide-copy" class="size-[15px]" /></button></UTooltip>
+      </template>
+      <div class="flex flex-col gap-2">
+        <h2 class="m-0 line-clamp-3 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ traceLine.title }}</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="wz-status" :class="status(trace.state).shape" :style="{ background: status(trace.state).tone.bg, color: status(trace.state).tone.fg }">{{ status(trace.state).label }}</span>
+          <span class="wz-meta">{{ { prompt: "Prompt", task: "Background task", subagent: "Subagent report" }[traceLine.kind] }}<template v-if="trace.completeness !== 'full'"> · {{ trace.completeness }}</template></span>
         </div>
       </div>
-      <div v-if="trace.memories.length" class="flex flex-none items-center gap-2">
-        <button v-for="m in trace.memories.slice(0, 2)" :key="m.id" type="button" class="wz-console-btn" @click="emit('openMemory', m.id)">Open #{{ m.id }}</button>
-        <span class="flex-1" />
-      </div>
+      <DockProps :rows="[
+        { icon: 'i-lucide-bot', k: 'Agent', v: trace.agent },
+        { icon: 'i-lucide-clock', k: 'Started', v: `${new Date(trace.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · ${time(trace.startedAt)}`, mono: true },
+        { icon: 'i-lucide-timer', k: 'Took', v: took(trace.startedAt, trace.endedAt), mono: true },
+        { icon: 'i-lucide-files', k: 'Files', v: `${trace.filesChanged.length} changed · ${trace.filesRead.length} read` },
+        { icon: 'i-lucide-terminal', k: 'Commands', v: String(trace.commands.length), mono: true },
+      ]" />
 
-      <div class="flex flex-none flex-col gap-0.5">
-        <div class="wz-step">
-          <span class="wz-step-icon"><UIcon name="i-lucide-message-square" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">{{ traceLine.kind === "task" ? "Task notification" : traceLine.kind === "subagent" ? "Subagent report" : "Prompt" }}</span><span class="flex-1" /><span class="wz-mono text-(--console-muted)">{{ time(trace.startedAt) }}</span></div>
-            <span class="wz-meta">{{ trace.agent }}<template v-if="trace.completeness !== 'full'"> · {{ trace.completeness }}</template></span>
-            <pre class="wz-code max-h-48 overflow-y-auto">{{ trace.prompt }}</pre>
-          </div>
+      <section class="flex flex-col gap-1 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Became</h3><span class="wz-mono text-(--ink-muted)">{{ trace.memories.length }}</span></div>
+        <button v-for="m in trace.memories" :key="m.id" type="button" class="flex h-8 min-w-0 items-center gap-2 rounded-md text-left hover:bg-(--surface-hover)" @click="emit('openMemory', m.id)">
+          <span class="wz-ring" :style="{ color: KIND_TONE[m.kind].fg }" />
+          <span class="min-w-0 flex-1 truncate text-[13px]">{{ m.title }}</span>
+          <span class="wz-mono flex-none text-(--ink-muted)">#{{ m.id }}</span>
+        </button>
+        <p v-if="!trace.memories.length" class="m-0 text-xs leading-4 text-(--ink-muted)">{{ trace.state === "skipped" ? "Nothing worth keeping, by the judge." : trace.state === "failed" ? "Distillation failed." : trace.state === "done" ? "Reinforced what was already known." : "Not distilled yet." }}</p>
+      </section>
+
+      <section class="flex flex-col gap-2 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center gap-2"><h3 class="m-0 flex-1 text-sm font-semibold">{{ { prompt: "Prompt", task: "Task notification", subagent: "Subagent report" }[traceLine.kind] }}</h3><span class="wz-mono text-(--ink-muted)">{{ time(trace.startedAt) }}</span></div>
+        <pre class="wz-console m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.prompt }}</pre>
+      </section>
+
+      <section v-if="trace.filesChanged.length || trace.filesRead.length" class="flex flex-col gap-1 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Files</h3><span class="wz-mono text-(--ink-muted)">{{ trace.filesChanged.length + trace.filesRead.length }}</span></div>
+        <div v-for="f in [...trace.filesChanged.map((p) => ({ p, role: 'changed' })), ...trace.filesRead.map((p) => ({ p, role: 'read' }))].slice(0, 12)" :key="f.role + f.p" class="flex h-7 min-w-0 items-center gap-2">
+          <UIcon :name="f.role === 'read' ? 'i-lucide-file' : 'i-lucide-file-pen'" class="size-3.5 flex-none text-(--ink-muted)" />
+          <span class="wz-mono" :title="f.p">{{ f.p }}</span>
+          <span class="flex-1" />
+          <span class="wz-meta flex-none">{{ f.role }}</span>
         </div>
-        <div v-if="trace.filesRead.length || trace.filesChanged.length" class="wz-step">
-          <span class="wz-step-icon"><UIcon name="i-lucide-files" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">Files</span><span class="flex-1" /><span class="wz-mono text-(--console-muted)">{{ trace.filesChanged.length }} changed · {{ trace.filesRead.length }} read</span></div>
-            <span v-for="f in trace.filesChanged" :key="`c${f}`" class="wz-mono text-(--console-ink)" :title="f">{{ f }}</span>
-            <span v-for="f in trace.filesRead.slice(0, 6)" :key="`r${f}`" class="wz-mono text-(--console-muted)" :title="f">{{ f }}</span>
-            <span v-if="trace.filesRead.length > 6" class="wz-meta">+{{ trace.filesRead.length - 6 }} more read</span>
-          </div>
-        </div>
-        <div v-if="trace.commands.length" class="wz-step">
-          <span class="wz-step-icon"><UIcon name="i-lucide-terminal" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">Commands</span><span class="flex-1" /><span class="wz-mono text-(--console-muted)">{{ trace.commands.length }}</span></div>
-            <pre class="wz-code max-h-40 overflow-y-auto">{{ trace.commands.join("\n") }}</pre>
-          </div>
-        </div>
-        <div v-if="trace.errors.length || trace.lastError" class="wz-step">
-          <span class="wz-step-icon text-(--console-danger)"><UIcon name="i-lucide-triangle-alert" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">Errors</span></div>
-            <pre class="wz-code max-h-32 overflow-y-auto text-[#FF6B85]">{{ [...trace.errors, trace.lastError].filter(Boolean).join("\n") }}</pre>
-          </div>
-        </div>
-        <div v-if="trace.finalText" class="wz-step">
-          <span class="wz-step-icon"><UIcon name="i-lucide-reply" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">Answer</span><span class="flex-1" /><span v-if="trace.endedAt" class="wz-mono text-(--console-muted)">{{ time(trace.endedAt) }}</span></div>
-            <p class="m-0 mt-1 text-xs leading-4 whitespace-pre-wrap text-(--console-ink) [overflow-wrap:anywhere]">{{ trace.finalText }}</p>
-          </div>
-        </div>
-        <div class="wz-step">
-          <span class="wz-step-icon" :class="trace.memories.length ? 'text-[#2EE6C8]' : ''"><UIcon name="i-lucide-sparkles" class="size-3.5" /></span>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex h-[18px] items-center gap-2"><span class="text-[13px] font-semibold">Judged</span></div>
-            <template v-if="trace.memories.length">
-              <button v-for="m in trace.memories" :key="m.id" type="button" class="flex min-w-0 items-center gap-2 py-0.5 text-left" @click="emit('openMemory', m.id)">
-                <span class="wz-stage" :style="{ background: 'var(--console-raised)', color: KIND_CONSOLE[m.kind] }">{{ m.kind }}</span>
-                <span class="min-w-0 truncate text-xs text-(--console-ink) hover:underline">{{ m.title }}</span>
-              </button>
-            </template>
-            <span v-else class="wz-meta">{{ trace.state === "skipped" ? "Nothing worth keeping." : trace.state === "failed" ? "Distillation failed." : trace.state === "done" ? "Reinforced what was already known." : "Not distilled yet." }}</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+        <span v-if="trace.filesChanged.length + trace.filesRead.length > 12" class="wz-meta">+{{ trace.filesChanged.length + trace.filesRead.length - 12 }} more</span>
+      </section>
+
+      <section v-if="trace.commands.length" class="flex flex-col gap-2 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Commands</h3><span class="wz-mono text-(--ink-muted)">{{ trace.commands.length }}</span></div>
+        <pre class="wz-console m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.commands.join("\n") }}</pre>
+      </section>
+
+      <section v-if="trace.errors.length || trace.lastError" class="flex flex-col gap-2 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold text-(--danger)">Errors</h3></div>
+        <pre class="m-0 max-h-32 overflow-y-auto rounded-lg bg-(--danger-soft) px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap text-(--danger) [overflow-wrap:anywhere]">{{ [...trace.errors, trace.lastError].filter(Boolean).join("\n") }}</pre>
+      </section>
+
+      <section v-if="trace.finalText" class="flex flex-col gap-2 border-t border-(--line) pt-3">
+        <div class="flex h-5 items-center gap-2"><h3 class="m-0 flex-1 text-sm font-semibold">Answer</h3><span v-if="trace.endedAt" class="wz-mono text-(--ink-muted)">{{ time(trace.endedAt) }}</span></div>
+        <p class="m-0 text-[13px] leading-[18px] whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.finalText }}</p>
+      </section>
+
+      <template #footer>
+        <UButton v-if="trace.memories.length" color="neutral" variant="outline" icon="i-lucide-sticky-note" :label="`Open #${trace.memories[0]?.id}`" @click="emit('openMemory', trace.memories[0]!.id)" />
+        <span class="flex-1" />
+        <span v-if="!trace.memories.length" class="wz-meta">Pruned after the retention period</span>
+      </template>
+    </Dock>
   </div>
 </template>
