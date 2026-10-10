@@ -95,6 +95,9 @@ export function migrateLegacyData(options: MigrateOptions = {}): MigrateResult {
   try {
     if (moveDir && !existsSync(join(target, DB)) && !existsSync(join(target, ENV_FILE))) {
       takeOver(legacy, target, move);
+      // The 0.3.0 viewer on record reads the old database: a session start must start a
+      // new one instead of showing that one.
+      rmSync(join(target, "ui.json"), { force: true });
     }
     rewriteKeys(join(target, ENV_FILE));
     const storeDir = storeDirOf(target, env);

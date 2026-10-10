@@ -77,7 +77,6 @@ describe("migrateLegacyData", () => {
     db.close();
     const target = join(home, ".wizardingcode", "mem");
     expect(existsSync(join(home, ".shibaox", "mem"))).toBe(false);
-    expect(existsSync(join(target, "ui.json"))).toBe(true);
     expect(existsSync(join(target, "shibaox-mem.db"))).toBe(false);
     expect(rows(join(target, "wizardingcode-mem.db"))).toEqual([{ v: "kept" }]);
     expect(readFileSync(join(target, "env"), "utf8")).toBe(
@@ -85,6 +84,19 @@ describe("migrateLegacyData", () => {
     );
     if (process.platform !== "win32")
       expect(statSync(join(target, "env")).mode & 0o777).toBe(0o600);
+  });
+
+  test("forgets the 0.3.0 viewer: it reads the old database and must not be reused", () => {
+    legacyInstall().db.close();
+    expect(migrateLegacyData({ env: {}, home })).toBe("migrated");
+    expect(existsSync(join(home, ".wizardingcode", "mem", "ui.json"))).toBe(false);
+  });
+
+  test("the same when merging into a directory the new plugin created", () => {
+    legacyInstall().db.close();
+    mkdirSync(join(home, ".wizardingcode", "mem", "bin"), { recursive: true });
+    expect(migrateLegacyData({ env: {}, home })).toBe("migrated");
+    expect(existsSync(join(home, ".wizardingcode", "mem", "ui.json"))).toBe(false);
   });
 
   test("runs once: a second call finds nothing to do", () => {
@@ -111,7 +123,6 @@ describe("migrateLegacyData", () => {
     expect(rows(join(target, "wizardingcode-mem.db"))).toEqual([{ v: "kept" }]);
     expect(readFileSync(join(target, "bin", "wizardingcode-mem"), "utf8")).toBe("new");
     expect(readFileSync(join(target, "env"), "utf8")).toBe("WIZARDINGCODE_MEM_TYPESAFE=off\n");
-    expect(existsSync(join(target, "ui.json"))).toBe(true);
   });
 
   test("the same, when the old directory cannot be moved", () => {
@@ -181,7 +192,6 @@ describe("migrateLegacyData", () => {
     expect(result).toBe("migrated");
     const target = join(home, ".wizardingcode", "mem");
     expect(rows(join(target, "wizardingcode-mem.db"))).toEqual([{ v: "kept" }]);
-    expect(existsSync(join(target, "ui.json"))).toBe(true);
     expect(existsSync(join(home, ".shibaox", "mem", "shibaox-mem.db"))).toBe(true);
   });
 
