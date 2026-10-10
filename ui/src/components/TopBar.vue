@@ -4,7 +4,6 @@
 // icon buttons on the right.
 import { ref } from "vue";
 import mark from "../../../src/ui/assets/wizardingcode-mark.svg?raw";
-import { theme } from "../viewer";
 
 const q = defineModel<string>({ required: true });
 defineProps<{ searchable: boolean }>();
@@ -29,8 +28,7 @@ defineExpose({ focus: () => input.value?.focus() });
       <button v-else type="button" aria-label="Open the command palette" class="mr-1 rounded border border-[#332E2A] px-[5px] font-mono text-[10.5px] leading-4 text-[#9A938B] hover:text-[#F4F1EC]" @click="emit('palette')">⌘K</button>
     </label>
     <div class="flex-1" />
-    <UTooltip :text="theme === 'dark' ? 'Light theme' : 'Dark theme'">
-      <button type="button" aria-label="Switch theme" class="flex size-7 items-center justify-center rounded-lg text-[#D9D4CD] hover:bg-[#25211E]" @click="theme = theme === 'dark' ? 'light' : 'dark'"><UIcon :name="theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'" class="size-4" /></button>
-    </UTooltip>
+    <!-- Balances the workspace on the left, so the search stays centred. -->
+    <div class="w-[168px] flex-none" />
   </header>
 </template>

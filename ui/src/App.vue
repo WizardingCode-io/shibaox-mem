@@ -11,7 +11,7 @@ import Sidebar from "./components/Sidebar.vue";
 import TopBar from "./components/TopBar.vue";
 import TurnsView from "./components/TurnsView.vue";
 import { ago, hue } from "./format";
-import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, startHeartbeat, state, type Tab } from "./viewer";
+import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, sidebarOpen, startHeartbeat, state, type Tab } from "./viewer";
 
 // The view tabs (Sales OS page header, second row): a 10px square each, in the brand's hues.
 const tabs: { label: string; value: Tab; hue: string }[] = [
@@ -84,6 +84,20 @@ function onKey(e: KeyboardEvent) {
     else if (state.selected !== null) closeDetail();
     return;
   }
+  if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    if (e.key === "[") {
+      e.preventDefault();
+      sidebarOpen.value = !sidebarOpen.value;
+      return;
+    }
+    const views: Record<string, Tab> = { "1": "memories", "2": "turns", "3": "overview", "4": "settings" };
+    const view = views[e.key];
+    if (view) {
+      e.preventDefault();
+      tab.value = view;
+      return;
+    }
+  }
   if (typing || state.tab !== "memories") return;
   if (e.key === "ArrowDown" || e.key === "j") {
     e.preventDefault();
@@ -115,8 +129,11 @@ onMounted(async () => {
     <div class="flex h-full flex-col overflow-hidden">
       <TopBar ref="topBar" v-model="q" :searchable="state.tab === 'memories'" @palette="palette = true" />
       <div class="flex min-h-0 flex-1">
-        <Rail :tab="state.tab" @go="tab = $event" />
-        <Sidebar />
+        <Rail :tab="state.tab" @go="tab = $event" @palette="palette = true" />
+        <!-- The projects panel folds to nothing (240ms) and keeps its width while it moves. -->
+        <div class="flex-none overflow-hidden transition-[width] duration-[240ms] ease-out motion-reduce:transition-none" :class="sidebarOpen ? 'w-[216px]' : 'w-0'" :inert="!sidebarOpen">
+          <Sidebar class="h-full" />
+        </div>
         <main class="flex min-h-0 min-w-0 flex-1 flex-col">
           <!-- Row 1, 36px: breadcrumb (16px space tile, 13px), the project's numbers, last activity. -->
           <div class="flex h-9 flex-none items-center gap-2 px-4">

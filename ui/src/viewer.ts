@@ -1,6 +1,6 @@
 // The viewer's state, shared by every component: one project, one list, one selection.
 import { useDark } from "@vueuse/core";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { api, type Kind, type MemoryDetail, type MemoryItem, type Project, type TurnItem } from "./api";
 
 export type Tab = "memories" | "turns" | "overview" | "settings";
@@ -147,3 +147,26 @@ export function startHeartbeat(): () => void {
 }
 
 export { state };
+
+// The projects sidebar can be folded away; the browser remembers the choice (a per-viewer
+// convenience, so a blocked or empty storage simply means "open").
+const SIDEBAR_KEY = "wizardingcode-mem.sidebar";
+function readSidebar(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+const sidebarOpenRef = ref(readSidebar());
+export const sidebarOpen = computed<boolean>({
+  get: () => sidebarOpenRef.value,
+  set: (open) => {
+    sidebarOpenRef.value = open;
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed");
+    } catch {
+      // Storage blocked: the choice lasts for this page only.
+    }
+  },
+});

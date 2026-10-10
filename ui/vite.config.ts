@@ -54,7 +54,7 @@ export default defineConfig({
         },
         kbd: { base: "font-mono text-[10.5px]" },
         tooltip: {
-          slots: { content: "bg-(--console) text-(--console-ink) ring-0 rounded-md px-2 py-1 text-xs" },
+          slots: { content: "bg-(--console) text-(--console-ink) ring-1 ring-[#332E2A] rounded-md px-2 py-1 text-xs shadow-lg" },
         },
         // Toasts are dark, as in Sales OS STATES.md: console surface, ivory text.
         toast: {
