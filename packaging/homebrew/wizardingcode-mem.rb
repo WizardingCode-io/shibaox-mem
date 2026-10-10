@@ -5,28 +5,28 @@
 class WizardingcodeMem < Formula
   desc "Persistent memory for coding agents: one local binary, no daemon"
   homepage "https://github.com/WizardingCode-io/wizardingcode-mem"
-  version "0.4.2"
+  version "0.4.3"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.2/wizardingcode-mem-darwin-arm64"
-      sha256 "2b14b1b8cb4c74f3be44bec9e6748926a956feb9d183afb9086dd78a446f81b4"
+      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.3/wizardingcode-mem-darwin-arm64"
+      sha256 "c28434c90f62999a8a3e9333c9bd66f15cfdce5be435d8189cc37f1cfddf81cc"
     end
     on_intel do
-      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.2/wizardingcode-mem-darwin-x64"
-      sha256 "f625baedf16e98b49a1c1e4225f18a0f9c85893aba4401de650f3c788f171dbc"
+      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.3/wizardingcode-mem-darwin-x64"
+      sha256 "3aa3a7bd3fb591732c888ee68f805a7f37c3714805af2225c9626ab1dee1ff63"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.2/wizardingcode-mem-linux-arm64"
-      sha256 "270d5db82de3b9ab95035bb4fb1628a135bf00453d1786b451e5e2fdf0356330"
+      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.3/wizardingcode-mem-linux-arm64"
+      sha256 "c28015662a3f42f02ae32e3bc2d6dc9c96ac8d8605358fcd4129c45a1cee3a66"
     end
     on_intel do
-      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.2/wizardingcode-mem-linux-x64"
-      sha256 "da35109f6698242f5c87ad0a51453ded3ecf9f972d7e4abb6a333275c079254b"
+      url "https://github.com/WizardingCode-io/wizardingcode-mem/releases/download/v0.4.3/wizardingcode-mem-linux-x64"
+      sha256 "439bb7f739dffa44b8af70d2ff37f48936a7e9067425032aa505b5508ef4df85"
     end
   end
 
