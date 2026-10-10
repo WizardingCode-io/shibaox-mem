@@ -1,4 +1,5 @@
 import { uninstallClaudeCode } from "../../install/claude-code.ts";
+import { claudeDesktopConfigPath, uninstallClaudeDesktop } from "../../install/claude-desktop.ts";
 import { codexContext, uninstallCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { cursorContext, uninstallCursor } from "../../install/cursor.ts";
@@ -25,6 +26,20 @@ export function run(argv: string[]): number {
     return EXIT_USAGE;
   }
   try {
+    if (agent === "claude-desktop") {
+      const configPath = claudeDesktopConfigPath();
+      const removed = uninstallClaudeDesktop({ configPath });
+      process.stdout.write(
+        [
+          "Removed wizardingcode-mem from Claude Desktop.",
+          `  ${configPath}: ${removed ? "server removed" : "had nothing of wizardingcode-mem's in it"}`,
+          "  The plugin, if you added it in Customize → Plugins, is removed there.",
+          `Your memories are still in ${defaultDataDir()}. Delete that folder to remove them.`,
+          "",
+        ].join("\n"),
+      );
+      return 0;
+    }
     if (agent === "opencode") {
       const result = uninstallOpenCode({ pluginPath: opencodePluginPath() });
       const outcome = {

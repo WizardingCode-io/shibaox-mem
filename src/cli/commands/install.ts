@@ -4,6 +4,11 @@ import { resolve } from "node:path";
 import { doctorContext } from "../../doctor/context.ts";
 import { stageBinary } from "../../install/binary.ts";
 import { installClaudeCode } from "../../install/claude-code.ts";
+import {
+  claudeDesktopConfigPath,
+  hasClaudeDesktop,
+  installClaudeDesktop,
+} from "../../install/claude-desktop.ts";
 import { codexContext, installCodex } from "../../install/codex.ts";
 import { claudeCodeContext } from "../../install/context.ts";
 import { cursorContext, installCursor } from "../../install/cursor.ts";
@@ -24,9 +29,17 @@ import { defaultDataDir } from "../../util/paths.ts";
 import { isCompiled } from "../../util/self.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-export const SUPPORTED_AGENTS = ["claude-code", "codex", "cursor", "gemini", "opencode"];
+export const SUPPORTED_AGENTS = [
+  "claude-code",
+  "claude-desktop",
+  "codex",
+  "cursor",
+  "gemini",
+  "opencode",
+];
 export const AGENT_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
+  "claude-desktop": "Claude Desktop",
   codex: "Codex",
   cursor: "Cursor",
   gemini: "Gemini CLI",
@@ -35,7 +48,7 @@ export const AGENT_NAMES: Record<string, string> = {
 
 const USAGE = `Usage: wizardingcode-mem install [<agent>] [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
-  <agent>             claude-code | codex | cursor | gemini | opencode; none installs for every agent found
+  <agent>             claude-code | claude-desktop | codex | cursor | gemini | opencode; none installs for every one found
   --binary <path>     The wizardingcode-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem and shibaox-mem without asking (disable or uninstall their plugins)
   --keep-claude-mem   Leave claude-mem installed and running
@@ -130,7 +143,12 @@ export function run(argv: string[]): number {
     return EXIT_USAGE;
   }
   if (agent === undefined) {
-    const found = detectAgents({ env: process.env, which: (command) => Bun.which(command) });
+    const found: string[] = detectAgents({
+      env: process.env,
+      which: (command) => Bun.which(command),
+    });
+    // Claude Desktop is no agent with hooks, but its chat should share the same memory.
+    if (hasClaudeDesktop(claudeDesktopConfigPath())) found.push("claude-desktop");
     if (found.length === 0) {
       process.stderr.write(
         "wizardingcode-mem install: No supported agent found on this machine. Name one: wizardingcode-mem install <agent>\n",
@@ -139,9 +157,9 @@ export function run(argv: string[]): number {
     }
     let code = 0;
     for (const each of found) code = Math.max(code, installOne(each, rest));
-    const missing = AGENT_ORDER.filter((each) => !found.includes(each)).map(
-      (each) => AGENT_NAMES[each],
-    );
+    const missing = [...AGENT_ORDER, "claude-desktop" as const]
+      .filter((each) => !found.includes(each))
+      .map((each) => AGENT_NAMES[each]);
     if (missing.length > 0)
       process.stdout.write(`Not found on this machine: ${missing.join(", ")}\n`);
     return code;
@@ -170,6 +188,21 @@ function installOne(agent: string, rest: string[]): number {
 
   const lines: string[] = retireLegacy(agent, rest);
   try {
+    if (agent === "claude-desktop") {
+      const result = installClaudeDesktop({ configPath: claudeDesktopConfigPath(), binaryPath });
+      process.stdout.write(
+        [
+          "Installed wizardingcode-mem for Claude Desktop.",
+          `  config: ${result.configPath}${result.changed ? "" : " (already up to date)"}`,
+          `  binary: ${binaryPath}`,
+          "  chat:   memory_search, memory_get, memory_save and memory_projects, across every project",
+          "  Cowork: add the plugin in Customize → Plugins → Add marketplace → WizardingCode-io/wizardingcode-plugins",
+          "Quit and reopen Claude Desktop for it to take effect.",
+          "",
+        ].join("\n"),
+      );
+      return 0;
+    }
     if (agent === "codex") {
       process.stdout.write(
         describeInstall(agent, installCodex(codexContext(binaryPath)), binaryPath, lines),

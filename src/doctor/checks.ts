@@ -3,6 +3,7 @@ import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { lastBackup } from "../backup/schedule.ts";
 import { CLAUDE_CODE } from "../install/claude-code.ts";
+import { claudeDesktopServer, hasClaudeDesktop } from "../install/claude-desktop.ts";
 import { CODEX } from "../install/codex.ts";
 import { CURSOR } from "../install/cursor.ts";
 import { GEMINI } from "../install/gemini.ts";
@@ -36,6 +37,8 @@ export interface DoctorContext {
   /** Whether a host's command is on this machine; null when it is not. */
   which: (command: string) => string | null;
   now: number;
+  /** Claude Desktop's claude_desktop_config.json, whose chat gets the memory over MCP. */
+  claudeDesktopConfigPath?: string;
   /** SHIBAOX_* variables set in the environment: the names until 0.3.0. */
   legacyVariables?: string[];
 }
@@ -350,6 +353,33 @@ function openCode(context: DoctorContext): Check {
   return { name, status: "ok", detail: `installed, running ${binaryPath}` };
 }
 
+/** Claude Desktop's chat: our MCP server in its config, spanning every project. Null when it is not on this machine. */
+function claudeDesktop(context: DoctorContext): Check | null {
+  const path = context.claudeDesktopConfigPath;
+  if (path === undefined || !hasClaudeDesktop(path)) return null;
+  const name = "Claude Desktop";
+  const server = claudeDesktopServer(path);
+  if (server === null) {
+    return {
+      name,
+      status: "warn",
+      detail: "its chat has no memory yet; run: wizardingcode-mem install claude-desktop",
+    };
+  }
+  if (!existsSync(server.command)) {
+    return {
+      name,
+      status: "fail",
+      detail: `its config runs ${server.command}, which does not exist; run: wizardingcode-mem install claude-desktop`,
+    };
+  }
+  return {
+    name,
+    status: "ok",
+    detail: "chat has the memory over MCP, across every project; Cowork and Code use the plugin",
+  };
+}
+
 function typeSafe(context: DoctorContext, db: Db | null): Check {
   const name = "TypeSafe";
   const settings = loadSettings(process.env, context.dataDir);
@@ -428,6 +458,7 @@ export function runChecks(context: DoctorContext): Check[] {
       hooksHost("Cursor", CURSOR, context.cursorHooksPath, "cursor", context),
       hooksHost("Gemini CLI", GEMINI, context.geminiSettingsPath, "gemini", context),
       openCode(context),
+      claudeDesktop(context),
       legacy(context),
     ].filter((check): check is Check => check !== null);
   } finally {
