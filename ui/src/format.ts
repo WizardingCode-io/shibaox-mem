@@ -74,6 +74,12 @@ const squash = (text: string) => text.replace(/\s+/g, " ").trim();
 /** A one-line title from Markdown: no emphasis markers, list bullets or heading hashes. */
 const plainLine = (text: string) =>
   squash(text.replace(/^\s*(?:[-*+]|#{1,6}|\d+\.)\s+/gm, "").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/\*\*|__/g, ""));
+/** A subagent's report without the harness's envelope and preamble: Markdown as it was written. */
+export function subagentReport(prompt: string): string {
+  const body = prompt.trim().replace(/^<agent-message[^>]*>/, "").replace(/<\/agent-message>\s*$/, "");
+  return (/\n\s*\n([\s\S]*)/.exec(body)?.[1] ?? body).replace(/^ {2,4}/gm, "").trim();
+}
+
 export function describePrompt(prompt: string): PromptLine {
   const text = prompt.trim();
   if (text.startsWith("<task-notification>")) {

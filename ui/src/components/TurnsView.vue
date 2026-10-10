@@ -4,11 +4,12 @@
 // the dark trace panel (400px): stats strip, actions, a timeline of steps.
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { api, type TurnDetail, type TurnItem } from "../api";
-import { AGENT_TILE, clock, describePrompt, KIND_TONE, took, TURN_STATUS } from "../format";
+import { AGENT_TILE, clock, describePrompt, KIND_TONE, subagentReport as report, took, TURN_STATUS } from "../format";
 import { project, state } from "../viewer";
 import Dock from "./Dock.vue";
 import DockProps from "./DockProps.vue";
 import Empty from "./Empty.vue";
+import Markdown from "./Markdown.vue";
 
 const emit = defineEmits<{ openMemory: [id: number] }>();
 const selected = computed({
@@ -204,13 +205,16 @@ async function copyId() {
       <template #actions>
         <UTooltip text="Copy the turn id"><button type="button" class="wz-icon-btn" aria-label="Copy the turn id" @click="copyId"><UIcon name="i-lucide-copy" class="size-[15px]" /></button></UTooltip>
       </template>
+      <template #head>
       <div class="flex flex-col gap-2">
-        <h2 class="m-0 line-clamp-3 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ traceLine.title }}</h2>
+        <h2 class="wz-title wz-clamp m-0 line-clamp-3 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ traceLine.title }}</h2>
         <div class="flex flex-wrap items-center gap-2">
           <span class="wz-status" :class="status(trace.state).shape" :style="{ background: status(trace.state).tone.bg, color: status(trace.state).tone.fg }">{{ status(trace.state).label }}</span>
           <span class="wz-meta">{{ { prompt: "Prompt", task: "Background task", subagent: "Subagent report" }[traceLine.kind] }}<template v-if="trace.completeness !== 'full'"> · {{ trace.completeness }}</template></span>
         </div>
       </div>
+      </template>
+      <template #props>
       <DockProps :rows="[
         { icon: 'i-lucide-bot', k: 'Agent', v: trace.agent },
         { icon: 'i-lucide-clock', k: 'Started', v: `${new Date(trace.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · ${time(trace.startedAt)}`, mono: true },
@@ -218,6 +222,7 @@ async function copyId() {
         { icon: 'i-lucide-files', k: 'Files', v: `${trace.filesChanged.length} changed · ${trace.filesRead.length} read` },
         { icon: 'i-lucide-terminal', k: 'Commands', v: String(trace.commands.length), mono: true },
       ]" />
+      </template>
 
       <section class="flex flex-col gap-1 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Became</h3><span class="wz-mono text-(--ink-muted)">{{ trace.memories.length }}</span></div>
@@ -231,7 +236,8 @@ async function copyId() {
 
       <section class="flex flex-col gap-2 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center gap-2"><h3 class="m-0 flex-1 text-sm font-semibold">{{ { prompt: "Prompt", task: "Task notification", subagent: "Subagent report" }[traceLine.kind] }}</h3><span class="wz-mono text-(--ink-muted)">{{ time(trace.startedAt) }}</span></div>
-        <pre class="wz-console m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.prompt }}</pre>
+        <Markdown v-if="traceLine.kind === 'subagent'" :source="report(trace.prompt)" />
+        <pre v-else class="wz-console wz-scroll m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.prompt }}</pre>
       </section>
 
       <section v-if="trace.filesChanged.length || trace.filesRead.length" class="flex flex-col gap-1 border-t border-(--line) pt-3">
@@ -247,17 +253,17 @@ async function copyId() {
 
       <section v-if="trace.commands.length" class="flex flex-col gap-2 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Commands</h3><span class="wz-mono text-(--ink-muted)">{{ trace.commands.length }}</span></div>
-        <pre class="wz-console m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.commands.join("\n") }}</pre>
+        <pre class="wz-console wz-scroll m-0 max-h-48 overflow-y-auto rounded-lg px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.commands.join("\n") }}</pre>
       </section>
 
       <section v-if="trace.errors.length || trace.lastError" class="flex flex-col gap-2 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold text-(--danger)">Errors</h3></div>
-        <pre class="m-0 max-h-32 overflow-y-auto rounded-lg bg-(--danger-soft) px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap text-(--danger) [overflow-wrap:anywhere]">{{ [...trace.errors, trace.lastError].filter(Boolean).join("\n") }}</pre>
+        <pre class="wz-scroll m-0 max-h-32 overflow-y-auto rounded-lg bg-(--danger-soft) px-2.5 py-2 font-mono text-[11.5px] leading-4 whitespace-pre-wrap text-(--danger) [overflow-wrap:anywhere]">{{ [...trace.errors, trace.lastError].filter(Boolean).join("\n") }}</pre>
       </section>
 
       <section v-if="trace.finalText" class="flex flex-col gap-2 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center gap-2"><h3 class="m-0 flex-1 text-sm font-semibold">Answer</h3><span v-if="trace.endedAt" class="wz-mono text-(--ink-muted)">{{ time(trace.endedAt) }}</span></div>
-        <p class="m-0 text-[13px] leading-[18px] whitespace-pre-wrap [overflow-wrap:anywhere]">{{ trace.finalText }}</p>
+        <Markdown :source="trace.finalText" />
       </section>
 
       <template #footer>

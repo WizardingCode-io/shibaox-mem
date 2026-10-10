@@ -9,6 +9,7 @@ import { closeDetail, refreshAfterChange, state } from "../viewer";
 import Dock from "./Dock.vue";
 import DockProps from "./DockProps.vue";
 import Importance from "./Importance.vue";
+import Markdown from "./Markdown.vue";
 
 const emit = defineEmits<{ openTurn: [id: number] }>();
 const toast = useToast();
@@ -85,9 +86,9 @@ async function copy() {
       </template>
     </template>
 
-    <template v-if="!editing">
+    <template v-if="!editing" #head>
       <div class="flex flex-col gap-2">
-        <h2 class="m-0 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ state.detail.title }}</h2>
+        <h2 class="wz-title m-0 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ state.detail.title }}</h2>
         <div class="flex flex-wrap items-center gap-2">
           <span class="wz-stage" :style="{ background: KIND_TONE[state.detail.kind].bg, color: KIND_TONE[state.detail.kind].fg }">{{ state.detail.kind }}</span>
           <Importance :value="state.detail.importance" />
@@ -95,7 +96,8 @@ async function copy() {
           <span v-if="state.detail.status !== 'active'" class="wz-status" :style="{ background: 'var(--paper-sunken)', color: 'var(--ink-muted)' }">{{ state.detail.status === "archived" ? "Archived" : "Superseded" }}</span>
         </div>
       </div>
-      <p v-if="state.detail.body" class="m-0 text-[13px] leading-[18px] whitespace-pre-wrap [overflow-wrap:anywhere]">{{ state.detail.body }}</p>
+    </template>
+    <template v-if="!editing" #props>
       <DockProps :rows="[
         { icon: 'i-lucide-scale', k: 'Judged by', v: `${state.detail.judge} v${state.detail.judgeVersion}` },
         { icon: 'i-lucide-git-branch', k: 'Origin', v: state.detail.branch ? `${state.detail.origin} · ${state.detail.branch}` : state.detail.origin },
@@ -105,7 +107,10 @@ async function copy() {
         { icon: 'i-lucide-eye', k: 'Read', v: state.detail.useCount ? `${state.detail.useCount}× by agents` : 'not yet' },
         ...(state.detail.supersededBy ? [{ icon: 'i-lucide-replace', k: 'Replaced by', v: `#${state.detail.supersededBy}`, mono: true }] : []),
       ]" />
+    </template>
 
+    <template v-if="!editing">
+      <Markdown v-if="state.detail.body" :source="state.detail.body" />
       <section v-if="state.detail.fileRoles.length" class="flex flex-col gap-1 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center"><h3 class="m-0 flex-1 text-sm font-semibold">Files</h3><span class="wz-mono text-(--ink-muted)">{{ state.detail.fileRoles.length }}</span></div>
         <div v-for="f in state.detail.fileRoles" :key="f.path" class="flex h-7 min-w-0 items-center gap-2">
@@ -118,7 +123,7 @@ async function copy() {
 
       <section v-if="state.detail.source" class="flex flex-col gap-2 border-t border-(--line) pt-3">
         <div class="flex h-5 items-center gap-2"><h3 class="m-0 flex-1 text-sm font-semibold">{{ { prompt: "From the prompt", task: "From a background task", subagent: "From a subagent's report" }[describePrompt(state.detail.source.prompt).kind] }}</h3><span class="wz-mono text-(--ink-muted)">{{ state.detail.source.agent }}</span></div>
-        <p class="wz-console m-0 line-clamp-6 rounded-lg px-2.5 py-2 text-xs leading-[18px] [overflow-wrap:anywhere]">{{ describePrompt(state.detail.source.prompt).title }}</p>
+        <p class="wz-console wz-clamp m-0 line-clamp-6 rounded-lg px-2.5 py-2 text-xs leading-[18px] [overflow-wrap:anywhere]">{{ describePrompt(state.detail.source.prompt).title }}</p>
         <button type="button" class="wz-link inline-flex items-center gap-1 self-start" @click="emit('openTurn', state.detail.source.turnId)">Open the turn<UIcon name="i-lucide-arrow-right" class="size-3.5" /></button>
       </section>
     </template>
