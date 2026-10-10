@@ -27,16 +27,6 @@ const tab = computed({
     void reload();
   },
 });
-const q = ref("");
-let timer: ReturnType<typeof setTimeout> | undefined;
-watch(q, (value) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => {
-    state.q = value.trim();
-    if (state.tab === "memories") void loadList();
-  }, 150);
-});
-const topBar = ref<{ focus: () => void } | null>(null);
 // The detail is a 320px dock from 1280px up, a sheet below: decided here, not by CSS, so that
 // the sheet's scrim never covers a page that already shows the column.
 const wide = matchMedia("(min-width: 1280px)");
@@ -75,7 +65,7 @@ function onKey(e: KeyboardEvent) {
   if (palette.value) return;
   if (e.key === "/" && !typing) {
     e.preventDefault();
-    topBar.value?.focus();
+    palette.value = true;
     return;
   }
   if (e.key === "Escape") {
@@ -127,9 +117,9 @@ onMounted(async () => {
 <template>
   <UApp :toaster="{ position: 'bottom-left', duration: 5000 }" :tooltip="{ delayDuration: 400 }">
     <div class="flex h-full flex-col overflow-hidden">
-      <TopBar ref="topBar" v-model="q" :searchable="state.tab === 'memories'" @palette="palette = true" />
+      <TopBar @palette="palette = true" />
       <div class="flex min-h-0 flex-1">
-        <Rail :tab="state.tab" @go="tab = $event" @palette="palette = true" />
+        <Rail :tab="state.tab" @go="tab = $event" />
         <!-- The projects panel folds to nothing (240ms) and keeps its width while it moves. -->
         <div class="flex-none overflow-hidden transition-[width] duration-[240ms] ease-out motion-reduce:transition-none" :class="sidebarOpen ? 'w-[216px]' : 'w-0'" :inert="!sidebarOpen">
           <Sidebar class="h-full" />
@@ -178,7 +168,7 @@ onMounted(async () => {
           <div v-if="failed" class="m-4 rounded-xl border border-(--danger) bg-(--danger-soft) px-3.5 py-3 text-[13px] text-(--danger)">Could not reach wizardingcode-mem: {{ failed }}</div>
           <div v-else-if="state.tab === 'memories'" class="flex min-h-0 flex-1">
             <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-              <MemoryList :docked="isWide && state.detail !== null" @search="topBar?.focus()" />
+              <MemoryList :docked="isWide && state.detail !== null" />
             </div>
             <MemoryDetail v-if="isWide && state.detail" @open-turn="openTurn" />
           </div>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // The icon rail: 48px, 36×36 icon buttons (radius 8) with a tooltip to the right that names
-// them and their key. Top: fold the projects panel. Views. Search. Bottom: theme, settings.
+// them and their key. Top: fold the projects panel. Views. Bottom: theme, settings.
 import { sidebarOpen, type Tab, theme } from "../viewer";
 
 defineProps<{ tab: Tab }>();
-const emit = defineEmits<{ go: [tab: Tab]; palette: [] }>();
+const emit = defineEmits<{ go: [tab: Tab] }>();
 const views: { tab: Tab; label: string; icon: string; key: string }[] = [
   { tab: "memories", label: "Memories", icon: "i-lucide-sticky-note", key: "1" },
   { tab: "turns", label: "Turns", icon: "i-lucide-history", key: "2" },
@@ -29,10 +29,6 @@ const tip = { content: { side: "right" as const, sideOffset: 8 } };
       <button type="button" :class="btn(tab === v.tab)" :aria-label="v.label" :aria-current="tab === v.tab ? 'page' : undefined" @click="emit('go', v.tab)">
         <UIcon :name="v.icon" class="size-[18px]" />
       </button>
-    </UTooltip>
-    <span class="my-1 h-px w-6 bg-[#2B2724]" />
-    <UTooltip text="Search" :kbds="['meta', 'K']" v-bind="tip">
-      <button type="button" :class="btn(false)" aria-label="Search" @click="emit('palette')"><UIcon name="i-lucide-search" class="size-[18px]" /></button>
     </UTooltip>
     <div class="flex-1" />
     <UTooltip :text="theme === 'dark' ? 'Light theme' : 'Dark theme'" v-bind="tip">

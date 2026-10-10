@@ -2,7 +2,7 @@
 // Memories as Sales OS's Pipeline list: a 40px toolbar, a 28px column header aligned with
 // the rows, one card per group (28px header: chevron, stage pill, count, meta), 32px rows
 // on a grid with an 8px column gap. With the detail dock open, the narrow column set.
-import { computed, reactive, ref, watchEffect } from "vue";
+import { computed, nextTick, reactive, ref, watch, watchEffect } from "vue";
 import { KINDS, type Kind, type MemoryItem } from "../api";
 import { day, IMPORTANCE_LABEL, KIND_TONE } from "../format";
 import { loadList, PAGE, project, select, state } from "../viewer";
@@ -10,7 +10,26 @@ import Empty from "./Empty.vue";
 import Importance from "./Importance.vue";
 
 const props = defineProps<{ docked: boolean }>();
-const emit = defineEmits<{ search: [] }>();
+// Search within this project: a field that opens in the toolbar (⌘K searches everywhere).
+const searching = ref(Boolean(state.q));
+const q = ref(state.q);
+const field = ref<HTMLInputElement | null>(null);
+let timer: ReturnType<typeof setTimeout> | undefined;
+watch(q, (value) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    state.q = value.trim();
+    void loadList();
+  }, 150);
+});
+async function toggleSearch() {
+  searching.value = !searching.value;
+  if (!searching.value) q.value = "";
+  else {
+    await nextTick();
+    field.value?.focus();
+  }
+}
 
 type GroupBy = "kind" | "importance" | "none";
 const groupBy = ref<GroupBy>("kind");
@@ -103,7 +122,11 @@ const filtered = computed(() => Boolean(state.q || state.kind || state.minImport
     <UDropdownMenu :items="kindMenu" :content="{ align: 'end' }">
       <button type="button" class="wz-icon-btn" aria-label="Filter by kind"><UIcon name="i-lucide-list-filter" class="size-[15px]" /></button>
     </UDropdownMenu>
-    <button type="button" class="wz-icon-btn" aria-label="Search in this project" @click="emit('search')"><UIcon name="i-lucide-search" class="size-[15px]" /></button>
+    <label v-if="searching" class="flex h-7 w-56 items-center gap-1.5 rounded-lg border border-(--btn-secondary-line) bg-(--paper-raised) px-2">
+      <UIcon name="i-lucide-search" class="size-3.5 flex-none text-(--ink-muted)" />
+      <input ref="field" v-model="q" type="search" placeholder="Search this project" aria-label="Search this project" class="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] outline-none focus-visible:outline-none" @keydown.esc.stop="toggleSearch">
+    </label>
+    <button type="button" class="wz-icon-btn" :aria-pressed="searching" aria-label="Search this project" @click="toggleSearch"><UIcon :name="searching ? 'i-lucide-x' : 'i-lucide-search'" class="size-[15px]" /></button>
   </div>
 
   <template v-if="state.items.length">
