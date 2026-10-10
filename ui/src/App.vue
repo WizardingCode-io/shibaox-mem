@@ -9,16 +9,15 @@ import Rail from "./components/Rail.vue";
 import Settings from "./components/Settings.vue";
 import Sidebar from "./components/Sidebar.vue";
 import TopBar from "./components/TopBar.vue";
-import TurnDetail from "./components/TurnDetail.vue";
-import TurnsList from "./components/TurnsList.vue";
+import TurnsView from "./components/TurnsView.vue";
+import { ago, hue } from "./format";
 import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, startHeartbeat, state, type Tab } from "./viewer";
 
-// The view tabs (Sales OS page header, second row): a coloured square each, in the brand's hues.
+// The view tabs (Sales OS page header, second row): a 10px square each, in the brand's hues.
 const tabs: { label: string; value: Tab; hue: string }[] = [
-  { label: "Memories", value: "memories", hue: "var(--violet)" },
-  { label: "Turns", value: "turns", hue: "var(--blue)" },
-  { label: "Overview", value: "overview", hue: "var(--aqua)" },
-  { label: "Settings", value: "settings", hue: "var(--sun)" },
+  { label: "Memories", value: "memories", hue: "#9B5CFF" },
+  { label: "Turns", value: "turns", hue: "#2E7BFF" },
+  { label: "Overview", value: "overview", hue: "#2EE6C8" },
 ];
 const tab = computed({
   get: () => state.tab,
@@ -50,11 +49,13 @@ const sheet = computed({
   set: (open: boolean) => { if (!open) closeDetail(); },
 });
 const palette = ref(false);
-const turnId = ref<number | null>(null);
+function openTurn(id: number) {
+  state.turnId = id;
+  tab.value = "turns";
+}
 const failed = ref("");
 
 async function openMemory(id: number) {
-  turnId.value = null;
   const m = await api.memory(id);
   if (m.projectId !== state.projectId) await selectProject(m.projectId);
   tab.value = "memories";
@@ -71,7 +72,7 @@ function onKey(e: KeyboardEvent) {
     palette.value = !palette.value;
     return;
   }
-  if (palette.value || turnId.value !== null) return;
+  if (palette.value) return;
   if (e.key === "/" && !typing) {
     e.preventDefault();
     topBar.value?.focus();
@@ -79,6 +80,7 @@ function onKey(e: KeyboardEvent) {
   }
   if (e.key === "Escape") {
     if (typing) (target as HTMLElement).blur();
+    else if (state.tab === "turns" && state.turnId !== null) state.turnId = null;
     else if (state.selected !== null) closeDetail();
     return;
   }
@@ -96,6 +98,7 @@ onMounted(async () => {
   document.addEventListener("keydown", onKey);
   onBeforeUnmount(startHeartbeat());
   const deep = /^#m(\d+)$/.exec(location.hash);
+  if (location.hash === "#search") palette.value = true;
   const hashTab = /^#(turns|overview|settings)$/.exec(location.hash)?.[1] as Tab | undefined;
   if (hashTab) state.tab = hashTab;
   try {
@@ -108,54 +111,69 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UApp :toaster="{ position: 'bottom-left', duration: 5000 }">
+  <UApp :toaster="{ position: 'bottom-left', duration: 5000 }" :tooltip="{ delayDuration: 400 }">
     <div class="flex h-full flex-col overflow-hidden">
       <TopBar ref="topBar" v-model="q" :searchable="state.tab === 'memories'" @palette="palette = true" />
       <div class="flex min-h-0 flex-1">
         <Rail :tab="state.tab" @go="tab = $event" />
         <Sidebar />
-        <main class="@container flex min-h-0 min-w-0 flex-1 flex-col">
-          <!-- Row 1, 36px: where you are, and the project's numbers. -->
+        <main class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <!-- Row 1, 36px: breadcrumb (16px space tile, 13px), the project's numbers, last activity. -->
           <div class="flex h-9 flex-none items-center gap-2 px-4">
-            <span aria-hidden="true" class="flex size-4 flex-none items-center justify-center rounded bg-(--primary) font-display text-[9px] font-bold text-(--on-primary)">M</span>
-            <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1 text-[13px] leading-[18px] whitespace-nowrap">
-              <span class="text-(--ink-muted)">Projects</span><span class="text-(--line-strong)">/</span>
-              <h1 class="m-0 truncate text-[13px] font-semibold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
-            </nav>
-            <span v-if="project" class="ml-2 flex min-w-0 items-center gap-2 overflow-hidden text-xs leading-4 whitespace-nowrap text-(--ink-muted)">
-              <span><span class="font-mono font-medium text-(--ink)">{{ project.active.toLocaleString() }}</span> active</span>
-              <span class="text-(--line-strong)">·</span>
-              <span><span class="font-mono font-medium text-(--ink)">{{ project.archived.toLocaleString() }}</span> archived</span>
-              <template v-if="project.stale"><span class="text-(--line-strong)">·</span><span><span class="font-mono font-medium text-(--warn)">{{ project.stale.toLocaleString() }}</span> stale</span></template>
-            </span>
+            <template v-if="state.tab === 'settings'">
+              <span aria-hidden="true" class="flex size-4 flex-none items-center justify-center rounded bg-(--ink) text-(--paper)"><UIcon name="i-lucide-settings" class="size-2.5" /></span>
+              <nav aria-label="Breadcrumb" class="flex items-center gap-1 text-[13px] leading-[18px] whitespace-nowrap"><h1 class="m-0 text-[13px] font-semibold">Settings</h1></nav>
+              <span class="ml-2 text-xs text-(--ink-muted)">For every project and every agent on this machine</span>
+            </template>
+            <template v-else>
+              <span aria-hidden="true" class="flex size-4 flex-none items-center justify-center rounded font-display text-[9px] font-bold text-[#100E0D] uppercase" :style="{ background: project ? hue(project.name) : 'var(--line)' }">{{ project?.name.charAt(0) }}</span>
+              <nav aria-label="Breadcrumb" class="flex min-w-0 flex-none items-center gap-1 text-[13px] leading-[18px] whitespace-nowrap">
+                <span class="text-(--ink-muted)">Projects</span><span class="text-(--line-strong)">/</span>
+                <h1 class="m-0 max-w-[280px] truncate text-[13px] font-semibold" :title="project?.key">{{ project?.name ?? "…" }}</h1>
+              </nav>
+              <span v-if="project" class="ml-2 flex min-w-0 items-center gap-2 overflow-hidden text-xs leading-4 whitespace-nowrap text-(--ink-muted)">
+                <span><span class="font-mono font-medium text-(--ink)">{{ project.active.toLocaleString("en-GB") }}</span> active</span>
+                <span class="text-(--line-strong)">·</span>
+                <span><span class="font-mono font-medium text-(--ink)">{{ project.archived.toLocaleString("en-GB") }}</span> archived</span>
+                <template v-if="project.stale"><span class="text-(--line-strong)">·</span><span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-[1px] bg-(--warn)" /><span class="text-(--warn)">{{ project.stale.toLocaleString("en-GB") }} may be outdated</span></span></template>
+              </span>
+              <span class="flex-1" />
+              <span v-if="project?.lastActivity" class="flex flex-none items-center gap-1.5 text-xs text-(--ink-muted)"><span class="size-1.5 rounded-full bg-(--ok)" />Last activity · {{ ago(project.lastActivity) }}</span>
+            </template>
           </div>
           <!-- Row 2, 36px: the views. -->
           <div role="navigation" aria-label="Views" class="flex h-9 flex-none items-center gap-4 border-b border-(--line) px-4">
-            <button
-              v-for="t in tabs"
-              :key="t.value"
-              type="button"
-              :aria-current="state.tab === t.value ? 'page' : undefined"
-              class="flex h-9 items-center gap-2 border-b-2 pt-0.5 text-[12.5px] whitespace-nowrap"
-              :class="state.tab === t.value ? 'border-(--ink) font-semibold text-(--ink)' : 'border-transparent text-(--ink-muted) hover:text-(--ink)'"
-              @click="tab = t.value"
-            >
-              <span aria-hidden="true" class="size-2.5 rounded-[3px]" :style="{ background: t.hue }" />{{ t.label }}
-            </button>
+            <template v-if="state.tab !== 'settings'">
+              <button
+                v-for="t in tabs"
+                :key="t.value"
+                type="button"
+                :aria-current="state.tab === t.value ? 'page' : undefined"
+                class="flex h-9 items-center gap-2 border-b-2 pt-0.5 text-[12.5px] whitespace-nowrap"
+                :class="state.tab === t.value ? 'border-(--ink) font-semibold text-(--ink)' : 'border-transparent text-(--ink-muted) hover:text-(--ink)'"
+                @click="tab = t.value"
+              >
+                <span aria-hidden="true" class="size-2.5 rounded-[3px]" :style="{ background: t.hue }" />{{ t.label }}
+              </button>
+            </template>
+            <span v-else class="flex h-9 items-center gap-2 border-b-2 border-(--ink) pt-0.5 text-[12.5px] font-semibold"><span aria-hidden="true" class="size-2.5 rounded-[3px] bg-[#FFC53D]" />This machine</span>
           </div>
           <div v-if="failed" class="m-4 rounded-xl border border-(--danger) bg-(--danger-soft) px-3.5 py-3 text-[13px] text-(--danger)">Could not reach wizardingcode-mem: {{ failed }}</div>
-          <MemoryList v-else-if="state.tab === 'memories'" />
-          <TurnsList v-else-if="state.tab === 'turns'" @open="turnId = $event" @open-memory="openMemory" />
+          <div v-else-if="state.tab === 'memories'" class="flex min-h-0 flex-1">
+            <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+              <MemoryList :docked="isWide && state.detail !== null" @search="topBar?.focus()" />
+            </div>
+            <MemoryDetail v-if="isWide && state.detail" class="w-80 flex-none border-l border-(--line) motion-safe:animate-[dock-in_240ms_ease-out]" @open-turn="openTurn" />
+          </div>
+          <TurnsView v-else-if="state.tab === 'turns'" @open-memory="openMemory" />
           <Settings v-else-if="state.tab === 'settings'" />
           <ProjectStats v-else />
         </main>
-        <MemoryDetail v-if="isWide && state.detail" class="w-80 flex-none border-l border-(--line) motion-safe:animate-[dock-in_240ms_ease-out]" @open-turn="turnId = $event" />
       </div>
     </div>
-    <USlideover v-model:open="sheet" :ui="{ content: 'max-w-[360px]' }" title="Memory" :close="false">
-      <template #content><MemoryDetail class="h-full" @open-turn="turnId = $event" /></template>
+    <USlideover v-model:open="sheet" :ui="{ content: 'max-w-[320px]' }" title="Memory" :close="false">
+      <template #content><MemoryDetail class="h-full" @open-turn="openTurn" /></template>
     </USlideover>
-    <TurnDetail :turn-id="turnId" @close="turnId = null" @open-memory="openMemory" />
     <Palette v-model:open="palette" @tab="tab = $event" />
   </UApp>
 </template>

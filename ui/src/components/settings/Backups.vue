@@ -127,9 +127,9 @@ async function restore() {
 </script>
 
 <template>
-  <Card title="Backups" description="A consistent, compressed copy of the database, taken on schedule after a turn ends and whenever you ask. Restoring puts a copy back in place and keeps the current file.">
+  <Card id="backups" title="Backups" description="Compressed copies on a schedule and on demand. A restore keeps the current file.">
     <template #aside>
-      <UBadge v-if="view?.target" :color="view.due ? 'warning' : 'success'" variant="soft" size="sm" :label="view.due ? 'Due' : 'Up to date'" />
+      <span v-if="view?.target" class="wz-status" :class="view.due ? 'square' : ''" :style="view.due ? { background: 'var(--warn-soft)', color: 'var(--warn)' } : { background: 'var(--ok-soft)', color: 'var(--ok)' }">{{ view.due ? "Due" : "Up to date" }}</span>
     </template>
     <div class="flex flex-col gap-4">
       <UFormField label="Back up to" :hint="locked ? 'Set by the environment.' : undefined" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">

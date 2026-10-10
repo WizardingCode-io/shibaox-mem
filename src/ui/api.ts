@@ -166,7 +166,7 @@ export function getMemory(db: Db, id: number): MemoryDetail | null {
       ? null
       : db
           .query<{ turnId: number; agent: string; prompt: string; startedAt: number }, [number]>(
-            `SELECT t.id AS turnId, s.agent, substr(t.prompt, 1, 400) AS prompt, t.started_at AS startedAt
+            `SELECT t.id AS turnId, s.agent, substr(t.prompt, 1, 2000) AS prompt, t.started_at AS startedAt
                FROM turns t JOIN sessions s ON s.id = t.session_id WHERE t.id = ?`,
           )
           .get(row.sourceTurnId);
@@ -289,7 +289,7 @@ export interface TurnItem {
 export function recentTurns(db: Db, projectId: number, limit = 50): TurnItem[] {
   return db
     .query<Omit<TurnItem, "memoryIds"> & { memoryIds: string | null }, [number, number]>(
-      `SELECT t.id, s.agent, t.state, t.completeness, substr(t.prompt, 1, 200) AS prompt,
+      `SELECT t.id, s.agent, t.state, t.completeness, substr(t.prompt, 1, 800) AS prompt,
               t.started_at AS startedAt, t.ended_at AS endedAt, t.last_error AS lastError,
               (SELECT group_concat(m.id) FROM memories m WHERE m.source_turn_id = t.id) AS memoryIds
          FROM turns t JOIN sessions s ON s.id = t.session_id

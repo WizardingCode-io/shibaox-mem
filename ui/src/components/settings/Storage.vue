@@ -58,7 +58,7 @@ async function move() {
 </script>
 
 <template>
-  <Card title="Storage" description="Where the memories are kept. The binary, the settings and the logs stay in the data directory; the database can live on another disk.">
+  <Card id="storage" title="Storage" description="Where the database lives. The binary, settings and logs stay in the data directory.">
     <div v-if="info" class="flex flex-col gap-4">
       <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
         <span class="text-(--ink-muted)">Data directory</span>

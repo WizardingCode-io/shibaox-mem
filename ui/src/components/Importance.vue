@@ -11,7 +11,7 @@ defineProps<{ value: number }>();
     :style="{ color: IMPORTANCE_COLOR[value] }"
     :title="`Importance ${value} of 5`"
   >
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 21V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><path d="M5 4h11l-2 4 2 4H5z" fill="currentColor" /></svg>
     {{ IMPORTANCE_LABEL[value] }}
   </span>
 </template>

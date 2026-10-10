@@ -22,6 +22,8 @@ const state = reactive({
   items: [] as MemoryItem[],
   total: 0,
   turns: [] as TurnItem[],
+  /** The turn whose trace is open in the Turns view. */
+  turnId: null as number | null,
   /** The ids in the order the list shows them (grouped by kind or not), for ↑ and ↓. */
   order: [] as number[],
   selected: null as number | null,
@@ -38,7 +40,10 @@ export async function loadOverview(): Promise<void> {
   state.storeDir = overview.storeDir;
   state.projects = overview.projects;
   if (state.projectId === null && overview.projects.length > 0) {
-    await selectProject(overview.projects[0]!.id);
+    // ?project=<id> opens that project (a link from elsewhere); otherwise the most recent.
+    const asked = Number(new URLSearchParams(location.search).get("project"));
+    const chosen = overview.projects.find((p) => p.id === asked) ?? overview.projects[0]!;
+    await selectProject(chosen.id);
   }
 }
 

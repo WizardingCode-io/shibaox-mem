@@ -41,6 +41,13 @@ export default defineConfig({
           variants: { size: { sm: { base: "h-7 text-[12.5px]" }, md: { base: "h-8 text-[13px]" } } },
         },
         textarea: { slots: { base: "rounded-lg text-[13px]" } },
+        // Fields as the Feedback artboard draws them: label 12px semibold above, hint and
+        // messages 12px below; switches labelled at 13px with a 12px line.
+        formField: {
+          slots: { label: "text-xs leading-4 font-semibold", hint: "text-xs leading-4", description: "text-xs leading-4", error: "mt-1 text-xs leading-4", help: "mt-1 text-xs leading-4" },
+          variants: { size: { md: { root: "text-[13px]" } } },
+        },
+        switch: { slots: { label: "text-[13px] leading-[18px] font-medium", description: "text-xs leading-4" } },
         badge: {
           slots: { base: "font-mono tracking-[.02em] rounded" },
           variants: { size: { sm: { base: "h-5 px-1.5 text-[11px]" } } },

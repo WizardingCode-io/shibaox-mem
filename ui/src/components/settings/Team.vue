@@ -3,7 +3,7 @@ import Card from "./Card.vue";
 </script>
 
 <template>
-  <Card title="Collaborative mode" description="A whole team sharing one project's memory, in real time. In design; this is the only place it is mentioned, and this build contains no client for it." soon>
+  <Card id="team" title="Collaborative mode" description="A team sharing one project's memory, in real time. In design; this build has no client for it." soon>
     <div class="flex max-w-[72ch] flex-col gap-3 text-[13px] leading-6 text-(--ink-muted)">
       <p class="m-0">
         Today a memory belongs to one machine: what your agent learned about a project stays with you. The collaborative mode will let a team share that memory <strong class="font-medium text-(--ink)">per project</strong>. The key already exists: wizardingcode-mem identifies a project by its normalised git remote, the same in every clone and worktree, so two people on the same repository are on the same project without any setup.

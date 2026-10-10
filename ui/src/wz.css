@@ -1,0 +1,101 @@
+/* WizardingCode app components, measured from the Sales OS mockups (09-sales-os/mockups,
+   rendered at 1280×800): Pipeline (grouped list), AdminAgentRuns (table + trace),
+   Search (⌘K), AdminReports (KPI cards, charts), Settings (tables, segmented control).
+   Every size here is the mockup's; colours come from the tokens in app.css. */
+
+:root {
+  --row-line: #EEEBE6; /* hairline between rows */
+  --row-selected: #F4EFFF;
+  --head-bg: #F7F5F2; /* table column-header band */
+  --grid-line: #EEEBE6; --axis-line: #D4CFC7; /* chart grid and baseline */
+  --series-1: #6B35E0; --series-2: #FF3DCB; /* validated: dataviz validate_palette, light on #FFFFFF */
+  --kbd-bg: #FFFFFF;
+}
+.dark {
+  --row-line: #2E2A27;
+  --row-selected: #221A33;
+  --head-bg: #1F1C1A;
+  --grid-line: #2E2A27; --axis-line: #4A4440;
+  --series-1: #9B5CFF; --series-2: #E0249F; /* validated: dark on #1A1816 */
+  --kbd-bg: #242120;
+}
+
+/* Labels in the machine's voice. */
+.wz-hcell { font-family: var(--font-mono); font-size: 10px; line-height: 14px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wz-label { font-family: var(--font-mono); font-size: 10.5px; line-height: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; }
+.wz-mono { font-family: var(--font-mono); font-size: 12px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wz-meta { font-size: 12px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wz-name { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wz-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line); background: var(--kbd-bg); font-family: var(--font-mono); font-size: 10.5px; line-height: 14px; color: var(--ink-muted); white-space: nowrap; flex: none; }
+
+/* Buttons the mockups build by hand: icon buttons 28×28 radius 6, pill toggles 24px. */
+.wz-icon-btn { width: 28px; height: 28px; flex: none; border: 0; border-radius: 6px; background: transparent; color: var(--ink-muted); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+.wz-icon-btn:hover { background: var(--paper-sunken); color: var(--ink); }
+.wz-icon-btn.sm { width: 20px; height: 20px; border-radius: 4px; }
+.wz-pill { display: inline-flex; align-items: center; gap: 4px; height: 24px; box-sizing: border-box; padding: 0 10px; border-radius: 9999px; font: inherit; font-size: 12px; line-height: 16px; white-space: nowrap; flex: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-muted); }
+.wz-pill[aria-pressed="true"] { background: var(--paper-raised); color: var(--ink); font-weight: 600; }
+.wz-pill.group { border: 0; background: var(--paper-sunken); color: var(--ink); }
+.wz-link { font-size: 12.5px; line-height: 16px; font-weight: 600; color: var(--violet-text); white-space: nowrap; cursor: pointer; background: none; border: 0; padding: 0; }
+.wz-link:hover { text-decoration: underline; }
+
+/* Stage pill (Pipeline groups): uppercase, a ring. Status pill (Runs): sentence case, a dot. */
+.wz-stage { display: inline-flex; align-items: center; gap: 4px; height: 20px; box-sizing: border-box; padding: 0 6px; border-radius: 4px; font-size: 11px; line-height: 20px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; flex: none; }
+.wz-stage::before { content: ""; flex: none; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid currentColor; }
+.wz-status { display: inline-flex; align-items: center; gap: 4px; height: 20px; box-sizing: border-box; padding: 0 6px; border-radius: 4px; font-size: 11px; line-height: 14px; font-weight: 600; white-space: nowrap; flex: none; }
+.wz-status::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.wz-status.square::before { border-radius: 1px; }
+.wz-status.diamond::before { border-radius: 1px; transform: rotate(45deg); }
+/* The row's status ring: 12px, 2px border, a 4px dot. */
+.wz-ring { flex: none; width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; border: 2px solid currentColor; display: inline-flex; align-items: center; justify-content: center; }
+.wz-ring::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+/* Letter tiles: 20px radius 6, Unbounded 10px (agents, runs); 16px radius 4 in the sidebar. */
+.wz-tile { flex: none; width: 20px; height: 20px; border-radius: 6px; color: #100E0D; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 10px; line-height: 1; font-weight: 700; text-transform: uppercase; }
+
+/* Grouped list (Pipeline): white cards, 28px group header, 32px rows. */
+.wz-group { flex: none; display: flex; flex-direction: column; background: var(--paper-raised); border-radius: 12px; box-shadow: 0 0 0 1px var(--line); overflow: hidden; }
+.wz-group-head { height: 28px; flex: none; box-sizing: border-box; padding: 0 8px 0 4px; display: flex; align-items: center; gap: 8px; }
+.wz-collapse { display: grid; transition: grid-template-rows 160ms ease-out; }
+.wz-collapse > div { overflow: hidden; min-height: 0; }
+.wz-row { display: grid; column-gap: 8px; align-items: center; height: 32px; box-sizing: border-box; padding: 0 12px; border-top: 1px solid var(--row-line); background: var(--paper-raised); width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; border-left: 0; border-right: 0; border-bottom: 0; }
+.wz-row.two { height: 40px; }
+.wz-row:hover { background: var(--surface-hover); }
+.wz-row[aria-selected="true"] { background: var(--row-selected); box-shadow: inset 2px 0 0 var(--primary); }
+.wz-row:focus-visible { outline: 2px solid var(--blue-text); outline-offset: -2px; }
+.wz-add-row { width: 100%; height: 28px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 32px; border: 0; border-top: 1px solid var(--row-line); background: var(--paper-raised); font: inherit; font-size: 12px; color: var(--ink-muted); text-align: left; cursor: pointer; }
+.wz-add-row:hover { color: var(--ink); }
+
+/* Table card (Runs, Settings): bordered, a tinted 28px header band. */
+.wz-table { box-sizing: border-box; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.wz-table-head { display: grid; column-gap: 8px; align-items: center; height: 28px; box-sizing: border-box; padding: 0 12px; background: var(--head-bg); }
+.wz-table-head > * { font-family: var(--font-mono); font-size: 10px; line-height: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wz-table-foot { height: 32px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--row-line); font-size: 12px; color: var(--ink-muted); }
+
+/* Cards (Reports): 12px radius, 1px line, 12/14 padding; chart cards have a 40px header. */
+.wz-card { box-sizing: border-box; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.wz-card-head { height: 40px; flex: none; box-sizing: border-box; padding: 0 6px 0 14px; display: flex; align-items: center; gap: 8px; }
+.wz-card-title { margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wz-card-sub { font-size: 11px; line-height: 14px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wz-kpi { height: 96px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.wz-kpi-value { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 24px; letter-spacing: -.03em; white-space: nowrap; }
+.wz-legend { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; line-height: 14px; color: var(--ink-muted); white-space: nowrap; }
+.wz-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+/* Section title (Settings): 15px semibold with an inline muted line. */
+.wz-section-title { margin: 0; font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; }
+
+/* The console (trace panel, prompts): dark in both themes. */
+.wz-console { background: var(--console); color: var(--console-ink); }
+.wz-console .wz-label, .wz-console .wz-meta { color: var(--console-muted); }
+.wz-console-box { border-radius: 8px; background: var(--console-raised); }
+.wz-console-status { background: var(--console-raised); }
+.wz-console-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; box-sizing: border-box; padding: 0 12px; border-radius: 8px; font-size: 12.5px; line-height: 16px; font-weight: 600; background: transparent; color: var(--console-ink); border: 1px solid var(--console-line); cursor: pointer; white-space: nowrap; }
+.wz-console-btn:hover { border-color: var(--console-muted); }
+.wz-step { position: relative; display: flex; gap: 10px; padding: 2px 0; }
+.wz-step:not(:last-child)::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: -2px; width: 1px; background: var(--console-line); }
+.wz-step-icon { flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--console-raised); box-shadow: inset 0 0 0 1px var(--console-line); display: flex; align-items: center; justify-content: center; position: relative; color: var(--console-muted); }
+.wz-code { margin: 4px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--console-raised); font-family: var(--font-mono); font-size: 11.5px; line-height: 16px; color: var(--console-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Segmented control (Settings: EN | PT, Light | Dark | System). */
+.wz-segmented { display: inline-flex; gap: 2px; padding: 2px; border-radius: 9999px; background: var(--paper-sunken); }
+.wz-segmented button { height: 24px; padding: 0 10px; border: 0; border-radius: 9999px; background: transparent; font: inherit; font-size: 12.5px; color: var(--ink-muted); cursor: pointer; }
+.wz-segmented button[aria-pressed="true"] { background: var(--paper-raised); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }

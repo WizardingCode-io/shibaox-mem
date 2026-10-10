@@ -34,10 +34,9 @@ async function removeKey() {
 </script>
 
 <template>
-  <Card title="Judge" description="What decides whether a turn is worth keeping, and as what. The heuristic judge always runs locally; with a TypeSafe key, TypeSafe answers first.">
+  <Card id="judge" title="Judge" description="Decides whether a turn is worth keeping, and as what. The heuristic judge always runs locally.">
     <template #aside>
-      <UBadge v-if="key?.set && enabled" color="success" variant="soft" size="sm" label="TypeSafe" />
-      <UBadge v-else color="neutral" variant="soft" size="sm" label="Heuristic" />
+      <span class="wz-status" :style="key?.set && enabled ? { background: 'var(--ok-soft)', color: 'var(--ok)' } : { background: 'var(--paper-sunken)', color: 'var(--ink-muted)' }">{{ key?.set && enabled ? "TypeSafe" : "Heuristic only" }}</span>
     </template>
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">

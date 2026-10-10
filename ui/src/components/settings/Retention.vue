@@ -46,7 +46,7 @@ async function run(dryRun: boolean) {
 </script>
 
 <template>
-  <Card title="Retention" description="How long finished turns are kept when no memory came from them. Memories are never deleted by compact.">
+  <Card id="retention" title="Retention" description="How long turns that became nothing are kept. Memories are never deleted.">
     <div class="flex flex-col gap-4">
       <UFormField label="Keep turns for" :hint="fromEnvironment('WIZARDINGCODE_MEM_RETENTION_DAYS') ? 'Set by the environment.' : '7 to 3650 days.'" :error="settingsState.errors.WIZARDINGCODE_MEM_RETENTION_DAYS">
         <div class="flex items-center gap-2">

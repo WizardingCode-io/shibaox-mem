@@ -62,3 +62,73 @@ export const shortPath = (path: string): string => {
   const parts = path.split(/[\\/]/).filter(Boolean);
   return (parts.length > 2 ? "…/" : "/") + parts.slice(-2).join("/");
 };
+
+/** What a prompt was, for a one-line title: the agent's own notifications and hand-backs
+ *  arrive as XML-ish envelopes and are named for what they are; the full text stays in the trace. */
+export interface PromptLine {
+  title: string;
+  sub: string;
+  kind: "prompt" | "task" | "subagent";
+}
+const squash = (text: string) => text.replace(/\s+/g, " ").trim();
+export function describePrompt(prompt: string): PromptLine {
+  const text = prompt.trim();
+  if (text.startsWith("<task-notification>")) {
+    const summary = /<summary>([\s\S]*?)<\/summary>/.exec(text)?.[1];
+    const status = /<status>([\s\S]*?)<\/status>/.exec(text)?.[1];
+    return { title: summary ? squash(summary) : "Background task", sub: summary ? `Background task${status ? ` · ${squash(status)}` : ""}` : status ? squash(status) : "", kind: "task" };
+  }
+  if (text.startsWith("<agent-message")) {
+    // The harness's preamble is one paragraph; the report starts after the first blank line.
+    const body = text.replace(/^<agent-message[^>]*>/, "").replace(/<\/agent-message>\s*$/, "");
+    const report = /\n\s*\n([\s\S]*)/.exec(body)?.[1] ?? "";
+    const title = squash(report).slice(0, 160);
+    return { title: title || "Subagent report", sub: title ? "Subagent report" : "", kind: "subagent" };
+  }
+  const images = (text.match(/\[Image #\d+\]/g) ?? []).length;
+  const plain = squash(text.replace(/\[Image #\d+\]/g, ""));
+  return { title: plain || "(no prompt)", sub: images ? `${images} image${images > 1 ? "s" : ""}` : "", kind: "prompt" };
+}
+
+/** A turn's state as the Runs log shows it: sentence case, a dot whose shape carries it too. */
+export const TURN_STATUS: Record<string, { label: string; tone: Tone; shape: "" | "square" | "diamond" }> = {
+  done: { label: "Done", tone: { bg: "var(--ok-soft)", fg: "var(--ok)" }, shape: "" },
+  skipped: { label: "Skipped", tone: { bg: "var(--paper-sunken)", fg: "var(--ink-muted)" }, shape: "" },
+  failed: { label: "Failed", tone: { bg: "var(--danger-soft)", fg: "var(--danger)" }, shape: "diamond" },
+  open: { label: "Open", tone: { bg: "var(--blue-soft)", fg: "var(--blue-text)" }, shape: "" },
+  processing: { label: "Distilling", tone: { bg: "var(--violet-soft)", fg: "var(--violet-text)" }, shape: "" },
+  pending: { label: "Queued", tone: { bg: "var(--warn-soft)", fg: "var(--warn)" }, shape: "square" },
+};
+
+/** Clock time for today, a short date otherwise (the Runs log's first column). */
+export const clock = (ms: number): string => {
+  const d = new Date(ms);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+};
+
+/** A duration the way the Runs log writes it: 42 s, 2 min, 1.2 h. */
+export const took = (from: number, to: number | null): string => {
+  if (!to) return "…";
+  const s = Math.max(0, (to - from) / 1000);
+  if (s < 60) return `${Math.round(s)} s`;
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  return `${(s / 3600).toFixed(1)} h`;
+};
+
+/** The agents' letter tiles, each in its hue (the brand's agent palette). */
+export const AGENT_TILE: Record<string, { letter: string; bg: string }> = {
+  "claude-code": { letter: "C", bg: "#FF3DCB" },
+  codex: { letter: "X", bg: "#2E7BFF" },
+  cursor: { letter: "U", bg: "#9B5CFF" },
+  gemini: { letter: "G", bg: "#2EE6C8" },
+  opencode: { letter: "O", bg: "#FFC53D" },
+};
+export const compact = (n: number): string =>
+  n >= 10_000 ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}k` : n.toLocaleString("en-GB");
+
+/** A project's tile hue, stable for its name: one of the brand's five agent hues. */
+const HUES = ["#FF3DCB", "#9B5CFF", "#2E7BFF", "#FFC53D", "#2EE6C8"];
+export const hue = (name: string): string =>
+  HUES[[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % HUES.length] as string;
