@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { api, type SearchHit } from "../api";
-import { KIND_COLOR } from "../format";
+import { KIND_TONE } from "../format";
+import Pill from "./Pill.vue";
 import { selectProject, select, state, theme, type Tab } from "../viewer";
 
 const open = defineModel<boolean>("open", { default: false });
@@ -79,7 +80,7 @@ const groups = computed(() => [
     <template #content>
       <UCommandPalette v-model:search-term="term" :groups="groups" :loading="loading" placeholder="Search memories across every project, or jump somewhere…" :fuse="{ resultLimit: 40 }" class="h-[420px]">
         <template #item-leading="{ item }">
-          <UBadge v-if="'kind' in item && item.kind" :color="KIND_COLOR[item.kind as keyof typeof KIND_COLOR]" variant="soft" size="sm" :label="String(item.kind)" />
+          <Pill v-if="'kind' in item && item.kind" :tone="KIND_TONE[item.kind as keyof typeof KIND_TONE]" :label="String(item.kind)" />
           <UIcon v-else :name="String(item.icon)" class="size-4 text-(--ink-muted)" />
         </template>
       </UCommandPalette>

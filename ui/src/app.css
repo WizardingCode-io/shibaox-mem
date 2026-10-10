@@ -25,32 +25,38 @@
   --shadow-sm: 0 1px 2px #100E0D0f, 0 2px 8px #100E0D0a;
   --focus-ring: 0 0 0 2px #F7F5F2, 0 0 0 4px #1A5CE0;
   --blend-overlap: multiply;
+  --btn-secondary-line: #D4CFC7;
+  /* The app's frame (top bar, rail, sidebar) is dark in both themes, as in Sales OS. */
+  --frame-0: #0B0A09; --frame-1: #141210; --frame-line: #2B2724; --frame-raised: #25211E; --frame-active: #2B2724;
+  --frame-field: #1E1B18; --frame-field-line: #332E2A; --frame-ink: #F4F1EC; --frame-soft: #D9D4CD; --frame-muted: #9A938B;
 
   --bg: var(--paper); --surface: var(--paper-raised); --surface-sunken: var(--paper-sunken); --surface-hover: #FAF8F5;
   --scrollbar-thumb: #D6D1C9; --scrollbar-thumb-hover: var(--line-strong); --scrollbar-track: transparent;
 
-  --ui-radius: 0.5rem;
+  --ui-radius: 0.25rem; /* Nuxt UI derives every radius from it: md 6px, lg 8px, xl 12px — the brand's. */
   --ui-primary: var(--primary);
   --ui-text-dimmed: var(--line-strong); --ui-text-muted: var(--ink-muted); --ui-text-toned: #3A3632; --ui-text: var(--ink); --ui-text-highlighted: var(--ink); --ui-text-inverted: var(--paper);
   --ui-bg: var(--bg); --ui-bg-muted: var(--surface-sunken); --ui-bg-elevated: var(--surface); --ui-bg-accented: var(--surface-hover); --ui-bg-inverted: var(--ink);
   --ui-border: var(--line); --ui-border-muted: var(--line); --ui-border-accented: var(--line-strong); --ui-border-inverted: var(--ink);
   --ui-success: var(--ok); --ui-info: var(--blue-text); --ui-warning: var(--warn); --ui-error: var(--danger);
 }
+/* Dark: the app's own dark theme (Sales OS theme-dark.css), not the marketing site's. */
 .dark {
-  --paper: #100E0D; --paper-raised: #1A1715; --paper-sunken: #0A0908;
-  --line: #2B2724; --line-strong: #716B64; --ink: #F7F5F2; --ink-muted: #A8A29A;
+  --paper: #121110; --paper-raised: #1A1816; --paper-sunken: #242120;
+  --line: #2E2A27; --line-strong: #5E5953; --ink: #F4F1EC; --ink-muted: #A8A199;
   --primary: #B894FF; --on-primary: #100E0D;
-  --magenta-text: #FF6FD8; --magenta-soft: #2A0B22; --violet-text: #B894FF; --violet-soft: #1E1433; --blue-text: #7AA8FF; --blue-soft: #0D1A36;
-  --ok: #2EE6C8; --ok-soft: #0A2A25; --warn: #FFC53D; --warn-soft: #2A2107; --danger: #FF6B85; --danger-soft: #2E0D14;
-  --console: #1C1917; --console-raised: #25211E; --console-line: #3D3833;
-  --shadow-sm: 0 1px 2px #00000099;
-  --focus-ring: 0 0 0 2px #100E0D, 0 0 0 4px #7AA8FF;
+  --magenta-text: #FF7ADB; --magenta-soft: #40163A; --violet-text: #B894FF; --violet-soft: #2A1F4A; --blue-text: #7AA8FF; --blue-soft: #16284A;
+  --ok: #4FD1A5; --ok-soft: #0F3328; --warn: #FFC53D; --warn-soft: #3A2E10; --danger: #FF6B85; --danger-soft: #3F1620;
+  --console: #0B0A09; --console-raised: #1A1816;
+  --shadow-sm: 0 1px 2px #0000004d, 0 2px 8px #00000033;
+  --focus-ring: 0 0 0 2px #121110, 0 0 0 4px #7AA8FF;
   --blend-overlap: screen;
+  --btn-secondary-line: #3A3531;
 
-  --surface-hover: #211D1A;
+  --surface-hover: #211E1C;
   --scrollbar-thumb: #3A3531;
 
-  --ui-text-toned: #D6D1C9; --ui-text-highlighted: #FFFFFF;
+  --ui-text-toned: #D9D4CD; --ui-text-highlighted: #FFFFFF;
 }
 
 /* The Overlap mark: where the two V's cross, the colours mix (multiply on light, screen on dark). */
@@ -70,13 +76,20 @@
 }
 
 html, body, #app { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 24px; -webkit-font-smoothing: antialiased; }
+/* The compact scale (Sales OS DENSITY.md): body 13/18, meta 12/16, mono labels 10.5/14. */
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 13px; line-height: 18px; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
 /* Unbounded is wide: short phrases only, tracked in. */
 .font-display { font-family: var(--font-display); letter-spacing: -0.03em; }
 /* The machine's voice: labels in mono capitals. */
 /* text-decoration: Tailwind has an `overline` utility of the same name. */
-.overline { text-decoration: none; font-family: var(--font-mono); font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+.overline { text-decoration: none; font-family: var(--font-mono); font-size: 10.5px; line-height: 14px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
 /* The eyebrow that opens a section: two overlapping circles, then the label. */
 .eyebrow { display: inline-flex; align-items: center; gap: 8px; }
 .eyebrow::before { content: ""; width: 14px; height: 8px; flex: none; background: radial-gradient(circle at 4px 4px, var(--magenta) 3.5px, transparent 4px), radial-gradient(circle at 10px 4px, var(--blue) 3.5px, transparent 4px); }
+/* The detail dock slides in (240ms ease-out). */
+@keyframes dock-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Skeleton bars while a list loads. */
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+.skeleton { border-radius: 4px; background: linear-gradient(90deg, var(--paper-sunken), var(--paper), var(--paper-sunken)); background-size: 400px 100%; animation: shimmer 1.2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

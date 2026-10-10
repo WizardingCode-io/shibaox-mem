@@ -16,7 +16,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-5 pt-4 pb-6">
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
     <div v-if="settingsState.view === null" class="text-[13px] text-(--ink-muted)">Loading…</div>
     <template v-else>
       <Judge />
