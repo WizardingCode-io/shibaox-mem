@@ -9,24 +9,24 @@ export { ENV_FILE };
 
 export const SETTING_KEYS = [
   "TYPESAFE_API_KEY",
-  "SHIBAOX_MEM_TYPESAFE",
-  "SHIBAOX_MEM_RETENTION_DAYS",
-  "SHIBAOX_MEM_UI_AUTO_OPEN",
-  "SHIBAOX_MEM_STORE_DIR",
-  "SHIBAOX_MEM_BACKUP_TO",
-  "SHIBAOX_MEM_BACKUP_EVERY_HOURS",
-  "SHIBAOX_MEM_BACKUP_KEEP",
-  "SHIBAOX_MEM_BACKUP_S3_ENDPOINT",
-  "SHIBAOX_MEM_BACKUP_S3_REGION",
-  "SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY",
-  "SHIBAOX_MEM_BACKUP_S3_SECRET_KEY",
+  "WIZARDINGCODE_MEM_TYPESAFE",
+  "WIZARDINGCODE_MEM_RETENTION_DAYS",
+  "WIZARDINGCODE_MEM_UI_AUTO_OPEN",
+  "WIZARDINGCODE_MEM_STORE_DIR",
+  "WIZARDINGCODE_MEM_BACKUP_TO",
+  "WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS",
+  "WIZARDINGCODE_MEM_BACKUP_KEEP",
+  "WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT",
+  "WIZARDINGCODE_MEM_BACKUP_S3_REGION",
+  "WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY",
+  "WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY",
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
 /** Values that never leave the machine in full: the API shows a fingerprint. */
 const SECRET_KEYS: ReadonlySet<SettingKey> = new Set([
   "TYPESAFE_API_KEY",
-  "SHIBAOX_MEM_BACKUP_S3_SECRET_KEY",
+  "WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY",
 ]);
 
 export interface Settings {
@@ -102,23 +102,27 @@ export function loadSettings(env: Env = process.env, dataDir: string): Settings 
   const value = (key: SettingKey) => raw[key].value;
   return {
     typesafeKey: value("TYPESAFE_API_KEY"),
-    typesafe: onOff(value("SHIBAOX_MEM_TYPESAFE"), true) ? "on" : "off",
-    retentionDays: integer(value("SHIBAOX_MEM_RETENTION_DAYS"), RETENTION, DEFAULTS.retentionDays),
-    uiAutoOpen: onOff(value("SHIBAOX_MEM_UI_AUTO_OPEN"), DEFAULTS.uiAutoOpen),
-    storeDir: value("SHIBAOX_MEM_STORE_DIR"),
+    typesafe: onOff(value("WIZARDINGCODE_MEM_TYPESAFE"), true) ? "on" : "off",
+    retentionDays: integer(
+      value("WIZARDINGCODE_MEM_RETENTION_DAYS"),
+      RETENTION,
+      DEFAULTS.retentionDays,
+    ),
+    uiAutoOpen: onOff(value("WIZARDINGCODE_MEM_UI_AUTO_OPEN"), DEFAULTS.uiAutoOpen),
+    storeDir: value("WIZARDINGCODE_MEM_STORE_DIR"),
     backup: {
-      to: value("SHIBAOX_MEM_BACKUP_TO"),
+      to: value("WIZARDINGCODE_MEM_BACKUP_TO"),
       everyHours: integer(
-        value("SHIBAOX_MEM_BACKUP_EVERY_HOURS"),
+        value("WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS"),
         EVERY_HOURS,
         DEFAULTS.backupEveryHours,
       ),
-      keep: integer(value("SHIBAOX_MEM_BACKUP_KEEP"), KEEP, DEFAULTS.backupKeep),
+      keep: integer(value("WIZARDINGCODE_MEM_BACKUP_KEEP"), KEEP, DEFAULTS.backupKeep),
       s3: {
-        endpoint: value("SHIBAOX_MEM_BACKUP_S3_ENDPOINT"),
-        region: value("SHIBAOX_MEM_BACKUP_S3_REGION"),
-        accessKey: value("SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY"),
-        secretKey: value("SHIBAOX_MEM_BACKUP_S3_SECRET_KEY"),
+        endpoint: value("WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT"),
+        region: value("WIZARDINGCODE_MEM_BACKUP_S3_REGION"),
+        accessKey: value("WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY"),
+        secretKey: value("WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY"),
       },
     },
   };
@@ -138,27 +142,31 @@ const S3_URL = /^s3:\/\/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](\/[^\s]*)?$/i;
 /** How each key is checked; the message never repeats the value. */
 const RULES: Record<SettingKey, (value: string) => string | null> = {
   TYPESAFE_API_KEY: (v) => (v === "" ? "the key cannot be empty; clear it instead" : null),
-  SHIBAOX_MEM_TYPESAFE: (v) => (v === "on" || v === "off" ? null : "on or off"),
-  SHIBAOX_MEM_RETENTION_DAYS: (v) =>
+  WIZARDINGCODE_MEM_TYPESAFE: (v) => (v === "on" || v === "off" ? null : "on or off"),
+  WIZARDINGCODE_MEM_RETENTION_DAYS: (v) =>
     /^\d+$/.test(v) && Number(v) >= RETENTION.min && Number(v) <= RETENTION.max
       ? null
       : `a whole number of days from ${RETENTION.min} to ${RETENTION.max}`,
-  SHIBAOX_MEM_UI_AUTO_OPEN: (v) => (v === "on" || v === "off" ? null : "on or off"),
-  SHIBAOX_MEM_STORE_DIR: () => "the store directory is changed by moving the store, not here",
-  SHIBAOX_MEM_BACKUP_TO: (v) =>
+  WIZARDINGCODE_MEM_UI_AUTO_OPEN: (v) => (v === "on" || v === "off" ? null : "on or off"),
+  WIZARDINGCODE_MEM_STORE_DIR: () => "the store directory is changed by moving the store, not here",
+  WIZARDINGCODE_MEM_BACKUP_TO: (v) =>
     absolutePath(v) || S3_URL.test(v) ? null : "an absolute folder path or s3://bucket/prefix",
-  SHIBAOX_MEM_BACKUP_EVERY_HOURS: (v) =>
+  WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: (v) =>
     /^\d+$/.test(v) && Number(v) <= EVERY_HOURS.max
       ? null
       : `a whole number of hours from 0 (on demand only) to ${EVERY_HOURS.max}`,
-  SHIBAOX_MEM_BACKUP_KEEP: (v) =>
+  WIZARDINGCODE_MEM_BACKUP_KEEP: (v) =>
     /^\d+$/.test(v) && Number(v) >= KEEP.min && Number(v) <= KEEP.max
       ? null
       : `a whole number of copies to keep, from ${KEEP.min} to ${KEEP.max}`,
-  SHIBAOX_MEM_BACKUP_S3_ENDPOINT: (v) => (/^https?:\/\/\S+$/.test(v) ? null : "an http(s) URL"),
-  SHIBAOX_MEM_BACKUP_S3_REGION: (v) => (v === "" ? "cannot be empty; clear it instead" : null),
-  SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY: (v) => (v === "" ? "cannot be empty; clear it instead" : null),
-  SHIBAOX_MEM_BACKUP_S3_SECRET_KEY: (v) => (v === "" ? "cannot be empty; clear it instead" : null),
+  WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT: (v) =>
+    /^https?:\/\/\S+$/.test(v) ? null : "an http(s) URL",
+  WIZARDINGCODE_MEM_BACKUP_S3_REGION: (v) =>
+    v === "" ? "cannot be empty; clear it instead" : null,
+  WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY: (v) =>
+    v === "" ? "cannot be empty; clear it instead" : null,
+  WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY: (v) =>
+    v === "" ? "cannot be empty; clear it instead" : null,
 };
 
 /** Normalises what the viewer sends: booleans and numbers become the file's strings. */
@@ -179,7 +187,7 @@ export function validatePatch(patch: Patch): Validated {
     }
     const settingKey = key as SettingKey;
     if (value === null) {
-      if (settingKey === "SHIBAOX_MEM_STORE_DIR") errors[key] = RULES[settingKey]("") ?? "";
+      if (settingKey === "WIZARDINGCODE_MEM_STORE_DIR") errors[key] = RULES[settingKey]("") ?? "";
       else changes[settingKey] = null;
       continue;
     }
@@ -221,11 +229,11 @@ export function publicSettings(env: Env = process.env, dataDir: string): PublicS
   const raw = rawSettings(env, dataDir);
   const settings = loadSettings(env, dataDir);
   const defaults: Partial<Record<SettingKey, string>> = {
-    SHIBAOX_MEM_TYPESAFE: settings.typesafe,
-    SHIBAOX_MEM_RETENTION_DAYS: String(settings.retentionDays),
-    SHIBAOX_MEM_UI_AUTO_OPEN: settings.uiAutoOpen ? "on" : "off",
-    SHIBAOX_MEM_BACKUP_EVERY_HOURS: String(settings.backup.everyHours),
-    SHIBAOX_MEM_BACKUP_KEEP: String(settings.backup.keep),
+    WIZARDINGCODE_MEM_TYPESAFE: settings.typesafe,
+    WIZARDINGCODE_MEM_RETENTION_DAYS: String(settings.retentionDays),
+    WIZARDINGCODE_MEM_UI_AUTO_OPEN: settings.uiAutoOpen ? "on" : "off",
+    WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: String(settings.backup.everyHours),
+    WIZARDINGCODE_MEM_BACKUP_KEEP: String(settings.backup.keep),
   };
   const out = {} as PublicSettings;
   for (const key of SETTING_KEYS) {

@@ -25,7 +25,7 @@ export interface BackupTarget {
   remove(name: string): Promise<void>;
 }
 
-const NAME = /^shibaox-mem-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z-v(\d+)\.db\.gz$/;
+const NAME = /^wizardingcode-mem-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z-v(\d+)\.db\.gz$/;
 
 /** Our naming: UTC time first, so that sorting by name is sorting by age. */
 export function backupName(now: number, version: number): string {
@@ -33,7 +33,7 @@ export function backupName(now: number, version: number): string {
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d{3}Z$/, "Z");
-  return `shibaox-mem-${stamp}-v${version}.db.gz`;
+  return `wizardingcode-mem-${stamp}-v${version}.db.gz`;
 }
 
 export function parseBackupName(name: string): { at: number; version: number } | null {

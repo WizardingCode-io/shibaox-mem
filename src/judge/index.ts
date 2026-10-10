@@ -36,7 +36,7 @@ export function makeJudge(options: JudgeOptions): Judge {
   if (key === null || settings.typesafe === "off") return heuristicJudge;
   const { db } = options;
   // Tests and, one day, a managed service stand in for the public endpoint.
-  const endpoint = env.SHIBAOX_MEM_TYPESAFE_URL;
+  const endpoint = env.WIZARDINGCODE_MEM_TYPESAFE_URL;
   const typesafe = new TypeSafeJudge({
     apiKey: key,
     ...(options.fetch ? { fetch: options.fetch } : {}),

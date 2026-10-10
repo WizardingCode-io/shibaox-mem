@@ -3,7 +3,7 @@ import { askToOpen, clearUiState, probeUi, readUiState } from "../../ui/state.ts
 import { defaultDataDir } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-const USAGE = "Usage: shibaox-mem ui [--port <n>] [--no-open] [--auto]\n";
+const USAGE = "Usage: wizardingcode-mem ui [--port <n>] [--no-open] [--auto]\n";
 
 /** Blocks until the host asks us to leave. */
 async function serve(server: UiServer): Promise<void> {
@@ -42,7 +42,7 @@ async function auto(dataDir: string): Promise<number> {
 }
 
 /**
- * `shibaox-mem ui`: opens the viewer in the browser. Loopback only, token in the URL,
+ * `wizardingcode-mem ui`: opens the viewer in the browser. Loopback only, token in the URL,
  * stops by itself after half an hour without a request or a tab.
  */
 export async function run(argv: string[]): Promise<number> {
@@ -51,7 +51,7 @@ export async function run(argv: string[]): Promise<number> {
   const at = argv.indexOf("--port");
   const port = at === -1 ? 0 : Number(argv[at + 1]);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
-    process.stderr.write(`shibaox-mem ui: --port takes a port number\n${USAGE}`);
+    process.stderr.write(`wizardingcode-mem ui: --port takes a port number\n${USAGE}`);
     return EXIT_USAGE;
   }
   const server = await startUi({
@@ -59,11 +59,11 @@ export async function run(argv: string[]): Promise<number> {
     port,
     open: !argv.includes("--no-open"),
     onIdle: () => {
-      process.stdout.write("shibaox-mem ui: no requests for a while, stopping.\n");
+      process.stdout.write("wizardingcode-mem ui: no requests for a while, stopping.\n");
       process.exit(0);
     },
   });
-  process.stdout.write(`shibaox-mem ui: ${server.url}\n`);
+  process.stdout.write(`wizardingcode-mem ui: ${server.url}\n`);
   await serve(server);
   return 0;
 }

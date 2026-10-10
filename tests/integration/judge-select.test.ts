@@ -9,7 +9,7 @@ import { getMeta } from "../../src/store/meta.ts";
 let dir: string;
 let db: Db;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-judge-"));
+  dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-judge-"));
   db = openDb({ dataDir: dir, busyTimeoutMs: 1000 });
 });
 afterEach(() => {
@@ -55,8 +55,8 @@ describe("makeJudge", () => {
     expect(fetched).toBe(0);
   });
 
-  test("with a key but SHIBAOX_MEM_TYPESAFE=off, the heuristic judge alone", async () => {
-    writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\nSHIBAOX_MEM_TYPESAFE=off\n`);
+  test("with a key but WIZARDINGCODE_MEM_TYPESAFE=off, the heuristic judge alone", async () => {
+    writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\nWIZARDINGCODE_MEM_TYPESAFE=off\n`);
     let fetched = 0;
     const judge = makeJudge({
       db,
@@ -89,13 +89,13 @@ describe("makeJudge", () => {
     expect(getMeta(db, "typesafe.input_tokens")).toBe("1000");
   });
 
-  test("SHIBAOX_MEM_TYPESAFE_URL sends the requests somewhere else", async () => {
+  test("WIZARDINGCODE_MEM_TYPESAFE_URL sends the requests somewhere else", async () => {
     writeFileSync(join(dir, "env"), `TYPESAFE_API_KEY=${KEY}\n`);
     const urls: string[] = [];
     const judge = makeJudge({
       db,
       dataDir: dir,
-      env: { SHIBAOX_MEM_TYPESAFE_URL: "http://127.0.0.1:1/systemone" },
+      env: { WIZARDINGCODE_MEM_TYPESAFE_URL: "http://127.0.0.1:1/systemone" },
       fetch: (async (url: string | URL | Request) => {
         urls.push(String(url));
         return new Response(JSON.stringify(okResponse));

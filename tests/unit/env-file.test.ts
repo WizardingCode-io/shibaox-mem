@@ -17,12 +17,12 @@ import {
 } from "../../src/settings/env-file.ts";
 
 const SAMPLE = [
-  "# shibaox-mem settings",
+  "# wizardingcode-mem settings",
   "TYPESAFE_API_KEY=sk-live-abc",
   "",
-  "export SHIBAOX_MEM_RETENTION_DAYS = 30",
-  'SHIBAOX_MEM_STORE_DIR="C:\\Users\\ana\\mem"',
-  "SHIBAOX_MEM_BACKUP_TO='\\\\nas\\share\\mem'",
+  "export WIZARDINGCODE_MEM_RETENTION_DAYS = 30",
+  'WIZARDINGCODE_MEM_STORE_DIR="C:\\Users\\ana\\mem"',
+  "WIZARDINGCODE_MEM_BACKUP_TO='\\\\nas\\share\\mem'",
   "SOMETHING_ELSE=kept as is",
   "not a setting at all",
 ].join("\n");
@@ -31,9 +31,9 @@ describe("env file parsing", () => {
   test("reads KEY=value lines, with or without export and quotes", () => {
     expect(parseEnvFile(SAMPLE)).toEqual({
       TYPESAFE_API_KEY: "sk-live-abc",
-      SHIBAOX_MEM_RETENTION_DAYS: "30",
-      SHIBAOX_MEM_STORE_DIR: "C:\\Users\\ana\\mem",
-      SHIBAOX_MEM_BACKUP_TO: "\\\\nas\\share\\mem",
+      WIZARDINGCODE_MEM_RETENTION_DAYS: "30",
+      WIZARDINGCODE_MEM_STORE_DIR: "C:\\Users\\ana\\mem",
+      WIZARDINGCODE_MEM_BACKUP_TO: "\\\\nas\\share\\mem",
       SOMETHING_ELSE: "kept as is",
     });
   });
@@ -51,20 +51,20 @@ describe("env file parsing", () => {
   });
 
   test("a missing file reads as nothing", () => {
-    expect(readEnvFile(join(tmpdir(), "shibaox-mem-no-such-dir", "env"))).toEqual({});
+    expect(readEnvFile(join(tmpdir(), "wizardingcode-mem-no-such-dir", "env"))).toEqual({});
   });
 });
 
 describe("env file rendering", () => {
   test("replaces a key in place and keeps every other line, comments and order", () => {
-    const out = renderEnvFile(SAMPLE, { SHIBAOX_MEM_RETENTION_DAYS: "45" });
+    const out = renderEnvFile(SAMPLE, { WIZARDINGCODE_MEM_RETENTION_DAYS: "45" });
     expect(out.split("\n")).toEqual([
-      "# shibaox-mem settings",
+      "# wizardingcode-mem settings",
       "TYPESAFE_API_KEY=sk-live-abc",
       "",
-      "SHIBAOX_MEM_RETENTION_DAYS=45",
-      'SHIBAOX_MEM_STORE_DIR="C:\\Users\\ana\\mem"',
-      "SHIBAOX_MEM_BACKUP_TO='\\\\nas\\share\\mem'",
+      "WIZARDINGCODE_MEM_RETENTION_DAYS=45",
+      'WIZARDINGCODE_MEM_STORE_DIR="C:\\Users\\ana\\mem"',
+      "WIZARDINGCODE_MEM_BACKUP_TO='\\\\nas\\share\\mem'",
       "SOMETHING_ELSE=kept as is",
       "not a setting at all",
       "",
@@ -92,7 +92,7 @@ describe("env file rendering", () => {
 });
 
 describe("env file writing", () => {
-  const dir = () => mkdtempSync(join(tmpdir(), "shibaox-mem-env-"));
+  const dir = () => mkdtempSync(join(tmpdir(), "wizardingcode-mem-env-"));
 
   test("creates the file and the directory, readable by the owner only", () => {
     const path = join(dir(), "data", "env");
@@ -107,9 +107,9 @@ describe("env file writing", () => {
   test("keeps the lines it was not asked to change", () => {
     const path = join(dir(), "env");
     writeFileSync(path, "# mine\nTYPESAFE_API_KEY=sk-test\nOTHER=1\n");
-    writeEnvFile(path, { SHIBAOX_MEM_RETENTION_DAYS: "60", OTHER: null });
+    writeEnvFile(path, { WIZARDINGCODE_MEM_RETENTION_DAYS: "60", OTHER: null });
     expect(readFileSync(path, "utf8")).toBe(
-      "# mine\nTYPESAFE_API_KEY=sk-test\nSHIBAOX_MEM_RETENTION_DAYS=60\n",
+      "# mine\nTYPESAFE_API_KEY=sk-test\nWIZARDINGCODE_MEM_RETENTION_DAYS=60\n",
     );
   });
 

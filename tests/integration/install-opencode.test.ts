@@ -13,14 +13,14 @@ let home: string;
 let pluginPath: string;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-opencode-"));
-  pluginPath = join(home, ".config", "opencode", "plugins", "shibaox-mem.ts");
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-install-opencode-"));
+  pluginPath = join(home, ".config", "opencode", "plugins", "wizardingcode-mem.ts");
 });
 afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
-const BIN = "/opt/shibaox-mem/bin/shibaox-mem";
+const BIN = "/opt/wizardingcode-mem/bin/wizardingcode-mem";
 
 describe("install opencode", () => {
   test("writes the plugin, with the binary's path in it, creating the directory", () => {
@@ -30,8 +30,10 @@ describe("install opencode", () => {
   });
 
   test("installing again changes nothing; a new binary path rewrites it", () => {
-    installOpenCode({ pluginPath, binaryPath: "/old/shibaox-mem" });
-    expect(installOpenCode({ pluginPath, binaryPath: "/old/shibaox-mem" }).changed).toBe(false);
+    installOpenCode({ pluginPath, binaryPath: "/old/wizardingcode-mem" });
+    expect(installOpenCode({ pluginPath, binaryPath: "/old/wizardingcode-mem" }).changed).toBe(
+      false,
+    );
     expect(installOpenCode({ pluginPath, binaryPath: BIN }).changed).toBe(true);
     expect(readFileSync(pluginPath, "utf8")).not.toContain("/old/");
   });
@@ -40,7 +42,7 @@ describe("install opencode", () => {
     mkdirSync(join(home, ".config", "opencode", "plugins"), { recursive: true });
     writeFileSync(pluginPath, "export const Mine = async () => ({});\n");
     expect(() => installOpenCode({ pluginPath, binaryPath: BIN })).toThrow(
-      /not written by shibaox-mem/,
+      /not written by wizardingcode-mem/,
     );
     expect(readFileSync(pluginPath, "utf8")).toContain("Mine");
   });
@@ -65,29 +67,31 @@ describe("uninstall opencode", () => {
 describe("opencodePluginPath", () => {
   test("follows XDG_CONFIG_HOME, and otherwise ~/.config", () => {
     expect(opencodePluginPath({ XDG_CONFIG_HOME: "/x/cfg", HOME: "/h" })).toBe(
-      "/x/cfg/opencode/plugins/shibaox-mem.ts",
+      "/x/cfg/opencode/plugins/wizardingcode-mem.ts",
     );
-    expect(opencodePluginPath({ HOME: "/h" })).toBe("/h/.config/opencode/plugins/shibaox-mem.ts");
+    expect(opencodePluginPath({ HOME: "/h" })).toBe(
+      "/h/.config/opencode/plugins/wizardingcode-mem.ts",
+    );
   });
 });
 
-describe("shibaox-mem install opencode / uninstall opencode", () => {
+describe("wizardingcode-mem install opencode / uninstall opencode", () => {
   const env = () => ({ HOME: home, XDG_CONFIG_HOME: join(home, ".config"), PATH: "/nonexistent" });
 
   test("installs with an explicit binary, then uninstalls", async () => {
-    const binary = join(home, "shibaox-mem");
+    const binary = join(home, "wizardingcode-mem");
     writeFileSync(binary, "");
     const installed = await runCliWith({ env: env() }, "install", "opencode", "--binary", binary);
     expect(installed.stderr).toBe("");
     expect(installed.exitCode).toBe(0);
-    expect(installed.stdout).toContain("Installed shibaox-mem for OpenCode.");
+    expect(installed.stdout).toContain("Installed wizardingcode-mem for OpenCode.");
     expect(installed.stdout).toContain(pluginPath);
     expect(installed.stdout).toContain("tools:  memory_search, memory_get, memory_save");
     expect(existsSync(pluginPath)).toBe(true);
 
     const removed = await runCliWith({ env: env() }, "uninstall", "opencode");
     expect(removed.exitCode).toBe(0);
-    expect(removed.stdout).toContain("Removed shibaox-mem from OpenCode.");
+    expect(removed.stdout).toContain("Removed wizardingcode-mem from OpenCode.");
     expect(existsSync(pluginPath)).toBe(false);
   });
 });

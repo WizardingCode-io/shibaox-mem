@@ -18,7 +18,7 @@ export interface StatusReport {
   memories: { active: number; stale: number; superseded: number; archived: number };
   turns: { distilled: number; skipped: number; failed: number; queued: number };
   hooks: { latency: Latency[]; runs: number; errors: number };
-  /** Requests shibaox-mem itself made to a model. The heuristic judge makes none. */
+  /** Requests wizardingcode-mem itself made to a model. The heuristic judge makes none. */
   modelCalls: number;
   judge: JudgeReport;
   dataDir: string;
@@ -123,7 +123,7 @@ export function statusReport(
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export function formatStatus(report: StatusReport): string {
-  const lines = [`shibaox-mem ${report.version}`];
+  const lines = [`wizardingcode-mem ${report.version}`];
   const { memories, turns, hooks } = report;
   const empty =
     report.project === null ||
@@ -158,7 +158,7 @@ export function formatStatus(report: StatusReport): string {
   lines.push(
     judge.configured === "typesafe"
       ? `judge     typesafe, heuristic as fallback · ${judge.requests} requests, ${judge.inputTokens} input tokens (≈ $${(judge.inputTokens * USD_PER_INPUT_TOKEN).toFixed(4)})${who ? ` · memories by judge: ${who}` : ""}`
-      : `judge     heuristic only (no TypeSafe key) · model calls made by shibaox-mem: ${report.modelCalls}`,
+      : `judge     heuristic only (no TypeSafe key) · model calls made by wizardingcode-mem: ${report.modelCalls}`,
     `data      ${report.dataDir}`,
   );
   return `${lines.join("\n")}\n`;

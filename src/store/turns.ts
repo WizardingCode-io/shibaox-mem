@@ -85,7 +85,7 @@ export function interruptOpenTurns(
 
 /**
  * Queues the turn that just ended, with the assistant's final message. A turn whose
- * prompt was never seen (shibaox-mem installed mid-session) is captured from this event alone.
+ * prompt was never seen (wizardingcode-mem installed mid-session) is captured from this event alone.
  */
 export function completeTurn(db: Db, turn: TurnContext, finalText: Redacted | null): void {
   const target =

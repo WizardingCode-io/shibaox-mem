@@ -13,10 +13,10 @@ export interface RunResult {
 
 /**
  * Builds the release binary for this machine and returns its path. End-to-end tests
- * run what users run, not the source. SHIBAOX_MEM_E2E_BINARY points at a prebuilt one.
+ * run what users run, not the source. WIZARDINGCODE_MEM_E2E_BINARY points at a prebuilt one.
  */
 export function hostBinary(): string {
-  const prebuilt = process.env.SHIBAOX_MEM_E2E_BINARY;
+  const prebuilt = process.env.WIZARDINGCODE_MEM_E2E_BINARY;
   if (prebuilt !== undefined && prebuilt !== "") return prebuilt;
 
   const os = process.platform === "win32" ? "windows" : process.platform;

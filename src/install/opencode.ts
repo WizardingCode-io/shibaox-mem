@@ -19,7 +19,7 @@ export interface OpenCodeUninstallResult {
 
 export function opencodePluginPath(env: Record<string, string | undefined> = process.env): string {
   const config = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), ".config");
-  return join(config, "opencode", "plugins", "shibaox-mem.ts");
+  return join(config, "opencode", "plugins", "wizardingcode-mem.ts");
 }
 
 const isOurs = (text: string) => text.includes(PLUGIN_MARKER);
@@ -32,11 +32,11 @@ export function installOpenCode(options: {
   const next = pluginSource(binaryPath);
   const previous = existsSync(pluginPath) ? readFileSync(pluginPath, "utf8") : null;
   if (previous !== null && !isOurs(previous)) {
-    throw new Error(`${pluginPath} exists and was not written by shibaox-mem; move it first`);
+    throw new Error(`${pluginPath} exists and was not written by wizardingcode-mem; move it first`);
   }
   if (previous === next) return { pluginPath, changed: false };
   mkdirSync(dirname(pluginPath), { recursive: true });
-  const temp = `${pluginPath}.shibaox-mem-new`;
+  const temp = `${pluginPath}.wizardingcode-mem-new`;
   writeFileSync(temp, next, { mode: 0o644 });
   renameSync(temp, pluginPath);
   return { pluginPath, changed: true };

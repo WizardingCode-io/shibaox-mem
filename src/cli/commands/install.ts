@@ -31,10 +31,10 @@ export const AGENT_NAMES: Record<string, string> = {
   opencode: "OpenCode",
 };
 
-const USAGE = `Usage: shibaox-mem install [<agent>] [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
+const USAGE = `Usage: wizardingcode-mem install [<agent>] [--binary <path>] [--yes] [--keep-claude-mem] [--no-import]
 
   <agent>             claude-code | codex | cursor | gemini | opencode; none installs for every agent found
-  --binary <path>     The shibaox-mem binary the hooks will run (needed when running from source)
+  --binary <path>     The wizardingcode-mem binary the hooks will run (needed when running from source)
   --yes               Retire claude-mem without asking (disable its plugin, stop its processes)
   --keep-claude-mem   Leave claude-mem installed and running
   --no-import         Do not import claude-mem's memories
@@ -54,7 +54,7 @@ function describeInstall(
         : "registered"
       : `not registered. Run: ${result.mcpCommand.join(" ")}`;
   return [
-    `Installed shibaox-mem for ${AGENT_NAMES[agent]}.`,
+    `Installed wizardingcode-mem for ${AGENT_NAMES[agent]}.`,
     `  hooks:  ${result.settingsPath}${result.changed ? "" : " (already up to date)"}`,
     `  binary: ${binaryPath}`,
     `  MCP:    ${mcp}`,
@@ -82,14 +82,14 @@ function confirm(question: string): boolean {
   return answer === "" || answer === "y" || answer === "yes" || answer === "s" || answer === "sim";
 }
 
-/** `shibaox-mem install [<agent>] [options]` */
+/** `wizardingcode-mem install [<agent>] [options]` */
 export function run(argv: string[]): number {
   const named = argv[0] !== undefined && !argv[0].startsWith("--");
   const agent = named ? argv[0] : undefined;
   const rest = named ? argv.slice(1) : argv;
   if (agent !== undefined && !SUPPORTED_AGENTS.includes(agent)) {
     process.stderr.write(
-      `shibaox-mem install: unknown agent "${agent}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
+      `wizardingcode-mem install: unknown agent "${agent}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n${USAGE}`,
     );
     return EXIT_USAGE;
   }
@@ -97,7 +97,7 @@ export function run(argv: string[]): number {
     const found = detectAgents({ env: process.env, which: (command) => Bun.which(command) });
     if (found.length === 0) {
       process.stderr.write(
-        "shibaox-mem install: No supported agent found on this machine. Name one: shibaox-mem install <agent>\n",
+        "wizardingcode-mem install: No supported agent found on this machine. Name one: wizardingcode-mem install <agent>\n",
       );
       return 1;
     }
@@ -120,14 +120,14 @@ function installOne(agent: string, rest: string[]): number {
   if (explicit !== undefined) {
     binaryPath = resolve(explicit);
     if (!existsSync(binaryPath)) {
-      process.stderr.write(`shibaox-mem install: ${binaryPath} does not exist\n`);
+      process.stderr.write(`wizardingcode-mem install: ${binaryPath} does not exist\n`);
       return 1;
     }
   } else if (isCompiled()) {
     binaryPath = stageBinary(process.execPath, defaultDataDir());
   } else {
     process.stderr.write(
-      "shibaox-mem install: running from source. Build a binary with `bun run build` and pass it with --binary <path>.\n",
+      "wizardingcode-mem install: running from source. Build a binary with `bun run build` and pass it with --binary <path>.\n",
     );
     return 1;
   }
@@ -144,7 +144,7 @@ function installOne(agent: string, rest: string[]): number {
       const result = installOpenCode({ pluginPath: opencodePluginPath(), binaryPath });
       process.stdout.write(
         [
-          "Installed shibaox-mem for OpenCode.",
+          "Installed wizardingcode-mem for OpenCode.",
           `  plugin: ${result.pluginPath}${result.changed ? "" : " (already up to date)"}`,
           `  binary: ${binaryPath}`,
           "  tools:  memory_search, memory_get, memory_save (native, no MCP server needed)",
@@ -202,7 +202,7 @@ function installOne(agent: string, rest: string[]): number {
     return 0;
   } catch (error) {
     process.stderr.write(
-      `shibaox-mem install: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem install: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

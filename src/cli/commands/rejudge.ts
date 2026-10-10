@@ -7,7 +7,7 @@ import { logError } from "../../util/log.ts";
 import { resolvePaths } from "../../util/paths.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-const USAGE = "Usage: shibaox-mem rejudge [--limit <n>] [--concurrency <n>]\n";
+const USAGE = "Usage: wizardingcode-mem rejudge [--limit <n>] [--concurrency <n>]\n";
 /** TypeSafe's published input price, used only to show an estimate. */
 const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
 
@@ -19,7 +19,7 @@ function positiveInt(argv: string[], flag: string): number | undefined | null {
 }
 
 /**
- * `shibaox-mem rejudge`: asks TypeSafe about every memory imported from another tool,
+ * `wizardingcode-mem rejudge`: asks TypeSafe about every memory imported from another tool,
  * so that kind and importance stop being the importer's guess. Needs a key; safe to
  * interrupt and run again.
  */
@@ -28,7 +28,7 @@ export async function run(argv: string[]): Promise<number> {
   const concurrency = positiveInt(argv, "--concurrency");
   if (limit === null || concurrency === null) {
     process.stderr.write(
-      `shibaox-mem rejudge: ${limit === null ? "--limit" : "--concurrency"} takes a whole number above zero\n${USAGE}`,
+      `wizardingcode-mem rejudge: ${limit === null ? "--limit" : "--concurrency"} takes a whole number above zero\n${USAGE}`,
     );
     return EXIT_USAGE;
   }
@@ -39,7 +39,7 @@ export async function run(argv: string[]): Promise<number> {
     const judge = makeJudge({ db, dataDir });
     if (judge.versions.typesafe === undefined) {
       process.stderr.write(
-        `shibaox-mem rejudge: needs a TypeSafe key. Set TYPESAFE_API_KEY in the environment or in ${join(dataDir, "env")}.\n`,
+        `wizardingcode-mem rejudge: needs a TypeSafe key. Set TYPESAFE_API_KEY in the environment or in ${join(dataDir, "env")}.\n`,
       );
       return EXIT_USAGE;
     }
@@ -68,7 +68,7 @@ export async function run(argv: string[]): Promise<number> {
   } catch (error) {
     logError("rejudge", error);
     process.stderr.write(
-      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   } finally {

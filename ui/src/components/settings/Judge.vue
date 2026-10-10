@@ -9,9 +9,9 @@ const key = computed(() => {
   return s !== null && "secret" in s ? s : null;
 });
 const enabled = computed({
-  get: () => valueOf("SHIBAOX_MEM_TYPESAFE") !== "off",
+  get: () => valueOf("WIZARDINGCODE_MEM_TYPESAFE") !== "off",
   set: async (on: boolean) => {
-    if (await saveSettings({ SHIBAOX_MEM_TYPESAFE: on ? "on" : "off" })) {
+    if (await saveSettings({ WIZARDINGCODE_MEM_TYPESAFE: on ? "on" : "off" })) {
       toast.add({ title: on ? "TypeSafe on" : "TypeSafe off", description: on ? "TypeSafe judges first; the heuristic judge stands in when it cannot." : "The heuristic judge works alone; the key is kept.", color: "success" });
     }
   },
@@ -55,7 +55,7 @@ async function removeKey() {
           <UButton color="primary" label="Save" :disabled="keyLocked || !draft.trim()" :loading="settingsState.saving" @click="saveKey" />
         </div>
       </UFormField>
-      <USwitch v-model="enabled" :disabled="!key?.set || fromEnvironment('SHIBAOX_MEM_TYPESAFE')" label="Use TypeSafe" :description="key?.set ? 'Off keeps the key but lets the heuristic judge work alone.' : 'Needs a key.'" />
+      <USwitch v-model="enabled" :disabled="!key?.set || fromEnvironment('WIZARDINGCODE_MEM_TYPESAFE')" label="Use TypeSafe" :description="key?.set ? 'Off keeps the key but lets the heuristic judge work alone.' : 'Needs a key.'" />
     </div>
   </Card>
 </template>

@@ -10,17 +10,17 @@ import { AGENT_NAMES, SUPPORTED_AGENTS } from "./install.ts";
 
 const OUTCOME = {
   restored: "put back exactly as it was",
-  removed: "removed (shibaox-mem had created it)",
-  edited: "shibaox-mem's entries removed, everything else kept",
-  untouched: "had nothing of shibaox-mem's in it",
+  removed: "removed (wizardingcode-mem had created it)",
+  edited: "wizardingcode-mem's entries removed, everything else kept",
+  untouched: "had nothing of wizardingcode-mem's in it",
 } as const;
 
-/** `shibaox-mem uninstall <agent>`: removes what install wrote. Memories are never deleted. */
+/** `wizardingcode-mem uninstall <agent>`: removes what install wrote. Memories are never deleted. */
 export function run(argv: string[]): number {
   const [agent] = argv;
   if (agent === undefined || !SUPPORTED_AGENTS.includes(agent)) {
     process.stderr.write(
-      `shibaox-mem uninstall: unknown agent "${agent ?? ""}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n`,
+      `wizardingcode-mem uninstall: unknown agent "${agent ?? ""}". Supported: ${SUPPORTED_AGENTS.join(", ")}\n`,
     );
     return EXIT_USAGE;
   }
@@ -29,12 +29,12 @@ export function run(argv: string[]): number {
       const result = uninstallOpenCode({ pluginPath: opencodePluginPath() });
       const outcome = {
         removed: "removed",
-        kept: "left alone (not written by shibaox-mem)",
+        kept: "left alone (not written by wizardingcode-mem)",
         absent: "was not there",
       }[result.plugin];
       process.stdout.write(
         [
-          "Removed shibaox-mem from OpenCode.",
+          "Removed wizardingcode-mem from OpenCode.",
           `  ${result.pluginPath}: ${outcome}`,
           `Your memories are still in ${defaultDataDir()}. Delete that folder to remove them.`,
           "",
@@ -52,7 +52,7 @@ export function run(argv: string[]): number {
             : uninstallClaudeCode(claudeCodeContext(""));
     process.stdout.write(
       [
-        `Removed shibaox-mem from ${AGENT_NAMES[agent]}.`,
+        `Removed wizardingcode-mem from ${AGENT_NAMES[agent]}.`,
         `  ${result.settingsPath}: ${OUTCOME[result.settings]}`,
         `Your memories are still in ${defaultDataDir()}. Delete that folder to remove them.`,
         "",
@@ -61,7 +61,7 @@ export function run(argv: string[]): number {
     return 0;
   } catch (error) {
     process.stderr.write(
-      `shibaox-mem uninstall: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem uninstall: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

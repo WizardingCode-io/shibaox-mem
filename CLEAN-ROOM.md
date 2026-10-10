@@ -1,6 +1,6 @@
 # Clean-room policy
 
-shibaox-mem is written from scratch. It is not a fork of claude-mem or of any other
+wizardingcode-mem is written from scratch. It is not a fork of claude-mem or of any other
 memory tool, and it never will be.
 
 claude-mem is used only as a reference for what features users expect and as a

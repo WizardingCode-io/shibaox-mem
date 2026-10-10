@@ -1,9 +1,9 @@
 {
-  "name": "shibaox-mem",
+  "name": "wizardingcode-mem",
   "version": "0.3.0",
   "description": "Persistent memory for coding agents: what one session learns, the next one is told. One local binary, no daemon, no LLM in the loop.",
   "bin": {
-    "shibaox-mem": "bin/shibaox-mem.js"
+    "wizardingcode-mem": "bin/wizardingcode-mem.js"
   },
   "files": [
     "bin",
@@ -14,12 +14,12 @@
   },
   "license": "Apache-2.0",
   "author": "WizardingCode",
-  "homepage": "https://github.com/WizardingCode-io/shibaox-mem",
+  "homepage": "https://github.com/WizardingCode-io/wizardingcode-mem",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WizardingCode-io/shibaox-mem.git"
+    "url": "git+https://github.com/WizardingCode-io/wizardingcode-mem.git"
   },
-  "bugs": "https://github.com/WizardingCode-io/shibaox-mem/issues",
+  "bugs": "https://github.com/WizardingCode-io/wizardingcode-mem/issues",
   "keywords": [
     "memory",
     "claude-code",
@@ -28,6 +28,6 @@
     "gemini-cli",
     "opencode",
     "mcp",
-    "shibaox"
+    "wizardingcode"
   ]
 }

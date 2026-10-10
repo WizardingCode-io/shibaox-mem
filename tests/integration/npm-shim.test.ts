@@ -16,10 +16,10 @@ import rootPkg from "../../package.json" with { type: "json" };
 // The npm package: a Node shim that fetches the binary of its own version on first use.
 // Run with node, the way npx runs it, against a stand-in release.
 
-const SHIM = new URL("../../npm/bin/shibaox-mem.js", import.meta.url).pathname;
+const SHIM = new URL("../../npm/bin/wizardingcode-mem.js", import.meta.url).pathname;
 const os = process.platform === "darwin" ? "darwin" : "linux";
 const arch = process.arch === "arm64" ? "arm64" : "x64";
-const FILE = `shibaox-mem-${os}-${arch}`;
+const FILE = `wizardingcode-mem-${os}-${arch}`;
 const fake = (version: string) =>
   `#!/bin/sh\nif [ "$1" = "--version" ]; then echo ${version}; exit 0; fi\necho "ran: $*"\nexit 3\n`;
 
@@ -28,7 +28,7 @@ let server: ReturnType<typeof Bun.serve> | undefined;
 let downloads = 0;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-npm-"));
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-npm-"));
   downloads = 0;
 });
 afterEach(async () => {
@@ -66,8 +66,8 @@ async function shim(base: string, ...args: string[]) {
     env: {
       ...process.env,
       HOME: home,
-      SHIBAOX_HOME: join(home, ".shibaox"),
-      SHIBAOX_MEM_RELEASE_BASE: base,
+      WIZARDINGCODE_HOME: join(home, ".wizardingcode"),
+      WIZARDINGCODE_MEM_RELEASE_BASE: base,
     },
     stdin: "ignore",
     stdout: "pipe",
@@ -84,8 +84,8 @@ async function shim(base: string, ...args: string[]) {
 describe("the npm package", () => {
   test("carries the same version as the binary it fetches, and nothing runs at install time", () => {
     expect(npmPkg.version).toBe(rootPkg.version);
-    expect(npmPkg.name).toBe("shibaox-mem");
-    expect(npmPkg.bin).toEqual({ "shibaox-mem": "bin/shibaox-mem.js" });
+    expect(npmPkg.name).toBe("wizardingcode-mem");
+    expect(npmPkg.bin).toEqual({ "wizardingcode-mem": "bin/wizardingcode-mem.js" });
     const loose = npmPkg as {
       scripts?: Record<string, string>;
       dependencies?: Record<string, string>;
@@ -100,7 +100,7 @@ describe("the npm package", () => {
     expect(result.stdout).toBe("ran: install --yes\n");
     expect(result.exitCode).toBe(3);
     expect(downloads).toBe(1);
-    const binary = join(home, ".shibaox", "mem", "bin", "shibaox-mem");
+    const binary = join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem");
     expect(existsSync(binary)).toBe(true);
     const again = await shim(release(), "status");
     expect(again.stdout).toBe("ran: status\n");
@@ -108,20 +108,20 @@ describe("the npm package", () => {
   });
 
   test("a binary of another version in place is replaced by the package's", async () => {
-    mkdirSync(join(home, ".shibaox", "mem", "bin"), { recursive: true });
-    writeFileSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"), fake("0.0.1"));
-    chmodSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"), 0o755);
+    mkdirSync(join(home, ".wizardingcode", "mem", "bin"), { recursive: true });
+    writeFileSync(join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem"), fake("0.0.1"));
+    chmodSync(join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem"), 0o755);
     await shim(release(), "status");
     expect(downloads).toBe(1);
-    expect(readFileSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"), "utf8")).toContain(
-      npmPkg.version,
-    );
+    expect(
+      readFileSync(join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem"), "utf8"),
+    ).toContain(npmPkg.version);
   });
 
   test("a checksum that does not match stops everything", async () => {
     const result = await shim(release({ checksum: "f".repeat(64) }), "status");
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("checksum");
-    expect(existsSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"))).toBe(false);
+    expect(existsSync(join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem"))).toBe(false);
   });
 });

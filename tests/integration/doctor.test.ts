@@ -16,9 +16,9 @@ let dataDir: string;
 let settingsPath: string;
 
 beforeEach(() => {
-  home = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-doctor-")));
+  home = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-doctor-")));
   project = join(home, "demo");
-  dataDir = join(home, ".shibaox-mem");
+  dataDir = join(home, ".wizardingcode-mem");
   mkdirSync(project);
   mkdirSync(join(home, ".claude"));
   settingsPath = join(home, ".claude", "settings.json");
@@ -30,7 +30,7 @@ afterEach(() => {
 const env = () => ({
   HOME: home,
   CLAUDE_CONFIG_DIR: join(home, ".claude"),
-  SHIBAOX_MEM_DATA_DIR: dataDir,
+  WIZARDINGCODE_MEM_DATA_DIR: dataDir,
   PATH: "/nonexistent",
 });
 const cli = (...args: string[]) => cliWith({}, ...args);
@@ -98,9 +98,9 @@ function installHooks(binary: string): void {
 const line = (output: string, name: string) =>
   output.split("\n").find((candidate) => candidate.includes(name)) ?? "";
 
-describe("shibaox-mem doctor", () => {
+describe("wizardingcode-mem doctor", () => {
   test("a healthy installation passes every check", async () => {
-    const binary = join(home, "shibaox-mem");
+    const binary = join(home, "wizardingcode-mem");
     writeFileSync(binary, "");
     installHooks(binary);
     seed(() => {});
@@ -118,7 +118,7 @@ describe("shibaox-mem doctor", () => {
     expect(result.exitCode).toBe(0);
     expect(line(result.stdout, "Claude Code")).toStartWith("warn");
     expect(line(result.stdout, "Claude Code")).toContain(
-      "claude plugin install shibaox-mem@shibaox-plugins",
+      "claude plugin install wizardingcode-mem@wizardingcode-plugins",
     );
     expect(result.stdout).toContain("1 warning");
   });
@@ -131,36 +131,43 @@ describe("shibaox-mem doctor", () => {
     }
   });
 
-  test("an agent that is on the machine but has no shibaox-mem is a warning that says how to install", async () => {
+  test("an agent that is on the machine but has no wizardingcode-mem is a warning that says how to install", async () => {
     const bin = join(home, "bin");
     mkdirSync(bin);
     writeFileSync(join(bin, "codex"), "#!/bin/sh\n", { mode: 0o755 });
     const result = await cliWith({ PATH: bin }, "doctor");
     expect(line(result.stdout, "Codex")).toStartWith("warn");
-    expect(line(result.stdout, "Codex")).toContain("codex plugin add shibaox-mem@shibaox-plugins");
+    expect(line(result.stdout, "Codex")).toContain(
+      "codex plugin add wizardingcode-mem@wizardingcode-plugins",
+    );
     expect(line(result.stdout, "Gemini CLI")).toStartWith("skip");
   });
 
-  test("an agent that has shibaox-mem as its own plugin or extension is installed, and says how", async () => {
+  test("an agent that has wizardingcode-mem as its own plugin or extension is installed, and says how", async () => {
     writeFileSync(
       settingsPath,
-      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": true, "other@x": true } }),
+      JSON.stringify({
+        enabledPlugins: { "wizardingcode-mem@wizardingcode-plugins": true, "other@x": true },
+      }),
     );
     mkdirSync(join(home, ".codex"));
     writeFileSync(
       join(home, ".codex", "config.toml"),
-      'model = "x"\n\n[plugins."other@x"]\nenabled = true\n\n[plugins."shibaox-mem@shibaox-plugins"]\nenabled = true\n',
+      'model = "x"\n\n[plugins."other@x"]\nenabled = true\n\n[plugins."wizardingcode-mem@wizardingcode-plugins"]\nenabled = true\n',
     );
-    mkdirSync(join(home, ".gemini", "extensions", "shibaox-mem", "bin"), { recursive: true });
+    mkdirSync(join(home, ".gemini", "extensions", "wizardingcode-mem", "bin"), { recursive: true });
     writeFileSync(
-      join(home, ".gemini", "extensions", "shibaox-mem", "gemini-extension.json"),
-      JSON.stringify({ name: "shibaox-mem", version: "9.9.9" }),
+      join(home, ".gemini", "extensions", "wizardingcode-mem", "gemini-extension.json"),
+      JSON.stringify({ name: "wizardingcode-mem", version: "9.9.9" }),
     );
-    writeFileSync(join(home, ".gemini", "extensions", "shibaox-mem", "bin", "shibaox-mem"), "");
+    writeFileSync(
+      join(home, ".gemini", "extensions", "wizardingcode-mem", "bin", "wizardingcode-mem"),
+      "",
+    );
     mkdirSync(join(home, ".config", "opencode"), { recursive: true });
     writeFileSync(
       join(home, ".config", "opencode", "opencode.jsonc"),
-      '{\n  // plugins\n  "plugin": ["shibaox-mem-opencode"]\n}\n',
+      '{\n  // plugins\n  "plugin": ["wizardingcode-mem-opencode"]\n}\n',
     );
     const nativeEnv = {
       CODEX_HOME: join(home, ".codex"),
@@ -169,34 +176,34 @@ describe("shibaox-mem doctor", () => {
     };
     const result = await cliWith(nativeEnv, "doctor");
     expect(line(result.stdout, "Claude Code")).toBe(
-      "ok    Claude Code: installed as a plugin (shibaox-mem@shibaox-plugins)",
+      "ok    Claude Code: installed as a plugin (wizardingcode-mem@wizardingcode-plugins)",
     );
     expect(line(result.stdout, "Codex")).toBe(
-      "ok    Codex: installed as a plugin (shibaox-mem@shibaox-plugins)",
+      "ok    Codex: installed as a plugin (wizardingcode-mem@wizardingcode-plugins)",
     );
     expect(line(result.stdout, "Gemini CLI")).toBe(
       "ok    Gemini CLI: installed as an extension (9.9.9)",
     );
     expect(line(result.stdout, "OpenCode")).toBe(
-      "ok    OpenCode: installed as an npm plugin (shibaox-mem-opencode)",
+      "ok    OpenCode: installed as an npm plugin (wizardingcode-mem-opencode)",
     );
 
     // Turned off in the agent, it is not installed.
     writeFileSync(
       settingsPath,
-      JSON.stringify({ enabledPlugins: { "shibaox-mem@shibaox-plugins": false } }),
+      JSON.stringify({ enabledPlugins: { "wizardingcode-mem@wizardingcode-plugins": false } }),
     );
     writeFileSync(
       join(home, ".codex", "config.toml"),
-      '[plugins."shibaox-mem@shibaox-plugins"]\nenabled = false\n',
+      '[plugins."wizardingcode-mem@wizardingcode-plugins"]\nenabled = false\n',
     );
     const off = await cliWith(nativeEnv, "doctor");
     expect(line(off.stdout, "Claude Code")).toStartWith("warn");
     expect(line(off.stdout, "Codex")).not.toStartWith("ok");
   });
 
-  test("agents with shibaox-mem installed are reported, whether or not their command is on PATH", async () => {
-    const binary = join(home, "shibaox-mem");
+  test("agents with wizardingcode-mem installed are reported, whether or not their command is on PATH", async () => {
+    const binary = join(home, "wizardingcode-mem");
     writeFileSync(binary, "");
     const codexEnv = {
       CODEX_HOME: join(home, ".codex"),
@@ -224,16 +231,18 @@ describe("shibaox-mem doctor", () => {
     const result = await cli("doctor");
     expect(result.exitCode).toBe(1);
     expect(line(result.stdout, "database")).toStartWith("FAIL");
-    expect(line(result.stdout, "database")).toContain("upgrade shibaox-mem");
+    expect(line(result.stdout, "database")).toContain("upgrade wizardingcode-mem");
   });
 
   test("hooks that point at a binary that is gone fail", async () => {
-    installHooks(join(home, "removed", "shibaox-mem"));
+    installHooks(join(home, "removed", "wizardingcode-mem"));
     seed(() => {});
     const result = await cli("doctor");
     expect(result.exitCode).toBe(1);
     expect(line(result.stdout, "Claude Code")).toStartWith("FAIL");
-    expect(line(result.stdout, "Claude Code")).toContain(join(home, "removed", "shibaox-mem"));
+    expect(line(result.stdout, "Claude Code")).toContain(
+      join(home, "removed", "wizardingcode-mem"),
+    );
   });
 
   test("turns that could not be distilled are a warning with a count", async () => {
@@ -317,14 +326,17 @@ describe("shibaox-mem doctor", () => {
   });
 
   test("a data directory inside a synced folder is a warning", async () => {
-    const synced = join(home, "Dropbox", "shibaox-mem");
-    const result = await runCliWith({ env: { ...env(), SHIBAOX_MEM_DATA_DIR: synced } }, "doctor");
+    const synced = join(home, "Dropbox", "wizardingcode-mem");
+    const result = await runCliWith(
+      { env: { ...env(), WIZARDINGCODE_MEM_DATA_DIR: synced } },
+      "doctor",
+    );
     expect(line(result.stdout, "data directory")).toStartWith("warn");
     expect(line(result.stdout, "data directory")).toContain("synced");
   });
 });
 
-describe("shibaox-mem status", () => {
+describe("wizardingcode-mem status", () => {
   test("before anything is stored, says so", async () => {
     const result = await cli("status");
     expect(result.exitCode).toBe(0);
@@ -370,12 +382,12 @@ describe("shibaox-mem status", () => {
     expect(result.stderr).toBe("");
     expect(result.stdout).toBe(
       [
-        `shibaox-mem ${pkg.version}`,
+        `wizardingcode-mem ${pkg.version}`,
         `project   demo (path:${project})`,
         "memories  3 active (1 stale) · 1 superseded · 1 archived",
         "turns     3 distilled · 1 skipped · 1 failed · 1 queued",
         "hooks     prompt p50 10 ms, p95 19 ms · turn-end p50 4 ms, p95 4 ms · 21 runs, 1 error",
-        "judge     heuristic only (no TypeSafe key) · model calls made by shibaox-mem: 0",
+        "judge     heuristic only (no TypeSafe key) · model calls made by wizardingcode-mem: 0",
         `data      ${dataDir}`,
         "",
       ].join("\n"),
@@ -422,7 +434,7 @@ describe("shibaox-mem status", () => {
     seed((db) => db.run("PRAGMA user_version = 99"));
     const result = await cli("status");
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain("newer than this shibaox-mem supports");
+    expect(result.stderr).toContain("newer than this wizardingcode-mem supports");
   });
 });
 
@@ -434,7 +446,7 @@ describe("doctor: backups", () => {
 
     const nas = join(home, "nas");
     const fresh = await cliWith(
-      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      { WIZARDINGCODE_MEM_BACKUP_TO: nas, WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "1" },
       "doctor",
     );
     expect(fresh.stdout).toMatch(/warn\s+backups: none yet/);
@@ -447,7 +459,7 @@ describe("doctor: backups", () => {
       ),
     );
     const late = await cliWith(
-      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      { WIZARDINGCODE_MEM_BACKUP_TO: nas, WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "1" },
       "doctor",
     );
     expect(late.stdout).toMatch(/warn\s+backups: the last copy is 3 h old/);
@@ -460,7 +472,7 @@ describe("doctor: backups", () => {
       ),
     );
     const good = await cliWith(
-      { SHIBAOX_MEM_BACKUP_TO: nas, SHIBAOX_MEM_BACKUP_EVERY_HOURS: "1" },
+      { WIZARDINGCODE_MEM_BACKUP_TO: nas, WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: "1" },
       "doctor",
     );
     expect(good.stdout).toMatch(/ok {2}\s+backups: last copy 10 min ago/);

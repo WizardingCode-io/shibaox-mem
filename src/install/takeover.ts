@@ -13,11 +13,11 @@ import {
   type TakeoverContext,
 } from "./claude-mem.ts";
 
-// The switch from claude-mem to shibaox-mem, as one step of `install`: import what the user
+// The switch from claude-mem to wizardingcode-mem, as one step of `install`: import what the user
 // has, then retire claude-mem so that two memories do not inject into the same session.
 
 export function claudeMemDir(env: Record<string, string | undefined> = process.env): string {
-  const override = env.SHIBAOX_MEM_CLAUDE_MEM_DIR;
+  const override = env.WIZARDINGCODE_MEM_CLAUDE_MEM_DIR;
   return override !== undefined && override !== "" ? override : join(homedir(), ".claude-mem");
 }
 

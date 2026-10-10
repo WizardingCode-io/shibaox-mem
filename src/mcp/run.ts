@@ -4,7 +4,7 @@ import { openDb } from "../store/db.ts";
 import { resolvePaths } from "../util/paths.ts";
 import { getMemories, saveMemory, searchMemories, type ToolContext } from "./tools.ts";
 
-// The three tools, reachable from the MCP server and from `shibaox-mem tool` alike.
+// The three tools, reachable from the MCP server and from `wizardingcode-mem tool` alike.
 
 export const TOOL_NAMES = ["memory_search", "memory_get", "memory_save"] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];

@@ -111,7 +111,7 @@ export function inspectTarget(path: string): TargetReport {
       "this folder is synced by another program, which can copy the database behind SQLite's back.",
     );
   }
-  if (hasDb) warnings.push("a shibaox-mem database is already there; it would be lost.");
+  if (hasDb) warnings.push("a wizardingcode-mem database is already there; it would be lost.");
   if (!writable) warnings.push("cannot write there.");
   return { path, exists, hasDb, writable, network, fsType, warnings };
 }
@@ -181,7 +181,7 @@ export async function moveStore(options: MoveOptions): Promise<MoveOutcome> {
       return { ok: false, reason: "copy-failed", detail: problem };
     }
     renameSync(tmp, join(to, DB_FILE));
-    writeEnvFile(join(dataDir, ENV_FILE), { SHIBAOX_MEM_STORE_DIR: to });
+    writeEnvFile(join(dataDir, ENV_FILE), { WIZARDINGCODE_MEM_STORE_DIR: to });
     const keptOld = join(from, `${DB_FILE}.moved-${now}`);
     renameSync(source, keptOld);
     for (const suffix of ["-wal", "-shm"]) {

@@ -9,7 +9,7 @@ import { join } from "node:path";
 const SCRIPT = new URL("../../scripts/install.sh", import.meta.url).pathname;
 const os = process.platform === "darwin" ? "darwin" : "linux";
 const arch = process.arch === "arm64" ? "arm64" : "x64";
-const FILE = `shibaox-mem-${os}-${arch}`;
+const FILE = `wizardingcode-mem-${os}-${arch}`;
 // The "binary": prints a version, and records how `install` was called.
 const FAKE = `#!/bin/sh\nif [ "$1" = "--version" ]; then echo 9.9.9; exit 0; fi\necho "called: $*" > "$(dirname "$0")/called.txt"\n`;
 
@@ -17,7 +17,7 @@ let home: string;
 let server: ReturnType<typeof Bun.serve> | undefined;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-sh-"));
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-install-sh-"));
 });
 afterEach(async () => {
   // Awaited: a port still closing can be handed to the next test's server.
@@ -28,7 +28,7 @@ afterEach(async () => {
 
 function release(options: { checksum?: string } = {}): string {
   const sha = new Bun.CryptoHasher("sha256").update(FAKE).digest("hex");
-  const checksums = `${options.checksum ?? sha}  ${FILE}\n${"0".repeat(64)}  shibaox-mem-other\n`;
+  const checksums = `${options.checksum ?? sha}  ${FILE}\n${"0".repeat(64)}  wizardingcode-mem-other\n`;
   server = Bun.serve({
     // Loopback by name: on every interface, the port handed out may already be
     // another process's on 127.0.0.1, and the request would go to it.
@@ -49,8 +49,8 @@ async function run(base: string, ...args: string[]) {
     env: {
       ...process.env,
       HOME: home,
-      SHIBAOX_HOME: join(home, ".shibaox"),
-      SHIBAOX_MEM_RELEASE_BASE: base,
+      WIZARDINGCODE_HOME: join(home, ".wizardingcode"),
+      WIZARDINGCODE_MEM_RELEASE_BASE: base,
     },
     stdin: "ignore",
     stdout: "pipe",
@@ -69,11 +69,11 @@ describe("scripts/install.sh", () => {
     const result = await run(release(), "claude-code", "--yes");
     expect(result.stderr).toBe("");
     expect(result.exitCode).toBe(0);
-    const binary = join(home, ".shibaox", "mem", "bin", "shibaox-mem");
+    const binary = join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem");
     expect(existsSync(binary)).toBe(true);
     expect(statSync(binary).mode & 0o111).not.toBe(0);
     expect(result.stdout).toContain("installed 9.9.9");
-    expect(readFileSync(join(home, ".shibaox", "mem", "bin", "called.txt"), "utf8")).toBe(
+    expect(readFileSync(join(home, ".wizardingcode", "mem", "bin", "called.txt"), "utf8")).toBe(
       "called: install claude-code --yes\n",
     );
   });
@@ -83,7 +83,7 @@ describe("scripts/install.sh", () => {
     expect(result.stderr).toContain("checksum mismatch");
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("checksum mismatch");
-    expect(existsSync(join(home, ".shibaox", "mem", "bin", "shibaox-mem"))).toBe(false);
+    expect(existsSync(join(home, ".wizardingcode", "mem", "bin", "wizardingcode-mem"))).toBe(false);
   });
 
   test("a release that does not list the binary is refused", async () => {

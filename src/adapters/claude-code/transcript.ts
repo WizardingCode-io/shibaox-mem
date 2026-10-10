@@ -86,8 +86,8 @@ export function readTurnDetail(
         if (READ_TOOLS.has(name)) add(filesRead, path);
         else if (WRITE_TOOLS.has(name)) add(filesChanged, path);
         else if (name === "Bash") add(commands, text(block.input.command));
-        // MCP tools are named mcp__<server>__<tool>; ours is registered as "shibaox-mem".
-        else if (name.includes("shibaox-mem") && name.endsWith("__memory_save")) {
+        // MCP tools are named mcp__<server>__<tool>; ours is registered as "wizardingcode-mem".
+        else if (name.includes("wizardingcode-mem") && name.endsWith("__memory_save")) {
           const saveId = text(block.id);
           if (saveId !== null) saves.add(saveId);
         }

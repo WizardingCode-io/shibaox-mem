@@ -19,28 +19,28 @@ const kindItems = [
   { label: "A folder — external disk, NAS", value: "folder" },
   { label: "An S3-compatible bucket — AWS, R2, MinIO, B2", value: "s3" },
 ];
-const current = () => valueOf("SHIBAOX_MEM_BACKUP_TO") ?? "";
+const current = () => valueOf("WIZARDINGCODE_MEM_BACKUP_TO") ?? "";
 const kindOf = (to: string): Kind => (to === "" ? "none" : to.startsWith("s3://") ? "s3" : "folder");
 const kind = ref<Kind>(kindOf(current()));
 const to = ref(current());
-const every = ref(valueOf("SHIBAOX_MEM_BACKUP_EVERY_HOURS") ?? "24");
-const keep = ref(valueOf("SHIBAOX_MEM_BACKUP_KEEP") ?? "10");
-const endpoint = ref(valueOf("SHIBAOX_MEM_BACKUP_S3_ENDPOINT") ?? "");
-const region = ref(valueOf("SHIBAOX_MEM_BACKUP_S3_REGION") ?? "");
-const accessKey = ref(valueOf("SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY") ?? "");
+const every = ref(valueOf("WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS") ?? "24");
+const keep = ref(valueOf("WIZARDINGCODE_MEM_BACKUP_KEEP") ?? "10");
+const endpoint = ref(valueOf("WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT") ?? "");
+const region = ref(valueOf("WIZARDINGCODE_MEM_BACKUP_S3_REGION") ?? "");
+const accessKey = ref(valueOf("WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY") ?? "");
 const secretKey = ref("");
 const secretSet = computed(() => {
-  const s = setting("SHIBAOX_MEM_BACKUP_S3_SECRET_KEY");
+  const s = setting("WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY");
   return s !== null && "secret" in s && s.set;
 });
-const locked = computed(() => fromEnvironment("SHIBAOX_MEM_BACKUP_TO"));
+const locked = computed(() => fromEnvironment("WIZARDINGCODE_MEM_BACKUP_TO"));
 watch(
   () => settingsState.view,
   () => {
     to.value = current();
     kind.value = kindOf(to.value);
-    every.value = valueOf("SHIBAOX_MEM_BACKUP_EVERY_HOURS") ?? "24";
-    keep.value = valueOf("SHIBAOX_MEM_BACKUP_KEEP") ?? "10";
+    every.value = valueOf("WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS") ?? "24";
+    keep.value = valueOf("WIZARDINGCODE_MEM_BACKUP_KEEP") ?? "10";
   },
 );
 watch(kind, (k) => {
@@ -60,15 +60,15 @@ onMounted(load);
 
 async function save() {
   const patch: Record<string, string | null> = {
-    SHIBAOX_MEM_BACKUP_TO: kind.value === "none" ? null : to.value.trim(),
-    SHIBAOX_MEM_BACKUP_EVERY_HOURS: every.value,
-    SHIBAOX_MEM_BACKUP_KEEP: keep.value,
+    WIZARDINGCODE_MEM_BACKUP_TO: kind.value === "none" ? null : to.value.trim(),
+    WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS: every.value,
+    WIZARDINGCODE_MEM_BACKUP_KEEP: keep.value,
   };
   if (kind.value === "s3") {
-    patch.SHIBAOX_MEM_BACKUP_S3_ENDPOINT = endpoint.value.trim() || null;
-    patch.SHIBAOX_MEM_BACKUP_S3_REGION = region.value.trim() || null;
-    patch.SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY = accessKey.value.trim() || null;
-    if (secretKey.value.trim()) patch.SHIBAOX_MEM_BACKUP_S3_SECRET_KEY = secretKey.value.trim();
+    patch.WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT = endpoint.value.trim() || null;
+    patch.WIZARDINGCODE_MEM_BACKUP_S3_REGION = region.value.trim() || null;
+    patch.WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY = accessKey.value.trim() || null;
+    if (secretKey.value.trim()) patch.WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY = secretKey.value.trim();
   }
   if (await saveSettings(patch)) {
     secretKey.value = "";
@@ -132,32 +132,32 @@ async function restore() {
       <UBadge v-if="view?.target" :color="view.due ? 'warning' : 'success'" variant="soft" size="sm" :label="view.due ? 'Due' : 'Up to date'" />
     </template>
     <div class="flex flex-col gap-4">
-      <UFormField label="Back up to" :hint="locked ? 'Set by the environment.' : undefined" :error="settingsState.errors.SHIBAOX_MEM_BACKUP_TO">
+      <UFormField label="Back up to" :hint="locked ? 'Set by the environment.' : undefined" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
         <USelectMenu v-model="kind" :items="kindItems" value-key="value" :search-input="false" class="w-full sm:w-96" :disabled="locked" />
       </UFormField>
       <template v-if="kind !== 'none'">
-        <UFormField :label="kind === 's3' ? 'Bucket' : 'Folder'" :hint="kind === 's3' ? 's3://bucket/prefix' : 'An absolute path; created if needed.'" :error="settingsState.errors.SHIBAOX_MEM_BACKUP_TO">
-          <UInput v-model="to" class="w-full font-mono" :placeholder="kind === 's3' ? 's3://my-bucket/shibaox-mem' : '/Volumes/NAS/backups/shibaox-mem'" :disabled="locked" />
+        <UFormField :label="kind === 's3' ? 'Bucket' : 'Folder'" :hint="kind === 's3' ? 's3://bucket/prefix' : 'An absolute path; created if needed.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_TO">
+          <UInput v-model="to" class="w-full font-mono" :placeholder="kind === 's3' ? 's3://my-bucket/wizardingcode-mem' : '/Volumes/NAS/backups/wizardingcode-mem'" :disabled="locked" />
         </UFormField>
         <div v-if="kind === 's3'" class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Endpoint" hint="Empty for AWS." :error="settingsState.errors.SHIBAOX_MEM_BACKUP_S3_ENDPOINT">
+          <UFormField label="Endpoint" hint="Empty for AWS." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_ENDPOINT">
             <UInput v-model="endpoint" class="w-full font-mono" placeholder="https://<account>.r2.cloudflarestorage.com" />
           </UFormField>
-          <UFormField label="Region" :error="settingsState.errors.SHIBAOX_MEM_BACKUP_S3_REGION">
+          <UFormField label="Region" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_REGION">
             <UInput v-model="region" class="w-full font-mono" placeholder="auto" />
           </UFormField>
-          <UFormField label="Access key" :error="settingsState.errors.SHIBAOX_MEM_BACKUP_S3_ACCESS_KEY">
+          <UFormField label="Access key" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_ACCESS_KEY">
             <UInput v-model="accessKey" class="w-full font-mono" autocomplete="off" />
           </UFormField>
-          <UFormField label="Secret key" :hint="secretSet ? 'Set; paste a new one to replace it.' : 'Kept in the settings file, never shown.'" :error="settingsState.errors.SHIBAOX_MEM_BACKUP_S3_SECRET_KEY">
+          <UFormField label="Secret key" :hint="secretSet ? 'Set; paste a new one to replace it.' : 'Kept in the settings file, never shown.'" :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_S3_SECRET_KEY">
             <UInput v-model="secretKey" type="password" class="w-full font-mono" autocomplete="off" :placeholder="secretSet ? '••••••••' : ''" />
           </UFormField>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <UFormField label="Every" hint="Hours between copies; 0 means only when you ask." :error="settingsState.errors.SHIBAOX_MEM_BACKUP_EVERY_HOURS">
+          <UFormField label="Every" hint="Hours between copies; 0 means only when you ask." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_EVERY_HOURS">
             <div class="flex items-center gap-2"><UInput v-model="every" type="number" min="0" max="720" class="w-28" /><span class="text-[13px] text-(--ink-muted)">hours</span></div>
           </UFormField>
-          <UFormField label="Keep" hint="Older copies are removed." :error="settingsState.errors.SHIBAOX_MEM_BACKUP_KEEP">
+          <UFormField label="Keep" hint="Older copies are removed." :error="settingsState.errors.WIZARDINGCODE_MEM_BACKUP_KEEP">
             <div class="flex items-center gap-2"><UInput v-model="keep" type="number" min="1" max="1000" class="w-28" /><span class="text-[13px] text-(--ink-muted)">copies</span></div>
           </UFormField>
         </div>

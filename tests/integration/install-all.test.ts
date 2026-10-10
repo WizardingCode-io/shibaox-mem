@@ -9,8 +9,8 @@ let home: string;
 let binary: string;
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "shibaox-mem-install-all-"));
-  binary = join(home, "shibaox-mem");
+  home = mkdtempSync(join(tmpdir(), "wizardingcode-mem-install-all-"));
+  binary = join(home, "wizardingcode-mem");
   writeFileSync(binary, "");
 });
 afterEach(() => {
@@ -23,7 +23,7 @@ const env = () => ({
   CODEX_HOME: join(home, ".codex"),
   GEMINI_CLI_HOME: join(home, ".gemini"),
   XDG_CONFIG_HOME: join(home, ".config"),
-  SHIBAOX_MEM_DATA_DIR: join(home, "data"),
+  WIZARDINGCODE_MEM_DATA_DIR: join(home, "data"),
   PATH: join(home, "bin"),
 });
 
@@ -44,18 +44,20 @@ describe("detectAgents", () => {
   });
 });
 
-describe("shibaox-mem install (no agent)", () => {
+describe("wizardingcode-mem install (no agent)", () => {
   test("installs for every agent found, says which were not found, and leaves nothing else behind", async () => {
     mkdirSync(join(home, ".codex"));
     mkdirSync(join(home, ".config", "opencode"), { recursive: true });
     const result = await runCliWith({ env: env() }, "install", "--binary", binary);
     expect(result.stderr).toBe("");
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("Installed shibaox-mem for Codex.");
-    expect(result.stdout).toContain("Installed shibaox-mem for OpenCode.");
+    expect(result.stdout).toContain("Installed wizardingcode-mem for Codex.");
+    expect(result.stdout).toContain("Installed wizardingcode-mem for OpenCode.");
     expect(result.stdout).toContain("Not found on this machine: Claude Code, Cursor, Gemini CLI");
     expect(existsSync(join(home, ".codex", "hooks.json"))).toBe(true);
-    expect(existsSync(join(home, ".config", "opencode", "plugins", "shibaox-mem.ts"))).toBe(true);
+    expect(existsSync(join(home, ".config", "opencode", "plugins", "wizardingcode-mem.ts"))).toBe(
+      true,
+    );
     expect(existsSync(join(home, ".gemini"))).toBe(false);
     expect(existsSync(join(home, ".cursor"))).toBe(false);
   });
@@ -64,6 +66,6 @@ describe("shibaox-mem install (no agent)", () => {
     const result = await runCliWith({ env: env() }, "install", "--binary", binary);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("No supported agent found");
-    expect(result.stderr).toContain("shibaox-mem install <agent>");
+    expect(result.stderr).toContain("wizardingcode-mem install <agent>");
   });
 });

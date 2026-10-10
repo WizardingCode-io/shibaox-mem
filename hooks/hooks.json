@@ -7,7 +7,7 @@
             "type": "command",
             "command": "sh",
             "args": [
-              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "${CLAUDE_PLUGIN_ROOT}/plugin/wizardingcode-mem.sh",
               "hook",
               "claude-code",
               "session-start"
@@ -24,7 +24,7 @@
             "type": "command",
             "command": "sh",
             "args": [
-              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "${CLAUDE_PLUGIN_ROOT}/plugin/wizardingcode-mem.sh",
               "hook",
               "claude-code",
               "prompt"
@@ -41,7 +41,7 @@
             "type": "command",
             "command": "sh",
             "args": [
-              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "${CLAUDE_PLUGIN_ROOT}/plugin/wizardingcode-mem.sh",
               "hook",
               "claude-code",
               "turn-end"
@@ -58,7 +58,7 @@
             "type": "command",
             "command": "sh",
             "args": [
-              "${CLAUDE_PLUGIN_ROOT}/plugin/shibaox-mem.sh",
+              "${CLAUDE_PLUGIN_ROOT}/plugin/wizardingcode-mem.sh",
               "hook",
               "claude-code",
               "session-end"

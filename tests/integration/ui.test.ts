@@ -19,7 +19,7 @@ let projectId: number;
 let server: UiServer | undefined;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-ui-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-ui-")));
   dataDir = join(base, "data");
   project = join(base, "shop");
   mkdirSync(project);
@@ -92,7 +92,7 @@ const api = (s: UiServer, path: string, init: RequestInit = {}) =>
     headers: { Authorization: `Bearer ${s.token}`, ...(init.headers ?? {}) },
   });
 
-describe("shibaox-mem ui: the page", () => {
+describe("wizardingcode-mem ui: the page", () => {
   test("listens on the loopback only, at a URL that carries a token, and serves the page there", async () => {
     const s = await start();
     expect(s.origin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
@@ -101,7 +101,7 @@ describe("shibaox-mem ui: the page", () => {
     expect(page.status).toBe(200);
     expect(page.headers.get("content-type")).toContain("text/html");
     const html = await page.text();
-    expect(html).toContain("<title>shibaox-mem</title>");
+    expect(html).toContain("<title>wizardingcode-mem</title>");
     expect(html).toContain('<div id="app">');
     // Built into one file: no script or stylesheet fetched from anywhere.
     expect(html).not.toMatch(/<script[^>]+src=/);
@@ -133,7 +133,7 @@ describe("shibaox-mem ui: the page", () => {
   });
 });
 
-describe("shibaox-mem ui: the API", () => {
+describe("wizardingcode-mem ui: the API", () => {
   test("overview lists projects with their counts, and where the data lives", async () => {
     const s = await start();
     const overview = (await (await api(s, "/api/overview")).json()) as {
@@ -406,7 +406,7 @@ describe("shibaox-mem ui: the API", () => {
   });
 });
 
-describe("shibaox-mem ui: lifecycle", () => {
+describe("wizardingcode-mem ui: lifecycle", () => {
   test("stops itself after a stretch without requests", async () => {
     let idle = 0;
     const s = await start({ idleMs: 50, onIdle: () => idle++ });

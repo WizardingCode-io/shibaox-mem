@@ -20,15 +20,15 @@ export const MIGRATIONS: readonly Migration[] = [
 ];
 export const LATEST_VERSION = MIGRATIONS.length;
 
-export const DB_FILE = "shibaox-mem.db";
+export const DB_FILE = "wizardingcode-mem.db";
 const BACKUPS_DIR = "backups";
 const BACKUPS_KEPT = 2;
 
-/** The database was written by a newer shibaox-mem. Callers must leave it alone. */
+/** The database was written by a newer wizardingcode-mem. Callers must leave it alone. */
 export class SchemaTooNewError extends Error {
   constructor(found: number, supported: number) {
     super(
-      `database schema version ${found} is newer than this shibaox-mem supports (${supported}); upgrade shibaox-mem`,
+      `database schema version ${found} is newer than this wizardingcode-mem supports (${supported}); upgrade wizardingcode-mem`,
     );
     this.name = "SchemaTooNewError";
   }
@@ -61,7 +61,7 @@ function backup(db: Db, dir: string, version: number): void {
   const backups = join(dir, BACKUPS_DIR);
   mkdirSync(backups, { recursive: true, mode: 0o700 });
   // Timestamp first, so that sorting by name is sorting by age.
-  const target = join(backups, `shibaox-mem-${Date.now()}-v${version}-${process.pid}.db`);
+  const target = join(backups, `wizardingcode-mem-${Date.now()}-v${version}-${process.pid}.db`);
   db.run(`VACUUM INTO '${target.replaceAll("'", "''")}'`);
   restrict(target, 0o600);
   const old = readdirSync(backups)

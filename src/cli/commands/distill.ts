@@ -9,7 +9,7 @@ const MAX_TURNS = 50;
 const MAX_MS = 30_000;
 
 /**
- * `shibaox-mem distill`: turns queued turns into memories. Hooks start it in the
+ * `wizardingcode-mem distill`: turns queued turns into memories. Hooks start it in the
  * background; it can also be run by hand. Only one instance works at a time.
  */
 export async function run(): Promise<number> {
@@ -28,7 +28,7 @@ export async function run(): Promise<number> {
   } catch (error) {
     logError("distill", error);
     process.stderr.write(
-      `shibaox-mem: ${error instanceof Error ? error.message : String(error)}\n`,
+      `wizardingcode-mem: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   } finally {

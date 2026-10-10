@@ -1,6 +1,6 @@
 import type { AgentId, HookEvent } from "../core/types.ts";
 
-/** A host agent's hook payload, reduced to what shibaox-mem uses. Nothing here is redacted yet. */
+/** A host agent's hook payload, reduced to what wizardingcode-mem uses. Nothing here is redacted yet. */
 export interface HookInput {
   agent: AgentId;
   event: HookEvent;
@@ -26,7 +26,7 @@ export interface TurnDetail {
   filesChanged: string[];
   commands: string[];
   errors: string[];
-  /** The agent stored a memory itself during the turn, through shibaox-mem's own tool. */
+  /** The agent stored a memory itself during the turn, through wizardingcode-mem's own tool. */
   savedMemory: boolean;
 }
 

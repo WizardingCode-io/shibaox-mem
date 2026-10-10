@@ -19,7 +19,7 @@ let answers: Record<string, string>;
 let messages: unknown[];
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "shibaox-mem-opencode-plugin-"));
+  dir = mkdtempSync(join(tmpdir(), "wizardingcode-mem-opencode-plugin-"));
   calls = [];
   answers = {};
   messages = [];
@@ -44,8 +44,11 @@ interface Hooks {
 }
 
 async function load(): Promise<Hooks> {
-  const path = join(dir, "shibaox-mem.ts");
-  writeFileSync(path, pluginSource("/opt/shibaox-mem/bin/shibaox-mem", { exportFactory: true }));
+  const path = join(dir, "wizardingcode-mem.ts");
+  writeFileSync(
+    path,
+    pluginSource("/opt/wizardingcode-mem/bin/wizardingcode-mem", { exportFactory: true }),
+  );
   const mod = (await import(path)) as {
     createPlugin: (deps: unknown) => (input: unknown) => Promise<Record<string, unknown>>;
   };
@@ -61,7 +64,7 @@ async function load(): Promise<Hooks> {
   })) as unknown as Hooks;
 }
 
-const BIN = "/opt/shibaox-mem/bin/shibaox-mem";
+const BIN = "/opt/wizardingcode-mem/bin/wizardingcode-mem";
 const SESSION = "ses_1";
 
 describe("the OpenCode plugin", () => {
@@ -70,11 +73,11 @@ describe("the OpenCode plugin", () => {
     expect(source).toContain(PLUGIN_MARKER);
     expect(source).toContain(JSON.stringify(BIN));
     expect(source).not.toContain("export function createPlugin");
-    expect(source).toContain("export const ShibaoxMem");
+    expect(source).toContain("export const WizardingCodeMem");
   });
 
-  test("a created session starts one in shibaox-mem, and its brief goes into the system prompt", async () => {
-    answers["session-start"] = "<shibaox-mem-notes>brief</shibaox-mem-notes>";
+  test("a created session starts one in wizardingcode-mem, and its brief goes into the system prompt", async () => {
+    answers["session-start"] = "<wizardingcode-mem-notes>brief</wizardingcode-mem-notes>";
     const hooks = await load();
     await hooks.event({
       event: {
@@ -92,7 +95,7 @@ describe("the OpenCode plugin", () => {
     await hooks["experimental.chat.system.transform"]({ sessionID: SESSION }, output);
     expect(output.system).toEqual([
       "You are opencode.",
-      "<shibaox-mem-notes>brief</shibaox-mem-notes>",
+      "<wizardingcode-mem-notes>brief</wizardingcode-mem-notes>",
     ]);
   });
 

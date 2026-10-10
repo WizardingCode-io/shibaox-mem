@@ -10,7 +10,7 @@ let base: string;
 let db: Db;
 
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), "shibaox-mem-project-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "wizardingcode-mem-project-")));
   db = openDb({ dataDir: join(base, "data"), busyTimeoutMs: 2000 });
 });
 afterEach(() => {

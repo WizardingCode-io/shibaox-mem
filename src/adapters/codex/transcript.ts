@@ -82,7 +82,7 @@ export function readTurnDetail(
       }
       case "McpToolCall": {
         if (
-          text(item.server) === "shibaox-mem" &&
+          text(item.server) === "wizardingcode-mem" &&
           text(item.tool) === "memory_save" &&
           item.status === "completed"
         ) {

@@ -4,9 +4,9 @@
       {
         "hooks": [
           {
-            "name": "shibaox-mem",
+            "name": "wizardingcode-mem",
             "type": "command",
-            "command": "\"${extensionPath}/bin/shibaox-mem\" hook gemini session-start --via-plugin",
+            "command": "\"${extensionPath}/bin/wizardingcode-mem\" hook gemini session-start --via-plugin",
             "timeout": 5000
           }
         ]
@@ -16,9 +16,9 @@
       {
         "hooks": [
           {
-            "name": "shibaox-mem",
+            "name": "wizardingcode-mem",
             "type": "command",
-            "command": "\"${extensionPath}/bin/shibaox-mem\" hook gemini prompt --via-plugin",
+            "command": "\"${extensionPath}/bin/wizardingcode-mem\" hook gemini prompt --via-plugin",
             "timeout": 5000
           }
         ]
@@ -28,9 +28,9 @@
       {
         "hooks": [
           {
-            "name": "shibaox-mem",
+            "name": "wizardingcode-mem",
             "type": "command",
-            "command": "\"${extensionPath}/bin/shibaox-mem\" hook gemini turn-end --via-plugin",
+            "command": "\"${extensionPath}/bin/wizardingcode-mem\" hook gemini turn-end --via-plugin",
             "timeout": 5000
           }
         ]
@@ -40,9 +40,9 @@
       {
         "hooks": [
           {
-            "name": "shibaox-mem",
+            "name": "wizardingcode-mem",
             "type": "command",
-            "command": "\"${extensionPath}/bin/shibaox-mem\" hook gemini session-end --via-plugin",
+            "command": "\"${extensionPath}/bin/wizardingcode-mem\" hook gemini session-end --via-plugin",
             "timeout": 5000
           }
         ]

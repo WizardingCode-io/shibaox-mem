@@ -36,7 +36,7 @@ export const GEMINI: HostSpec = {
   binaryOf: (hook) => ourShellHookBinary(hook, "gemini") ?? "",
   mcpAdd: (binaryPath) => ["gemini", "mcp", "add", "-s", "user", MCP_NAME, binaryPath, "mcp"],
   mcpRemove: ["gemini", "mcp", "remove", "-s", "user", MCP_NAME],
-  notes: ["If Gemini CLI asks whether to trust the shibaox-mem hooks, accept."],
+  notes: ["If Gemini CLI asks whether to trust the wizardingcode-mem hooks, accept."],
 };
 
 export const installGemini = (context: InstallContext): InstallResult =>

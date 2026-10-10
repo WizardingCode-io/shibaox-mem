@@ -36,7 +36,7 @@ export const CODEX: HostSpec = {
   mcpAdd: (binaryPath) => ["codex", "mcp", "add", MCP_NAME, "--", binaryPath, "mcp"],
   mcpRemove: ["codex", "mcp", "remove", MCP_NAME],
   notes: [
-    "Codex asks you to approve new hooks the first time: run /hooks inside Codex and accept the shibaox-mem entries.",
+    "Codex asks you to approve new hooks the first time: run /hooks inside Codex and accept the wizardingcode-mem entries.",
   ],
 };
 

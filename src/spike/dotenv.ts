@@ -2,7 +2,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { isCompiled, type SpikeResult, selfCommand, withTempDir } from "./support.ts";
 
-const NAME = "SHIBAOX_MEM_SPIKE_DOTENV";
+const NAME = "WIZARDINGCODE_MEM_SPIKE_DOTENV";
 
 export function envProbe(name: string): "present" | "absent" {
   return process.env[name] === undefined ? "absent" : "present";

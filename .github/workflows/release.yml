@@ -45,7 +45,7 @@ jobs:
           name: unsigned
           path: dist
       - run: |
-          for file in dist/shibaox-mem-darwin-*; do
+          for file in dist/wizardingcode-mem-darwin-*; do
             chmod +x "$file"
             codesign --force --sign - "$file"
             codesign --verify --verbose "$file"
@@ -69,8 +69,8 @@ jobs:
       - name: Checksums
         run: |
           cd dist
-          chmod +x shibaox-mem-*
-          sha256sum shibaox-mem-* > checksums.txt
+          chmod +x wizardingcode-mem-*
+          sha256sum wizardingcode-mem-* > checksums.txt
           cat checksums.txt
       # The Gemini CLI extension: one archive per platform, the binary inside.
       - name: Gemini extension archives
@@ -83,11 +83,11 @@ jobs:
             echo "From inside your agent — see the [README](https://github.com/${GITHUB_REPOSITORY}#install) for each one. For example:"
             echo
             echo '```sh'
-            echo "claude plugin marketplace add WizardingCode-io/shibaox-plugins && claude plugin install shibaox-mem@shibaox-plugins"
+            echo "claude plugin marketplace add WizardingCode-io/wizardingcode-plugins && claude plugin install wizardingcode-mem@wizardingcode-plugins"
             echo "gemini extensions install https://github.com/${GITHUB_REPOSITORY}"
             echo '```'
             echo
-            echo "The \`*.shibaox-mem.tar.gz\` files are the Gemini CLI extension; the \`shibaox-mem-*\` files are the binaries the other plugins fetch."
+            echo "The \`*.wizardingcode-mem.tar.gz\` files are the Gemini CLI extension; the \`wizardingcode-mem-*\` files are the binaries the other plugins fetch."
             echo
             echo "## Changes"
             echo
@@ -102,4 +102,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           case "${GITHUB_REF_NAME}" in *-*) prerelease="--prerelease" ;; *) prerelease="" ;; esac
-          gh release create "${GITHUB_REF_NAME}" $prerelease --title "shibaox-mem ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/shibaox-mem-* dist/*.shibaox-mem.tar.gz dist/checksums.txt
+          gh release create "${GITHUB_REF_NAME}" $prerelease --title "wizardingcode-mem ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/wizardingcode-mem-* dist/*.wizardingcode-mem.tar.gz dist/checksums.txt
