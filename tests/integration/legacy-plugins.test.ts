@@ -66,7 +66,7 @@ describe("findLegacyPlugins", () => {
     ]);
   });
 
-  test("finds the enabled Codex plugin; Codex removes it from its own /plugins menu", () => {
+  test("finds the enabled Codex plugin and how to remove it", () => {
     write(
       join(home, ".codex", "config.toml"),
       '[plugins."shibaox-mem@shibaox-plugins"]\nenabled = true\n',
@@ -75,8 +75,8 @@ describe("findLegacyPlugins", () => {
       {
         agent: "codex",
         name: "shibaox-mem@shibaox-plugins",
-        command: null,
-        hint: 'in Codex, open /plugins and remove shibaox-mem, or set enabled = false under [plugins."shibaox-mem@shibaox-plugins"] in ~/.codex/config.toml',
+        command: ["codex", "plugin", "remove", "shibaox-mem@shibaox-plugins"],
+        hint: "codex plugin remove shibaox-mem@shibaox-plugins",
       },
     ]);
   });
