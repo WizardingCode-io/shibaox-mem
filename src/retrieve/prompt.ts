@@ -16,6 +16,12 @@ const EVIDENCE_WEIGHT = 3;
 const RECENT_TURNS = 5;
 const MAX_SESSION_FILES = 50;
 
+/**
+ * What the host sends in the user's place: a background task finishing, a subagent
+ * reporting back. Nobody asked anything; its ids and paths only make for a slow search.
+ */
+const FROM_THE_HOST = /^\s*<(?:task-notification|agent-message)[\s>]/;
+
 interface Candidate {
   row: MemoryRow;
   /** Lower is a better match; undefined when the full-text search did not return it. */
@@ -111,6 +117,7 @@ export function retrieveForPrompt(
     now: number;
   },
 ): Note[] {
+  if (FROM_THE_HOST.test(input.prompt)) return [];
   const query = buildQuery(input.prompt);
   if (query === null) return [];
 
@@ -156,9 +163,11 @@ export function retrieveForPrompt(
       .get(input.projectId)?.n ?? 0;
   // Never below one: in a small project, a word two memories share is not rare.
   const rareLimit = Math.max(1, Math.ceil(total * 0.05));
-  const frequency = db.query<{ n: number }, [string, number]>(
-    `SELECT count(*) AS n FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
-      WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active'`,
+  // Counted only as far as the limit: past it the word is common, however common.
+  const frequency = db.query<{ n: number }, [string, number, number]>(
+    `SELECT count(*) AS n FROM (
+       SELECT 1 FROM memories_fts CROSS JOIN memories m ON m.id = memories_fts.rowid
+        WHERE memories_fts MATCH ? AND m.project_id = ? AND m.status = 'active' LIMIT ?)`,
   );
   const known = new Map<string, boolean>();
   const isRare = (word: string) => {
@@ -166,8 +175,8 @@ export function retrieveForPrompt(
     if (rare === undefined) {
       const forms = new Set([word, stem(searchTokens(word)[0] ?? word)]);
       rare =
-        (frequency.get(inProject(anyOf(forms), input.projectId), input.projectId)?.n ?? 0) <=
-        rareLimit;
+        (frequency.get(inProject(anyOf(forms), input.projectId), input.projectId, rareLimit + 1)
+          ?.n ?? 0) <= rareLimit;
       known.set(word, rare);
     }
     return rare;

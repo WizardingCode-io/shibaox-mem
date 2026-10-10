@@ -16,6 +16,7 @@
   <a href="https://github.com/WizardingCode-io/wizardingcode-mem/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/WizardingCode-io/wizardingcode-mem?color=6B35E0&labelColor=100E0D"></a>
   <a href="https://github.com/WizardingCode-io/wizardingcode-mem/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/WizardingCode-io/wizardingcode-mem/ci.yml?branch=main&labelColor=100E0D"></a>
   <a href="https://www.npmjs.com/package/wizardingcode-mem"><img alt="npm" src="https://img.shields.io/npm/v/wizardingcode-mem?color=6B35E0&labelColor=100E0D"></a>
+  <a href="https://github.com/WizardingCode-io/wizardingcode-mem/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/WizardingCode-io/wizardingcode-mem/total?label=downloads&color=6B35E0&labelColor=100E0D"></a>
   <a href="LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-6B35E0?labelColor=100E0D"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-100E0D?labelColor=100E0D">
 </p>
