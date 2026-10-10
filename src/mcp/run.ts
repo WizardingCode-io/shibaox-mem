@@ -74,6 +74,60 @@ export const GLOBAL_TOOL_DESCRIPTIONS: Record<ToolName, string> = {
     "List the user's projects, most recently active first, to pick one to save into.",
 };
 
+/**
+ * How each tool is shown to people, and whether it only reads: hosts that ask before a
+ * tool runs can tell a lookup from a write.
+ */
+export const TOOL_META: Record<
+  ToolName,
+  {
+    title: string;
+    annotations: {
+      readOnlyHint: boolean;
+      destructiveHint: boolean;
+      idempotentHint: boolean;
+      openWorldHint: boolean;
+    };
+  }
+> = {
+  memory_search: {
+    title: "Search memories",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  memory_get: {
+    title: "Read memories",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  memory_projects: {
+    title: "List projects",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  memory_save: {
+    title: "Save a memory",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
+};
+
 /** What the model is told about the memory when it has no project folder (Claude Desktop's chat). */
 export const GLOBAL_INSTRUCTIONS = [
   "wizardingcode-mem is the user's memory across every coding agent and Claude app: what was decided, learned or stated while working on each project.",
