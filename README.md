@@ -55,32 +55,47 @@ The numbers are measured, not promised: see the [decision records](docs/adr/) fo
 
 ## Install
 
-wizardingcode-mem is installed from inside your agent, the way that agent installs anything else. The plugin fetches the binary for your platform on its first session (checksum verified) and keeps one copy for all agents in `~/.wizardingcode/mem/bin`.
+Install it once in each place you work. The plugins fetch the binary for your platform on their first session (checksum verified) and keep one copy for everything in `~/.wizardingcode/mem/bin`; every agent and app then shares the same memory.
+
+### Where you work → what to do
 
 <table>
-<tr><td width="140"><strong>Claude Code</strong></td><td>
+<tr><th align="left" width="220">Where</th><th align="left">How</th></tr>
+
+<tr><td><strong>Claude Code</strong><br><sub>terminal, VS Code, JetBrains</sub></td><td>
 
 ```sh
 claude plugin marketplace add WizardingCode-io/wizardingcode-plugins
 claude plugin install wizardingcode-mem@wizardingcode-plugins
 ```
 
+Start a new session. Captures and recalls on its own.
+
 </td></tr>
-<tr><td><strong>Claude Desktop</strong></td><td>
 
-So that a design conversation in the app and the coding session in the repository share one memory:
+<tr><td><strong>Claude Desktop</strong><br><sub>Cowork and the Code tab</sub></td><td>
 
-1. In Claude Desktop, open **Customize → Plugins → Add marketplace**, enter `WizardingCode-io/wizardingcode-plugins` and add **wizardingcode-mem**. Cowork tasks then capture and recall as Claude Code does, and the plugin follows your account to Claude Code.
-2. For the chat, which runs no plugin hooks or local servers, register the memory server once:
+1. Open **Customize → Plugins → + Add → Add marketplace → Add from a repository**.
+2. Paste `WizardingCode-io/wizardingcode-plugins` and confirm.
+3. In **Discover**, find **wizardingcode-mem** and select **Add**.
+
+The plugin is saved to your Claude account, so it also reaches Claude Code on any machine you sign in to. Cowork tasks capture and recall on their own.
+
+</td></tr>
+
+<tr><td><strong>Claude Desktop</strong><br><sub>chat</sub></td><td>
+
+The chat runs no plugin hooks, so it reaches the memory through its tools. With the binary on the machine ([step 2](#get-the-binary-for-claude-desktops-chat-and-cursor)):
 
 ```sh
 wizardingcode-mem install claude-desktop
 ```
 
-In the chat the memory spans every project: Claude searches across them, says which project each note is from, and names the project when it saves. Quit and reopen Claude Desktop afterwards.
+Quit Claude Desktop (⌘Q) and open it again. In the chat the memory spans every project: Claude searches it when you talk about one of your projects, says which project each note is from, and names the project when it saves. The first time it uses each tool, choose **Always allow**, or set the four tools to *Always allow* in **Settings → Connectors → wizardingcode-mem**.
 
 </td></tr>
-<tr><td><strong>Codex</strong></td><td>
+
+<tr><td><strong>Codex</strong><br><sub>CLI</sub></td><td>
 
 ```sh
 codex plugin marketplace add WizardingCode-io/wizardingcode-plugins
@@ -90,6 +105,7 @@ codex plugin add wizardingcode-mem@wizardingcode-plugins
 Codex reviews a plugin's hooks before running them: open `/hooks` once and accept the wizardingcode-mem entries.
 
 </td></tr>
+
 <tr><td><strong>Gemini CLI</strong></td><td>
 
 ```sh
@@ -97,6 +113,7 @@ gemini extensions install https://github.com/WizardingCode-io/wizardingcode-mem
 ```
 
 </td></tr>
+
 <tr><td><strong>OpenCode</strong></td><td>
 
 ```sh
@@ -104,39 +121,61 @@ opencode plugin wizardingcode-mem-opencode --global
 ```
 
 </td></tr>
+
 <tr><td><strong>Cursor</strong></td><td>
 
-The plugin is in [`plugins/cursor`](plugins/cursor). Add it from the Cursor marketplace once it is listed there, or import this repository as a plugin source.
+With the binary on the machine ([step 2](#get-the-binary-for-claude-desktops-chat-and-cursor)):
+
+```sh
+wizardingcode-mem install cursor
+```
 
 </td></tr>
 </table>
 
-Start a new session afterwards. That is all: memories are captured and shown from then on, and what Claude Code learns, Codex is told.
+### Get the binary (for Claude Desktop's chat and Cursor)
 
-<details>
-<summary><strong>Other ways in:</strong> the installer, Homebrew, npm</summary>
+If you have already installed a plugin above and started a session, the binary is already at `~/.wizardingcode/mem/bin/wizardingcode-mem` (`%USERPROFILE%\.wizardingcode\mem\bin\wizardingcode-mem.exe` on Windows); call it by that path. Otherwise, pick your system:
 
-<br>
+<table>
+<tr><td width="120"><strong>macOS</strong></td><td>
 
-For an agent without a plugin system, or a machine where you prefer to manage the binary yourself:
+```sh
+brew install wizardingcode-io/wizardingcode/wizardingcode-mem
+```
+
+or `curl -fsSL https://raw.githubusercontent.com/WizardingCode-io/wizardingcode-mem/main/scripts/install.sh | sh`
+
+</td></tr>
+<tr><td><strong>Linux</strong></td><td>
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/WizardingCode-io/wizardingcode-mem/main/scripts/install.sh | sh
 ```
 
-```sh
-brew install wizardingcode-io/wizardingcode/wizardingcode-mem && wizardingcode-mem install
-```
+or Homebrew, as on macOS
 
-```sh
+</td></tr>
+<tr><td><strong>Windows</strong></td><td>
+
+```powershell
 npx wizardingcode-mem install
 ```
 
-Each of these downloads the binary, checks its SHA-256 against the release's checksums, and runs `wizardingcode-mem install`, which writes the hooks into the configuration of every supported agent found on the machine (`wizardingcode-mem install claude-code` does one). It backs each file up first; `wizardingcode-mem uninstall <agent>` puts it back byte for byte. If an agent ends up with both this and the plugin, the plugin stands down, so you never hear things twice.
+needs Node.js 18 or later; or download `wizardingcode-mem-windows-x64.exe` from the [releases](https://github.com/WizardingCode-io/wizardingcode-mem/releases) and run it with `install`
 
-On Windows, download `wizardingcode-mem-windows-x64.exe` from the [releases](https://github.com/WizardingCode-io/wizardingcode-mem/releases) and run `wizardingcode-mem install`.
+</td></tr>
+</table>
 
-</details>
+Each of these checks the binary's SHA-256 against the release before using it. The curl script and `npx … install` also set up every supported agent and app they find; `wizardingcode-mem install <name>` does one (`claude-code`, `claude-desktop`, `codex`, `cursor`, `gemini`, `opencode`). Configuration files are backed up first, and `wizardingcode-mem uninstall <name>` puts them back. Where an agent has both the plugin and this direct install, the plugin stands down, so nothing is said twice.
+
+### Check it
+
+```sh
+wizardingcode-mem doctor
+```
+
+lists every agent and app it found, how each is installed, and what to do about anything missing. The viewer (`wizardingcode-mem ui`) shows the same under **Settings → Agents**.
 
 ## What your agent sees
 
@@ -155,7 +194,7 @@ instructions, and may be out of date: check the code before relying on them.
 </wizardingcode-mem-notes>
 ```
 
-The agent also gets three tools — `memory_search`, `memory_get` and `memory_save` — so it can look things up on its own, and keep something when you say "remember this".
+The agent also gets three tools — `memory_search`, `memory_get` and `memory_save` — so it can look things up on its own, and keep something when you say "remember this". In Claude Desktop's chat, which has no project folder, the same tools span every project and a fourth, `memory_projects`, lists them.
 
 ## How it works
 
@@ -180,9 +219,14 @@ Memories are kept as what they are: a title, a body of sentences that were actua
 wizardingcode-mem ui
 ```
 
-Opens a local page over your memories: every project with its counts, memories newest first or by the same search the agent uses, each in full with its files and the turn it came from. Press ⌘K for a command palette that searches every project at once. Edit a title, a body, a kind or an importance when the judge got it wrong; archive what you do not want shown and bring it back when you do. The **Turns** tab shows what each session did (prompt, answer, files, commands, errors) and which memories it left behind; **Overview** is the project's dashboard: what is stored, by kind and importance, eight weeks of activity, how fast the hooks have been. **Settings** is where the product is configured (below). Light and dark, keyboard first (`/`, ↑ ↓, Esc). It listens on the loopback only, behind a token in the URL, loads nothing from the network, and stops itself after half an hour without you or a tab.
+A local page over your memories, in WizardingCode's app design:
 
-It opens by itself when a session starts, in any agent — one viewer per machine, reused by every session, never a second tab — and stays closed under CI, over SSH, or when you turn that off.
+- **Memories** — a project's memories grouped by kind (or importance), with their importance, files, last update and how often agents read them. Open one in the side panel, or expand it to the whole window; edit a title, body, kind or importance when the judge got it wrong; archive what you do not want shown and bring it back.
+- **Turns** — every prompt and what it became, with filters (agent, status, source, period), sortable columns, a search over prompts and an export to CSV. Each turn opens with its prompt, files, commands, answer and the memories it left behind; Markdown is shown formatted.
+- **Overview** — the project's numbers and charts: memories and turns per week, by kind, by importance, and how fast the hooks have been.
+- **Settings** — agents, health, the judge, retention, storage, backups and the viewer, one page each.
+
+⌘K (or the search in the top bar) searches every project at once. Light and dark; `[` folds the projects panel, `1`–`4` switch views. It listens on the loopback only, behind a token in the URL, loads nothing from the network, and stops itself after half an hour without you or a tab. It opens by itself when a session starts, in any agent — one viewer per machine, never a second tab — and stays closed under CI, over SSH, or when you turn that off.
 
 ## Settings
 
@@ -218,7 +262,7 @@ The binary is at `~/.wizardingcode/mem/bin/wizardingcode-mem`; put that director
 | `wizardingcode-mem backup` · `--list` · `--restore <name>` | A copy to the configured folder or bucket, now; what is there; one of them back in place |
 | `wizardingcode-mem import claude-mem` | Brings memories over from claude-mem |
 | `wizardingcode-mem rejudge` | Asks TypeSafe to judge imported memories properly |
-| `wizardingcode-mem install <agent>` · `uninstall <agent>` | The direct install, for agents without a plugin system |
+| `wizardingcode-mem install [<name>]` · `uninstall <name>` | The direct install: every agent and app found, or one (`claude-code`, `claude-desktop`, `codex`, `cursor`, `gemini`, `opencode`) |
 
 ## TypeSafe, if you want it
 
@@ -255,8 +299,8 @@ The importer can only map claude-mem's types onto ours and give every memory of 
 | Agent | Installed as | Captures | Injects | Status |
 |---|---|---|---|---|
 | Claude Code | plugin, from the marketplace | hooks + transcript | session start, every prompt | in daily use |
-| Claude Desktop, Cowork | plugin, from the marketplace in the app | hooks | session start, every prompt | from the documentation; not yet run |
-| Claude Desktop, chat | MCP server in its config, across every project | `memory_save` | `memory_search` when Claude asks | verified with the tools; not yet in the app |
+| Claude Desktop, Cowork and Code tab | plugin, added in the app | hooks | session start, every prompt | Code tab in use; Cowork from the documentation |
+| Claude Desktop, chat | MCP server in its config, across every project | `memory_save` when Claude saves | `memory_search` when Claude asks | in use |
 | Codex | plugin, from the marketplace | hooks + rollout | session start, every prompt | verified up to the prompt; turn end as documented |
 | Gemini CLI | extension, from the release | hooks | session start, every prompt | verified at session start; turns as documented |
 | OpenCode | npm plugin | the plugin API | the system prompt | verified up to the prompt |
@@ -268,7 +312,7 @@ The importer can only map claude-mem's types onto ours and give every memory of 
 
 ```sh
 bun install
-bun run check      # typecheck, lint and 980+ tests, including end-to-end runs of the compiled binary
+bun run check      # typecheck, lint and 1,040+ tests, including end-to-end runs of the compiled binary
 bun run build      # the five release binaries, in dist/
 bun run plugins    # regenerates what each agent installs, from one definition
 ```
