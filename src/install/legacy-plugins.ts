@@ -58,12 +58,8 @@ function codex(paths: LegacyPaths): LegacyPlugin | null {
   const section = /^\[plugins\."(shibaox-mem@[^"]+)"\]\s*\n((?:(?!\[)[^\n]*\n?)*)/m.exec(config);
   if (section === null || !/^enabled\s*=\s*true/m.test(section[2] ?? "")) return null;
   const name = section[1] as string;
-  return {
-    agent: "codex",
-    name,
-    command: null,
-    hint: `in Codex, open /plugins and remove ${LEGACY}, or set enabled = false under [plugins."${name}"] in ~/.codex/config.toml`,
-  };
+  const command = ["codex", "plugin", "remove", name];
+  return { agent: "codex", name, command, hint: command.join(" ") };
 }
 
 function gemini(paths: LegacyPaths): LegacyPlugin | null {

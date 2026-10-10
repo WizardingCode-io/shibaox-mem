@@ -35,7 +35,7 @@ This happens without the user doing anything, before any command (`src/util/lega
 - **Settings and database.** The settings file's keys are renamed. The database is renamed wherever the store lives, after a `wal_checkpoint(TRUNCATE)` so the WAL loses nothing.
 - **Concurrency.** A lock file (`<data dir>.migrating`, taken over after 10 minutes) keeps two processes from migrating at once. A hook that meets the lock exits 0 with no output, so no command starts an empty memory beside the one being moved. Any other command says to try again.
 - **Agent hooks.** `install` recognises shibaox-mem hooks and MCP entries as its own and replaces them.
-- **Agent plugins.** `install` uninstalls shibaox-mem's agent plugins through the agent's own command, asking first unless `--yes` is given. That command exists for Claude Code (`claude plugin uninstall`) and Gemini CLI (`gemini extensions uninstall`). For Codex and the OpenCode npm plugin, it says what to do. `doctor` warns while any of them is still enabled.
+- **Agent plugins.** `install` uninstalls shibaox-mem's agent plugins through the agent's own command, asking first unless `--yes` is given. That command exists for Claude Code (`claude plugin uninstall`), Codex (`codex plugin remove`) and Gemini CLI (`gemini extensions uninstall`). For the OpenCode npm plugin, it says what to do. `doctor` warns while any of them is still enabled.
 - **Old text.** The old notes wrapper is still stripped from transcripts and made inert in stored text. Old backup names are still listed and restorable.
 
 Tests set `WIZARDINGCODE_MEM_MIGRATE=off` (in `tests/preload.ts`), so a developer's real `~/.shibaox` is never touched. When there is nothing to migrate, the check costs about 0.06 ms per command.
