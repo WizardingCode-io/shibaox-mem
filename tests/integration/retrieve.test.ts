@@ -117,6 +117,16 @@ describe("retrieveForPrompt", () => {
     expect(ids("please run the tests again")).toEqual([]);
   });
 
+  test("what the agent's host sends on its own, a finished background task or a subagent's report, is not searched", () => {
+    memory("The suite runs with bun run test, never the global bun.", "", { importance: 4 });
+    memory("Background command output files live under the tasks folder.", "", { importance: 4 });
+    const task = `<task-notification>\n<task-id>b5ah64f13</task-id>\n<status>completed</status>\n<summary>Background command "Run the suite with bun run test" completed (exit code 0)</summary>\n<output-file>/tmp/tasks/b5ah64f13.output</output-file>\n</task-notification>`;
+    const report = `<agent-message from="a1">\n[Subagent hand-back] The suite runs with bun run test and every background command passed.\n</agent-message>`;
+    expect(ids(task)).toEqual([]);
+    expect(ids(report)).toEqual([]);
+    expect(ids("why does the suite need bun run test?")).not.toEqual([]);
+  });
+
   // Ordinary programming talk shares words with every memory. None of this is evidence.
   test("a plain word in a code span is not an identifier", () => {
     memory("The function parseUser returns null for an unknown value.");
