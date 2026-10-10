@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { claudeDesktopConfigPath } from "../install/claude-desktop.ts";
 import { codexContext } from "../install/codex.ts";
 import { cursorContext } from "../install/cursor.ts";
 import { geminiContext } from "../install/gemini.ts";
@@ -20,6 +21,7 @@ export function doctorContext(dataDir: string, now = Date.now()): DoctorContext 
     cursorHooksPath: cursorContext("").settingsPath,
     geminiSettingsPath: geminiContext("").settingsPath,
     opencodePluginPath: opencodePluginPath(),
+    claudeDesktopConfigPath: claudeDesktopConfigPath(),
     which: (command) => Bun.which(command),
     now,
     legacyVariables: Object.keys(process.env)

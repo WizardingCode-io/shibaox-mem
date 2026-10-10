@@ -129,6 +129,7 @@ export const took = (from: number, to: number | null): string => {
 /** The agents' letter tiles, each in its hue (the brand's agent palette). */
 export const AGENT_TILE: Record<string, { letter: string; bg: string }> = {
   "claude-code": { letter: "C", bg: "#FF3DCB" },
+  "claude-desktop": { letter: "D", bg: "#FF3DCB" },
   codex: { letter: "X", bg: "#2E7BFF" },
   cursor: { letter: "U", bg: "#9B5CFF" },
   gemini: { letter: "G", bg: "#2EE6C8" },

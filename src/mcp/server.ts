@@ -1,32 +1,56 @@
 import pkg from "../../package.json" with { type: "json" };
 import { logError } from "../util/log.ts";
-import { runTool, TOOL_DESCRIPTIONS, TOOL_NAMES, toolSchemas } from "./run.ts";
+import {
+  GLOBAL_INSTRUCTIONS,
+  GLOBAL_TOOL_DESCRIPTIONS,
+  GLOBAL_TOOL_NAMES,
+  runGlobalTool,
+  runTool,
+  TOOL_DESCRIPTIONS,
+  TOOL_NAMES,
+  toolSchemas,
+} from "./run.ts";
 
 // Tool descriptions are sent to the model in every session, so each is one sentence.
 
 /**
- * The MCP server: three tools over stdio. It lives as long as the host keeps its
+ * The MCP server: three tools over stdio (four with --global). It lives as long as the host keeps its
  * stdin open, and holds no database connection between calls.
  */
-export async function runMcpServer(): Promise<void> {
+export async function runMcpServer(options: { global?: boolean } = {}): Promise<void> {
+  const global = options.global === true;
   // The SDK is loaded here and nowhere else: hooks must never pay for it.
   const { McpServer } = await import("@modelcontextprotocol/server");
   const { StdioServerTransport } = await import("@modelcontextprotocol/server/stdio");
-  const schemas = await toolSchemas();
+  const schemas = await toolSchemas(global);
 
   const answer = (text: string, isError = false) => ({
     content: [{ type: "text" as const, text }],
     ...(isError ? { isError: true } : {}),
   });
 
-  const server = new McpServer({ name: "wizardingcode-mem", version: pkg.version });
-  for (const name of TOOL_NAMES) {
+  // Without a project folder (Claude Desktop's chat) the server spans every project and
+  // tells the model how to use it.
+  const server = new McpServer(
+    { name: "wizardingcode-mem", version: pkg.version },
+    global ? { instructions: GLOBAL_INSTRUCTIONS } : undefined,
+  );
+  for (const name of global ? GLOBAL_TOOL_NAMES : TOOL_NAMES) {
     server.registerTool(
       name,
-      { description: TOOL_DESCRIPTIONS[name], inputSchema: schemas[name] },
+      {
+        description: global
+          ? GLOBAL_TOOL_DESCRIPTIONS[name]
+          : TOOL_DESCRIPTIONS[name as (typeof TOOL_NAMES)[number]],
+        inputSchema: schemas[name],
+      },
       async (args: unknown) => {
         try {
-          return answer(await runTool(name, args, process.env.CLAUDE_PROJECT_DIR || process.cwd()));
+          return answer(
+            global
+              ? await runGlobalTool(name, args)
+              : await runTool(name, args, process.env.CLAUDE_PROJECT_DIR || process.cwd()),
+          );
         } catch (error) {
           logError(`mcp ${name}`, error);
           return answer(

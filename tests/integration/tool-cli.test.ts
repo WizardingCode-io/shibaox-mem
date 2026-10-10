@@ -87,3 +87,36 @@ describe("wizardingcode-mem tool", () => {
     expect(noProject.stderr).toContain("--project");
   });
 });
+
+describe("wizardingcode-mem tool --global (Claude Desktop's chat: every project)", () => {
+  const global = (name: string, args: unknown) =>
+    runCliWith(
+      { input: JSON.stringify(args), env: { WIZARDINGCODE_MEM_DATA_DIR: dataDir } },
+      "tool",
+      name,
+      "--global",
+    );
+
+  test("memory_search finds across projects and names the project", async () => {
+    const result = await global("memory_search", { query: "limit" });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("[project]");
+    expect(result.stdout).toContain("The request limit is five per minute.");
+  });
+
+  test("memory_projects lists the projects; memory_save needs one", async () => {
+    expect((await global("memory_projects", {})).stdout).toContain("project · 1 memory");
+    expect(
+      (await global("memory_save", { text: "Buttons are violet.", kind: "convention" })).stdout,
+    ).toContain("Say which project");
+    expect(
+      (
+        await global("memory_save", {
+          text: "Buttons are violet. Brand rule.",
+          kind: "convention",
+          project: "project",
+        })
+      ).stdout,
+    ).toMatch(/Saved as #\d+ in project\./);
+  });
+});

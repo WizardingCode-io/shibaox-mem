@@ -1,8 +1,16 @@
-import { runTool, TOOL_NAMES, type ToolName, toolSchemas } from "../../mcp/run.ts";
+import {
+  GLOBAL_TOOL_NAMES,
+  runGlobalTool,
+  runTool,
+  TOOL_NAMES,
+  type ToolName,
+  toolSchemas,
+} from "../../mcp/run.ts";
 import { logError } from "../../util/log.ts";
 import { EXIT_USAGE } from "../exit.ts";
 
-const USAGE = `Usage: wizardingcode-mem tool <${TOOL_NAMES.join("|")}> --project <dir>  (JSON arguments on stdin)\n`;
+const USAGE = `Usage: wizardingcode-mem tool <${TOOL_NAMES.join("|")}> --project <dir>  (JSON arguments on stdin)
+       wizardingcode-mem tool <${GLOBAL_TOOL_NAMES.join("|")}> --global   (every project)\n`;
 
 /**
  * `wizardingcode-mem tool <name> --project <dir>`: one tool call outside MCP, for hosts whose
@@ -13,11 +21,15 @@ export async function run(argv: string[]): Promise<number> {
   const [name, ...rest] = argv;
   const at = rest.indexOf("--project");
   const projectDir = at === -1 ? undefined : rest[at + 1];
-  if (name === undefined || !(TOOL_NAMES as readonly string[]).includes(name)) {
+  const global = rest.includes("--global");
+  if (
+    name === undefined ||
+    !((global ? GLOBAL_TOOL_NAMES : TOOL_NAMES) as readonly string[]).includes(name)
+  ) {
     process.stderr.write(`wizardingcode-mem tool: unknown tool "${name ?? ""}"\n${USAGE}`);
     return EXIT_USAGE;
   }
-  if (projectDir === undefined || projectDir === "") {
+  if (!global && (projectDir === undefined || projectDir === "")) {
     process.stderr.write(`wizardingcode-mem tool: --project <dir> is required\n${USAGE}`);
     return EXIT_USAGE;
   }
@@ -29,7 +41,7 @@ export async function run(argv: string[]): Promise<number> {
     process.stderr.write("wizardingcode-mem tool: stdin must hold the arguments as JSON\n");
     return EXIT_USAGE;
   }
-  const schemas = await toolSchemas();
+  const schemas = await toolSchemas(global);
   const parsed = schemas[name as ToolName].safeParse(args);
   if (!parsed.success) {
     const issues = parsed.error.issues
@@ -39,7 +51,10 @@ export async function run(argv: string[]): Promise<number> {
     return EXIT_USAGE;
   }
   try {
-    process.stdout.write(`${await runTool(name as ToolName, parsed.data, projectDir)}\n`);
+    const answer = global
+      ? await runGlobalTool(name as ToolName, parsed.data)
+      : await runTool(name as ToolName, parsed.data, projectDir as string);
+    process.stdout.write(`${answer}\n`);
     return 0;
   } catch (error) {
     logError(`tool ${name}`, error);
