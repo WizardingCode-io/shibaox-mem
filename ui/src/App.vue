@@ -5,23 +5,20 @@ import MemoryDetail from "./components/MemoryDetail.vue";
 import MemoryList from "./components/MemoryList.vue";
 import Palette from "./components/Palette.vue";
 import ProjectStats from "./components/ProjectStats.vue";
+import Rail from "./components/Rail.vue";
 import Settings from "./components/Settings.vue";
 import Sidebar from "./components/Sidebar.vue";
+import TopBar from "./components/TopBar.vue";
 import TurnDetail from "./components/TurnDetail.vue";
 import TurnsList from "./components/TurnsList.vue";
-import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, startHeartbeat, state, theme, type Tab } from "./viewer";
+import { closeDetail, loadList, loadOverview, move, project, reload, select, selectProject, startHeartbeat, state, type Tab } from "./viewer";
 
-const tabs = [
-  { label: "Memories", value: "memories", icon: "i-lucide-sticky-note" },
-  { label: "Turns", value: "turns", icon: "i-lucide-history" },
-  { label: "Overview", value: "overview", icon: "i-lucide-chart-column" },
-  { label: "Settings", value: "settings", icon: "i-lucide-settings" },
-];
-const statusItems = [
-  { label: "Active", value: "active" },
-  { label: "Archived", value: "archived" },
-  { label: "Superseded", value: "superseded" },
-  { label: "All", value: "all" },
+// The view tabs (Sales OS page header, second row): a coloured square each, in the brand's hues.
+const tabs: { label: string; value: Tab; hue: string }[] = [
+  { label: "Memories", value: "memories", hue: "var(--violet)" },
+  { label: "Turns", value: "turns", hue: "var(--blue)" },
+  { label: "Overview", value: "overview", hue: "var(--aqua)" },
+  { label: "Settings", value: "settings", hue: "var(--sun)" },
 ];
 const tab = computed({
   get: () => state.tab,
@@ -29,13 +26,6 @@ const tab = computed({
     state.tab = t;
     history.replaceState(null, "", t === "memories" ? "#" : `#${t}`);
     void reload();
-  },
-});
-const status = computed({
-  get: () => state.status,
-  set: (s: typeof state.status) => {
-    state.status = s;
-    void loadList();
   },
 });
 const q = ref("");
@@ -47,8 +37,8 @@ watch(q, (value) => {
     if (state.tab === "memories") void loadList();
   }, 150);
 });
-const search = ref<{ inputRef?: HTMLInputElement } | null>(null);
-// The detail is a column from 1280px up, a sheet below: decided here, not by CSS, so that
+const topBar = ref<{ focus: () => void } | null>(null);
+// The detail is a 320px dock from 1280px up, a sheet below: decided here, not by CSS, so that
 // the sheet's scrim never covers a page that already shows the column.
 const wide = matchMedia("(min-width: 1280px)");
 const isWide = ref(wide.matches);
@@ -84,7 +74,7 @@ function onKey(e: KeyboardEvent) {
   if (palette.value || turnId.value !== null) return;
   if (e.key === "/" && !typing) {
     e.preventDefault();
-    search.value?.inputRef?.focus();
+    topBar.value?.focus();
     return;
   }
   if (e.key === "Escape") {
@@ -118,44 +108,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UApp :toaster="{ position: 'bottom-center', duration: 2200 }">
-    <!-- From 1280px the detail is a third column that opens with a selection and closes
-         without one; the track animates, the column keeps its width so nothing reflows. -->
-    <div
-      class="grid h-full grid-cols-[264px_minmax(0,1fr)] overflow-hidden motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
-      :class="state.detail ? 'xl:grid-cols-[264px_minmax(0,1fr)_460px]' : 'xl:grid-cols-[264px_minmax(0,1fr)_0px]'"
-    >
-      <Sidebar class="min-h-0" @settings="tab = 'settings'" />
-      <main class="flex min-h-0 min-w-0 flex-col">
-        <div class="grid grid-cols-[auto_minmax(220px,1fr)_auto_auto_auto] items-center gap-3 border-b border-(--line) px-5 pt-4 pb-3">
-          <h1 class="font-display m-0 max-w-[30vw] truncate text-[22px] leading-8 font-bold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
-          <UInput ref="search" v-model="q" icon="i-lucide-search" placeholder="Search titles, bodies, file names" aria-label="Search memories" :ui="{ trailing: 'pe-1.5' }" :class="{ invisible: state.tab === 'settings' }">
-            <template #trailing>
-              <UButton v-if="q" color="neutral" variant="link" size="xs" icon="i-lucide-x" aria-label="Clear" @click="q = ''" />
-              <UKbd v-else value="/" size="sm" />
-            </template>
-          </UInput>
-          <USelectMenu v-model="status" :items="statusItems" value-key="value" :search-input="false" class="w-36" aria-label="Status" :class="{ invisible: state.tab !== 'memories' }" />
-          <UTooltip text="Command palette" :kbds="['meta', 'K']">
-            <UButton color="neutral" variant="outline" icon="i-lucide-command" aria-label="Command palette" @click="palette = true" />
-          </UTooltip>
-          <UTooltip :text="theme === 'dark' ? 'Light theme' : 'Dark theme'">
-            <UButton color="neutral" variant="outline" :icon="theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'" aria-label="Switch theme" @click="theme = theme === 'dark' ? 'light' : 'dark'" />
-          </UTooltip>
-        </div>
-        <div class="px-5 pt-3">
-          <UTabs v-model="tab" :items="tabs" :content="false" variant="pill" size="sm" class="w-fit" />
-        </div>
-        <div v-if="failed" class="m-5 rounded-lg border border-(--danger) bg-(--danger-soft) p-3 text-sm text-(--danger)">Could not reach wizardingcode-mem: {{ failed }}</div>
-        <MemoryList v-else-if="state.tab === 'memories'" />
-        <TurnsList v-else-if="state.tab === 'turns'" @open="turnId = $event" @open-memory="openMemory" />
-        <Settings v-else-if="state.tab === 'settings'" />
-        <ProjectStats v-else />
-      </main>
-      <MemoryDetail v-if="isWide" @open-turn="turnId = $event" />
+  <UApp :toaster="{ position: 'bottom-left', duration: 5000 }">
+    <div class="flex h-full flex-col overflow-hidden">
+      <TopBar ref="topBar" v-model="q" :searchable="state.tab === 'memories'" @palette="palette = true" />
+      <div class="flex min-h-0 flex-1">
+        <Rail :tab="state.tab" @go="tab = $event" />
+        <Sidebar />
+        <main class="@container flex min-h-0 min-w-0 flex-1 flex-col">
+          <!-- Row 1, 36px: where you are, and the project's numbers. -->
+          <div class="flex h-9 flex-none items-center gap-2 px-4">
+            <span aria-hidden="true" class="flex size-4 flex-none items-center justify-center rounded bg-(--primary) font-display text-[9px] font-bold text-(--on-primary)">M</span>
+            <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1 text-[13px] leading-[18px] whitespace-nowrap">
+              <span class="text-(--ink-muted)">Projects</span><span class="text-(--line-strong)">/</span>
+              <h1 class="m-0 truncate text-[13px] font-semibold" :title="project?.key">{{ project?.name ?? "Memories" }}</h1>
+            </nav>
+            <span v-if="project" class="ml-2 flex min-w-0 items-center gap-2 overflow-hidden text-xs leading-4 whitespace-nowrap text-(--ink-muted)">
+              <span><span class="font-mono font-medium text-(--ink)">{{ project.active.toLocaleString() }}</span> active</span>
+              <span class="text-(--line-strong)">·</span>
+              <span><span class="font-mono font-medium text-(--ink)">{{ project.archived.toLocaleString() }}</span> archived</span>
+              <template v-if="project.stale"><span class="text-(--line-strong)">·</span><span><span class="font-mono font-medium text-(--warn)">{{ project.stale.toLocaleString() }}</span> stale</span></template>
+            </span>
+          </div>
+          <!-- Row 2, 36px: the views. -->
+          <div role="navigation" aria-label="Views" class="flex h-9 flex-none items-center gap-4 border-b border-(--line) px-4">
+            <button
+              v-for="t in tabs"
+              :key="t.value"
+              type="button"
+              :aria-current="state.tab === t.value ? 'page' : undefined"
+              class="flex h-9 items-center gap-2 border-b-2 pt-0.5 text-[12.5px] whitespace-nowrap"
+              :class="state.tab === t.value ? 'border-(--ink) font-semibold text-(--ink)' : 'border-transparent text-(--ink-muted) hover:text-(--ink)'"
+              @click="tab = t.value"
+            >
+              <span aria-hidden="true" class="size-2.5 rounded-[3px]" :style="{ background: t.hue }" />{{ t.label }}
+            </button>
+          </div>
+          <div v-if="failed" class="m-4 rounded-xl border border-(--danger) bg-(--danger-soft) px-3.5 py-3 text-[13px] text-(--danger)">Could not reach wizardingcode-mem: {{ failed }}</div>
+          <MemoryList v-else-if="state.tab === 'memories'" />
+          <TurnsList v-else-if="state.tab === 'turns'" @open="turnId = $event" @open-memory="openMemory" />
+          <Settings v-else-if="state.tab === 'settings'" />
+          <ProjectStats v-else />
+        </main>
+        <MemoryDetail v-if="isWide && state.detail" class="w-80 flex-none border-l border-(--line) motion-safe:animate-[dock-in_240ms_ease-out]" @open-turn="turnId = $event" />
+      </div>
     </div>
-    <USlideover v-model:open="sheet" :ui="{ content: 'max-w-[520px]' }" title="Memory" :close="false">
-      <template #content><MemoryDetail class="h-full border-l-0" @open-turn="turnId = $event" /></template>
+    <USlideover v-model:open="sheet" :ui="{ content: 'max-w-[360px]' }" title="Memory" :close="false">
+      <template #content><MemoryDetail class="h-full" @open-turn="turnId = $event" /></template>
     </USlideover>
     <TurnDetail :turn-id="turnId" @close="turnId = null" @open-memory="openMemory" />
     <Palette v-model:open="palette" @tab="tab = $event" />

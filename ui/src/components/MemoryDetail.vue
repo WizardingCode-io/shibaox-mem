@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from "vue";
 import { api, KINDS, type Kind } from "../api";
-import { asNote, IMPORTANCE_LABEL, KIND_COLOR, when } from "../format";
+import { asNote, IMPORTANCE_LABEL, KIND_TONE, when } from "../format";
 import { closeDetail, refreshAfterChange, state } from "../viewer";
 import Importance from "./Importance.vue";
+import Pill from "./Pill.vue";
 
 const emit = defineEmits<{ openTurn: [id: number] }>();
 const toast = useToast();
@@ -75,75 +76,77 @@ async function copy() {
 </script>
 
 <template>
-  <!-- `isolate` keeps the sticky toolbar's z-index inside the column, so that Nuxt UI's
-       overlays (which rely on coming last in the document) still cover it. -->
-  <aside class="isolate flex min-h-0 flex-col overflow-auto border-(--line) bg-(--surface) xl:w-[460px]" :class="{ 'xl:border-l': state.detail }" aria-label="Memory">
+  <!-- The detail dock (Sales OS: side panels are 320px). `isolate` keeps its sticky bar
+       under Nuxt UI's overlays. -->
+  <aside class="isolate flex min-h-0 flex-col overflow-auto bg-(--surface)" aria-label="Memory">
     <template v-if="state.detail">
-      <div class="sticky top-0 z-10 flex items-center gap-2 border-b border-(--line) bg-(--surface) px-4 py-3">
+      <div class="sticky top-0 z-10 flex h-10 flex-none items-center gap-1 border-b border-(--line) bg-(--surface) px-2">
         <template v-if="!editing">
-          <UButton v-if="state.detail.status === 'active'" color="neutral" variant="outline" size="sm" icon="i-lucide-archive" label="Archive" @click="setStatus('archived')" />
-          <UButton v-else-if="state.detail.status === 'archived'" color="primary" size="sm" icon="i-lucide-archive-restore" label="Restore" @click="setStatus('active')" />
-          <UButton v-if="state.detail.status !== 'superseded'" color="neutral" variant="ghost" size="sm" icon="i-lucide-pencil" label="Edit" @click="startEdit" />
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-copy" label="Copy" title="Copy as a note" @click="copy" />
+          <span class="ml-1 font-mono text-xs text-(--ink-muted)">#{{ state.detail.id }}</span>
+          <span class="flex-1" />
+          <UTooltip v-if="state.detail.status !== 'superseded'" text="Edit"><button type="button" aria-label="Edit" class="flex size-7 items-center justify-center rounded-md text-(--ink-muted) hover:bg-(--paper-sunken) hover:text-(--ink)" @click="startEdit"><UIcon name="i-lucide-pencil" class="size-[15px]" /></button></UTooltip>
+          <UTooltip text="Copy as a note"><button type="button" aria-label="Copy as a note" class="flex size-7 items-center justify-center rounded-md text-(--ink-muted) hover:bg-(--paper-sunken) hover:text-(--ink)" @click="copy"><UIcon name="i-lucide-copy" class="size-[15px]" /></button></UTooltip>
+          <UButton v-if="state.detail.status === 'active'" color="neutral" variant="outline" icon="i-lucide-archive" label="Archive" @click="setStatus('archived')" />
+          <UButton v-else-if="state.detail.status === 'archived'" color="primary" icon="i-lucide-archive-restore" label="Restore" @click="setStatus('active')" />
         </template>
         <template v-else>
-          <UButton color="primary" size="sm" icon="i-lucide-check" label="Save" :loading="saving" @click="save" />
-          <UButton color="neutral" variant="ghost" size="sm" label="Cancel" @click="editing = false" />
+          <span class="ml-1 text-[13px] font-semibold">Edit memory</span>
+          <span class="flex-1" />
+          <UButton color="neutral" variant="outline" label="Cancel" @click="editing = false" />
+          <UButton color="primary" label="Save" :loading="saving" @click="save" />
         </template>
-        <span class="flex-1" />
-        <UButton color="neutral" variant="ghost" size="sm" icon="i-lucide-x" aria-label="Close" @click="closeDetail" />
+        <UTooltip text="Close"><button type="button" aria-label="Close" class="flex size-7 items-center justify-center rounded-md text-(--ink-muted) hover:bg-(--paper-sunken) hover:text-(--ink)" @click="closeDetail"><UIcon name="i-lucide-x" class="size-[15px]" /></button></UTooltip>
       </div>
 
-      <div v-if="!editing" class="flex flex-col gap-5 px-5 pt-5 pb-6">
+      <div v-if="!editing" class="flex flex-col gap-4 p-4">
         <div class="flex flex-wrap items-center gap-2">
-          <UBadge :color="KIND_COLOR[state.detail.kind]" variant="soft" size="sm" :label="state.detail.kind" />
-          <UBadge v-if="state.detail.status !== 'active'" color="error" variant="soft" size="sm" :label="state.detail.status" />
-          <UBadge v-if="state.detail.stale" color="warning" variant="soft" size="sm" label="stale" />
-          <Importance :value="state.detail.importance" class="ml-0.5" />
+          <Pill :tone="KIND_TONE[state.detail.kind]" :label="state.detail.kind" />
+          <Pill v-if="state.detail.status !== 'active'" :tone="{ bg: 'var(--paper-sunken)', fg: 'var(--ink-muted)' }" :label="state.detail.status" />
+          <Pill v-if="state.detail.stale" :tone="{ bg: 'var(--warn-soft)', fg: 'var(--warn)' }" label="stale" />
+          <Importance :value="state.detail.importance" />
         </div>
-        <h2 class="font-display m-0 text-[22px] leading-7 font-bold [overflow-wrap:anywhere]">{{ state.detail.title }}</h2>
-        <div v-if="state.detail.body" class="text-[15px] leading-6 whitespace-pre-wrap [overflow-wrap:anywhere]">{{ state.detail.body }}</div>
-        <dl class="m-0 grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px] leading-[18px]">
-          <dt class="text-(--ink-muted)">Judged by</dt><dd class="m-0">{{ state.detail.judge }} <span class="text-(--ink-muted)">v{{ state.detail.judgeVersion }}</span></dd>
-          <dt class="text-(--ink-muted)">Origin</dt><dd class="m-0">{{ state.detail.origin }} <span v-if="state.detail.branch" class="font-mono text-xs text-(--ink-muted)">{{ state.detail.branch }}</span></dd>
-          <dt class="text-(--ink-muted)">Created</dt><dd class="m-0">{{ when(state.detail.createdAt) }} <span v-if="state.detail.updatedAt !== state.detail.createdAt" class="text-(--ink-muted)">· updated {{ when(state.detail.updatedAt) }}</span></dd>
-          <dt class="text-(--ink-muted)">Evidence</dt><dd class="m-0">{{ state.detail.evidenceCount }} turn{{ state.detail.evidenceCount === 1 ? "" : "s" }} <span v-if="state.detail.useCount" class="text-(--ink-muted)">· read {{ state.detail.useCount }}×</span></dd>
-          <template v-if="state.detail.supersededBy"><dt class="text-(--ink-muted)">Replaced by</dt><dd class="m-0">#{{ state.detail.supersededBy }}</dd></template>
-          <dt class="text-(--ink-muted)">Id</dt><dd class="m-0 font-mono text-xs">#{{ state.detail.id }}</dd>
+        <h2 class="m-0 text-[15px] leading-5 font-semibold [overflow-wrap:anywhere]">{{ state.detail.title }}</h2>
+        <div v-if="state.detail.body" class="text-[13px] leading-[18px] whitespace-pre-wrap [overflow-wrap:anywhere]">{{ state.detail.body }}</div>
+        <dl class="m-0 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs leading-4">
+          <dt class="text-(--ink-muted)">Judged by</dt><dd class="m-0">{{ state.detail.judge }} <span class="font-mono text-(--ink-muted)">v{{ state.detail.judgeVersion }}</span></dd>
+          <dt class="text-(--ink-muted)">Origin</dt><dd class="m-0">{{ state.detail.origin }} <span v-if="state.detail.branch" class="font-mono text-(--ink-muted)">{{ state.detail.branch }}</span></dd>
+          <dt class="text-(--ink-muted)">Created</dt><dd class="m-0 font-mono">{{ when(state.detail.createdAt) }}</dd>
+          <template v-if="state.detail.updatedAt !== state.detail.createdAt"><dt class="text-(--ink-muted)">Updated</dt><dd class="m-0 font-mono">{{ when(state.detail.updatedAt) }}</dd></template>
+          <dt class="text-(--ink-muted)">Evidence</dt><dd class="m-0">{{ state.detail.evidenceCount }} turn{{ state.detail.evidenceCount === 1 ? "" : "s" }}<span v-if="state.detail.useCount" class="text-(--ink-muted)"> · read {{ state.detail.useCount }}×</span></dd>
+          <template v-if="state.detail.supersededBy"><dt class="text-(--ink-muted)">Replaced by</dt><dd class="m-0 font-mono">#{{ state.detail.supersededBy }}</dd></template>
         </dl>
-        <div v-if="state.detail.fileRoles.length" class="flex flex-col gap-2">
+        <div v-if="state.detail.fileRoles.length" class="flex flex-col gap-1.5">
           <div class="overline">Files</div>
           <ul class="m-0 flex list-none flex-col gap-1 p-0">
-            <li v-for="f in state.detail.fileRoles" :key="f.path" class="flex items-center gap-2 font-mono text-xs leading-[18px]">
-              <UIcon name="i-lucide-file" class="size-3.5 text-(--ink-muted)" /><span>{{ f.path }}</span>
-              <UBadge v-if="f.role === 'read'" color="neutral" variant="soft" size="sm" label="read" />
+            <li v-for="f in state.detail.fileRoles" :key="f.path" class="flex min-w-0 items-center gap-2 font-mono text-xs leading-4">
+              <UIcon name="i-lucide-file" class="size-3.5 flex-none text-(--ink-muted)" /><span class="truncate" :title="f.path">{{ f.path }}</span>
+              <Pill v-if="f.role === 'read'" :tone="{ bg: 'var(--paper-sunken)', fg: 'var(--ink-muted)' }" label="read" />
             </li>
           </ul>
         </div>
-        <div v-if="state.detail.source" class="flex flex-col gap-2">
+        <div v-if="state.detail.source" class="flex flex-col gap-1.5">
           <div class="overline">From the prompt · {{ state.detail.source.agent }} · {{ when(state.detail.source.startedAt) }}</div>
-          <div class="rounded-lg border border-(--line) bg-(--surface-sunken) p-3 text-[13px] leading-5 whitespace-pre-wrap text-(--ink-muted) [overflow-wrap:anywhere]">{{ state.detail.source.prompt }}</div>
-          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-history" label="Open the turn" class="self-start" @click="emit('openTurn', state.detail.source.turnId)" />
+          <div class="rounded-xl border border-(--console-line) bg-(--console) p-3 font-mono text-xs leading-[18px] whitespace-pre-wrap text-(--console-ink) [overflow-wrap:anywhere]">{{ state.detail.source.prompt }}</div>
+          <button type="button" class="flex items-center gap-1.5 self-start text-[13px] font-semibold text-(--violet-text) hover:underline" @click="emit('openTurn', state.detail.source.turnId)"><UIcon name="i-lucide-history" class="size-3.5" />Open the turn</button>
         </div>
       </div>
 
-      <div v-else class="flex flex-col gap-4 px-5 pt-5 pb-6">
+      <div v-else class="flex flex-col gap-3 p-4">
         <UFormField label="Title">
-          <UInput v-model="form.title" class="w-full" />
+          <UInput v-model="form.title" size="md" class="w-full" />
         </UFormField>
-        <UFormField label="Body" hint="What was said, in full sentences">
+        <UFormField label="Body" hint="In full sentences">
           <UTextarea v-model="form.body" autoresize :rows="6" class="w-full" />
         </UFormField>
         <div class="grid grid-cols-2 gap-3">
           <UFormField label="Kind">
-            <USelectMenu v-model="form.kind" :items="kindItems" value-key="value" :search-input="false" class="w-full" />
+            <USelectMenu v-model="form.kind" :items="kindItems" value-key="value" :search-input="false" size="md" class="w-full" />
           </UFormField>
           <UFormField label="Importance">
-            <USelectMenu v-model="form.importance" :items="importanceItems" value-key="value" :search-input="false" class="w-full" />
+            <USelectMenu v-model="form.importance" :items="importanceItems" value-key="value" :search-input="false" size="md" class="w-full" />
           </UFormField>
         </div>
       </div>
     </template>
-
   </aside>
 </template>

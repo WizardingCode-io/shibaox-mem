@@ -22,6 +22,8 @@ const state = reactive({
   items: [] as MemoryItem[],
   total: 0,
   turns: [] as TurnItem[],
+  /** The ids in the order the list shows them (grouped by kind or not), for ↑ and ↓. */
+  order: [] as number[],
   selected: null as number | null,
   detail: null as MemoryDetail | null,
   loading: false,
@@ -96,10 +98,14 @@ export async function refreshAfterChange(id: number | null = state.selected): Pr
 }
 
 export function move(delta: 1 | -1): void {
-  if (state.items.length === 0) return;
-  const i = state.items.findIndex((m) => m.id === state.selected);
-  const next = state.items[Math.min(state.items.length - 1, Math.max(0, i + delta))];
-  if (next) void select(next.id);
+  const order = state.order.length ? state.order : state.items.map((m) => m.id);
+  if (order.length === 0) return;
+  const i = order.indexOf(state.selected ?? -1);
+  const next = order[Math.min(order.length - 1, Math.max(0, i + delta))];
+  if (next !== undefined) {
+    void select(next);
+    document.querySelector(`[data-id="${next}"]`)?.scrollIntoView({ block: "nearest" });
+  }
 }
 
 // The theme: Nuxt UI's own colour mode (a `dark` class on <html>, remembered by the

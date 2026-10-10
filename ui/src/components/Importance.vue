@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { IMPORTANCE_LABEL } from "../format";
+// Importance as a priority flag (Sales OS rows): a flag and the word, in its colour.
+import { IMPORTANCE_COLOR, IMPORTANCE_LABEL } from "../format";
 
 defineProps<{ value: number }>();
 </script>
 
 <template>
   <span
-    class="inline-flex items-center gap-[3px]"
-    :title="`Importance ${value} of 5 — ${IMPORTANCE_LABEL[value]}`"
-    :aria-label="`Importance ${value} of 5`"
+    class="inline-flex h-5 items-center gap-1 text-xs leading-4 font-medium whitespace-nowrap"
+    :style="{ color: IMPORTANCE_COLOR[value] }"
+    :title="`Importance ${value} of 5`"
   >
-    <i
-      v-for="i in 5"
-      :key="i"
-      class="block size-1.5 rounded-full"
-      :style="{ background: i <= value ? 'var(--violet)' : 'var(--line)' }"
-    />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>
+    {{ IMPORTANCE_LABEL[value] }}
   </span>
 </template>

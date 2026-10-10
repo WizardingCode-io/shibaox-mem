@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { api, type TurnDetail } from "../api";
-import { KIND_COLOR, when } from "../format";
-import TurnState from "./TurnState.vue";
+import { KIND_TONE, TURN_TONE, when } from "../format";
+import Pill from "./Pill.vue";
 
 const props = defineProps<{ turnId: number | null }>();
 const emit = defineEmits<{ close: []; openMemory: [id: number] }>();
@@ -31,8 +31,8 @@ watch(open, (o) => {
     <template #body>
       <div v-if="turn" class="flex flex-col gap-5">
         <div class="flex flex-wrap items-center gap-2">
-          <TurnState :state="turn.state" />
-          <UBadge v-if="turn.completeness !== 'full'" color="neutral" variant="soft" :label="turn.completeness" />
+          <Pill :tone="TURN_TONE[turn.state] ?? { bg: 'var(--paper-sunken)', fg: 'var(--ink-muted)' }" :label="turn.state" />
+          <Pill v-if="turn.completeness !== 'full'" :tone="{ bg: 'var(--paper-sunken)', fg: 'var(--ink-muted)' }" :label="turn.completeness" />
           <span class="font-mono text-xs text-(--ink-muted)">#{{ turn.id }}</span>
         </div>
         <section class="flex flex-col gap-2">
@@ -47,7 +47,7 @@ watch(open, (o) => {
           <div class="overline">Became</div>
           <div v-if="turn.memories.length" class="flex flex-col gap-1.5">
             <UButton v-for="m in turn.memories" :key="m.id" color="neutral" variant="outline" size="sm" class="justify-start text-left" @click="emit('openMemory', m.id)">
-              <UBadge :color="KIND_COLOR[m.kind]" variant="soft" size="sm" :label="m.kind" /><span class="truncate">{{ m.title }}</span>
+              <Pill :tone="KIND_TONE[m.kind]" :label="m.kind" /><span class="truncate">{{ m.title }}</span>
             </UButton>
           </div>
           <p v-else class="m-0 text-[13px] text-(--ink-muted)">
